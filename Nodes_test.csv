@@ -1,0 +1,6 @@
+root,end,reorderPoint,reorderAmount,demandDistributionType,demandDistributionParam1,demandDistributionParam2,demandDistributionParam3,falsifier
+TRUE,FALSE,,,,,,,FALSE
+TRUE,FALSE,,,,,,,TRUE
+FALSE,FALSE,800,5000,,,,,FALSE
+FALSE,TRUE,28,210,1,4,12,,FALSE
+FALSE,TRUE,22,220,1,2,7,,FALSE
