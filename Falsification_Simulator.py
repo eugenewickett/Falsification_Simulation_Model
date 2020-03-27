@@ -19,10 +19,10 @@ from tabulate import tabulate # for making outputs
 
 # Run supporting files
 #os.getcwd() Run this command to get the current working directory string
-os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator') # Set directory    
+os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model') # Set directory    
 
-import Falsification_Sim_Classes # our class objects and methods
-import Falsification_Sim_Modules # modules for the simulation
+import Falsification_Sim_Classes as simClasses # our class objects and methods
+import Falsification_Sim_Modules as simModules # modules for the simulation
 
 # Read input lists: node list, arc preferences, and arc lead times
 nodeInputFileString = 'LIB_Nodes_1.csv'
@@ -30,10 +30,10 @@ arcPreferencesFileString = 'LIB_Arcs_Preferences_1.csv'
 arcLTsFileString = 'LIB_Arcs_LTs_1.csv'
 arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation
-NumSimDays = 1000
+NumSimDays = 600
 
 # Generate the lists of root, intermediate, and end nodes; also keep the list of node headers
-List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix = generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
+List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix = simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
 rootNum = len(List_RootNode)
 intermediateNum = len(List_IntermediateNode)
 endNum = len(List_EndNode)
@@ -49,7 +49,7 @@ List_DP = []
 ### TESTING POLICIES GENERATED HERE ###
 
 # Generate sampling schedule for current graph, as well as a report table shell
-List_TestingSchedule = testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = NumSimDays*3, int_PolicyType = 1, arr_PolicyParameter = [0])
+List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = NumSimDays*3, int_PolicyType = 1, arr_PolicyParameter = [0])
 TestReportTbl = []
 
 
