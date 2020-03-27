@@ -11,6 +11,8 @@ import numpy as np
 import random
 import csv
 
+import Falsification_Sim_Classes as simClasses # modules for the simulation
+
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',
                               arcLTsFileString='',
@@ -82,12 +84,12 @@ def generateNodeListsFromFile(nodeInputFileString='',
             # Generate Node objects, including demand schedules if the current node is a root node
             if currEndTF == 'FALSE': # Currently an intermediate node
                 # Add a node object to the List_IntermediateNode
-                newIntermediateNode = Node(nodeNum=currNode, reorderPoint=currReorderPoint, reorderAmount=currReorderAmount, preferredSupplierVec=currPreferredSuppliers, preferredSupplierLTsVec=currPreferredSuppliersLTs, preferredSupplierRsVec=currPreferredSuppliersRs, endNodeTF = False)
+                newIntermediateNode = simClasses.Node(nodeNum=currNode, reorderPoint=currReorderPoint, reorderAmount=currReorderAmount, preferredSupplierVec=currPreferredSuppliers, preferredSupplierLTsVec=currPreferredSuppliersLTs, preferredSupplierRsVec=currPreferredSuppliersRs, endNodeTF = False)
                 List_IntermediateNode.append(newIntermediateNode)
             else: # Currently an end node
                 # Add a node object to the List_End
                 newDemandSchedule = demandScheduleGenerator_EndNode(int_numDays=NumSimDays, int_DistType=currDemandDistribution, arr_DistParameter=currDemandParamList)
-                newEndNode = Node(nodeNum=currNode, reorderPoint=currReorderPoint, reorderAmount=currReorderAmount, preferredSupplierVec=currPreferredSuppliers, preferredSupplierLTsVec=currPreferredSuppliersLTs, preferredSupplierRsVec=currPreferredSuppliersRs, endNodeTF=True,demandSched=newDemandSchedule)
+                newEndNode = simClasses.Node(nodeNum=currNode, reorderPoint=currReorderPoint, reorderAmount=currReorderAmount, preferredSupplierVec=currPreferredSuppliers, preferredSupplierLTsVec=currPreferredSuppliersLTs, preferredSupplierRsVec=currPreferredSuppliersRs, endNodeTF=True,demandSched=newDemandSchedule)
                 List_EndNode.append(newEndNode)    
     ### END NODE FOR LOOP ###
     return List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix
