@@ -1,0 +1,58 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{margin=1in}
+
+\newcommand{\checkeditem}{\item[\refstepcounter{enumi}$\text{\rlap{$\boxtimes$}}\square$]}
+
+\title{\vspace{-0.75in} Summary Report}
+\date{\vspace{-0.5in} March 27th, 2020}
+
+\begin{document}
+\pagenumbering{gobble} 
+
+\maketitle
+
+
+\subsection*{This Meeting} 
+\begin{enumerate}[label={$\square$}]  \itemsep0em 
+	\checkeditem Discuss something...
+	\begin{itemize}
+		\item Include some details after the meeting
+	\end{itemize}
+	\checkeditem Discuss something else..
+	\begin{itemize}
+		\item  Include some details after the meeting
+	\end{itemize}
+\end{enumerate}
+
+\subsection*{Last Report Ongoing Tasks} 
+\begin{enumerate}[label={$\square$}]  \itemsep0em 
+	\item What are we working on now?\
+   	\checkeditem Got a github repo up!
+\end{enumerate}
+
+\subsection*{New Ongoing Tasks}
+\begin{enumerate}[label={$\square$}]  \itemsep0em
+	\item Whatare we starting on?
+\end{enumerate}
+
+\subsection*{Long Term Future Tasks}
+\begin{enumerate}[label={$\square$}] \itemsep0em 
+	\item Do research
+\end{enumerate}
+
+\subsection*{Older Completed Tasks} 
+\begin{enumerate}[label={$\square$}] \itemsep0em 
+   \checkeditem Schedule some meetings
+\end{enumerate}
+
+\section*{Other Notes:}
+\begin{itemize}
+	\item Notes that might be helpful but do not fit anywhere else.
+\end{itemize}
+\end{document}
