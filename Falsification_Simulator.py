@@ -31,6 +31,7 @@ arcLTsFileString = 'LIB_Arcs_LTs_1.csv'
 arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation
 NumSimDays = 600
+samplingBudget = NumSimDays*3
 
 # Generate the lists of root, intermediate, and end nodes; also keep the list of node headers
 List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix = simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
@@ -49,7 +50,7 @@ List_DP = []
 ### TESTING POLICIES GENERATED HERE ###
 
 # Generate sampling schedule for current graph, as well as a report table shell
-List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = NumSimDays*3, int_PolicyType = 1, arr_PolicyParameter = [0])
+List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = 1, arr_PolicyParameter = [0])
 TestReportTbl = []
 
 
