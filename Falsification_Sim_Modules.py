@@ -105,14 +105,16 @@ def demandScheduleGenerator_EndNode(int_numDays=1000,
             1) int_numDays: Number of batches desired
             2) int_DistType: Distribution for the demand of each time period
                 0 = Constant; parameter array should be [Constant value]
-                1 = Uniform; paramter array should be [Low Bound, High Bound]
-                2 = Triangular; paramter array should be [Left,Mode,Right]
+                1 = Uniform; parameter array should be [Low Bound, High Bound]
+                2 = Triangular; parameter array should be [Left,Mode,Right]
+                3 = Poisson; parameter array should be [Mean]
                 ...
             3) arr_DistParameter: Array of the parameters required for generatng
                 the demands
                 0 = Constant; parameter array should be [Constant value]
                 1 = Uniform; paramter array should be [Low Bound, High Bound]
                 2 = Triangular; parameter array should be [Left,Mode,Right]
+                3 = Poisson; parameter array should be [Mean]
                 ...
     
     Outputs a Python list with the following elements within each entry:
@@ -130,6 +132,9 @@ def demandScheduleGenerator_EndNode(int_numDays=1000,
     elif int_DistType == 2: #Triangular
         #Use the first two values of the parameter array
         demandSchedule = np.round(np.random.triangular(left=arr_DistParameter[0],mode=arr_DistParameter[1],right=arr_DistParameter[2],size=int_numDays))
+    elif int_DistType == 3: #Poisson
+        #Use the first value of the parameter array
+        demandSchedule = np.round(np.random.poisson(lam=arr_DistParameter[0],size=int_numDays))
     else:
         print('Error generating the demand schedule.')
     
