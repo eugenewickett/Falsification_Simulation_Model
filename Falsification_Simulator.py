@@ -17,6 +17,7 @@ import time # for time tracking
 import os # for directories
 from tabulate import tabulate # for making outputs
 import pickle # for saving/loading objects in Python
+import winsound # for beeps
 
 # Run supporting files
 #os.getcwd() Run this command to get the current working directory string
@@ -32,55 +33,11 @@ arcLTsFileString = 'LIB_Arcs_LTs_1.csv'
 arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 5000
+NumSimDays = 5001
 samplingBudget = NumSimDays*3
 numReplications = 100
 printOutput = False
 useWarmUpFile = False # True if we're going to pull a warm-up file
-
-# Generate the lists of root, intermediate, and end nodes; also keep the list of node headers
-List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix = simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
-rootNum = len(List_RootNode)
-intermediateNum = len(List_IntermediateNode)
-endNum = len(List_EndNode)
-
-# Simulation statistic lists
-List_RootConsumption = []
-for rootInd in range(len(List_RootNode)):
-    List_RootConsumption.append(0)
-
-# Initialize the drug packet object list
-List_DP = []
-
-### TESTING POLICIES GENERATED HERE ###
-
-# Generate sampling schedule for current graph, as well as a report table shell
-List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = 1, arr_PolicyParameter = [0])
-TestReportTbl = []
-
-### THINGS TO CHANGE AND PLAY WITH ONCE THE LISTS ARE GENERATED ###
-# Freeze end node demand to give intermediate nodes a chance to order and stock their shelves
-# We do this by setting the first (maxLT) days at each node equal to 0
-maxLT = 0
-for indInt in range(intermediateNum): # Find the highest lead time at intermediate nodes
-    currIntermediate = List_IntermediateNode[indInt]
-    if max(currIntermediate.PreferenceLTsList) > maxLT:
-        maxLT = max(currIntermediate.PreferenceLTsList)
-for indEnd in range(endNum): # Change demand at the end nodes to zero for these first few days
-    currEnd = List_EndNode[indEnd]
-    currEnd.demandSched[0:(maxLT+2)] = 0
-
-
-# Intermediate nodes - put something inside this loop
-for indInt in range(intermediateNum):
-    currIntermediate = List_IntermediateNode[indInt]
-    
-# End nodes - put something inside this loop
-for indEnd in range(endNum):
-    currEnd = List_EndNode[indEnd]
-    
-
-
 
 
 ##### WARM-UP SETTINGS #####
@@ -113,10 +70,14 @@ elif useWarmUpFile == False and warmUpRun == True: # Generate warm-up runs file
     warmUpFileName =  os.path.basename(sys.argv[0]) # Current file name
     warmUpFileName = warmUpFileName [:-3] + '_WARM_UP' # Warm-up file name
     warmUpFileName = os.path.join(warmUpDirectory, warmUpFileName)
-    numReplications = 100 # How many scenarios to generate
+    numReplications = 10 # How many scenarios to generate
     random.seed(8) # So others generate the same starting files
-    warmUpIterationGap = 500 # How often to store the current object lists
-    warmUpDict = {} # Initialize the dictionary
+    warmUpIterationGap = 1000 # How often to store the current object lists
+    if os.path.exists(warmUpFileName): # Generate this file if one doesn't exist
+        with open(warmUpFileName, 'rb') as f:
+            warmUpDict = pickle.load(f) # Load the dictionary
+    else:
+        warmUpDict = {} # Initialize the dictionary
     pickle.dump(warmUpDict, open(warmUpFileName,'wb'))
   
 elif useWarmUpFile == False and warmUpRun == False: # Nothing done WRT warm-ups
@@ -130,6 +91,50 @@ outputDict = {}
 
 # Iterate through each simulation replication
 for rep in range(numReplications):
+
+
+    # Generate the lists of root, intermediate, and end nodes; also keep the list of node headers
+    List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix = simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
+    rootNum = len(List_RootNode)
+    intermediateNum = len(List_IntermediateNode)
+    endNum = len(List_EndNode)
+    
+    # Simulation statistic lists
+    List_RootConsumption = []
+    for rootInd in range(len(List_RootNode)):
+        List_RootConsumption.append(0)
+    
+    # Initialize the drug packet object list
+    List_DP = []
+    
+    ### TESTING POLICIES GENERATED HERE ###
+    
+    # Generate sampling schedule for current graph, as well as a report table shell
+    List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = 1, arr_PolicyParameter = [0])
+    TestReportTbl = []
+    
+    ### THINGS TO CHANGE AND PLAY WITH ONCE THE LISTS ARE GENERATED ###
+    # Freeze end node demand to give intermediate nodes a chance to order and stock their shelves
+    # We do this by setting the first (maxLT) days at each node equal to 0
+    maxLT = 0
+    for indInt in range(intermediateNum): # Find the highest lead time at intermediate nodes
+        currIntermediate = List_IntermediateNode[indInt]
+        if max(currIntermediate.PreferenceLTsList) > maxLT:
+            maxLT = max(currIntermediate.PreferenceLTsList)
+    for indEnd in range(endNum): # Change demand at the end nodes to zero for these first few days
+        currEnd = List_EndNode[indEnd]
+        currEnd.demandSched[0:(maxLT+2)] = 0
+    
+    
+    # Intermediate nodes - put something inside this loop
+    for indInt in range(intermediateNum):
+        currIntermediate = List_IntermediateNode[indInt]
+        
+    # End nodes - put something inside this loop
+    for indEnd in range(endNum):
+        currEnd = List_EndNode[indEnd]
+    
+
 
     if useWarmUpFile == True: # Randomly select a path from the dictionary
         numScenarios = len(warmUpDict.keys())
@@ -215,15 +220,24 @@ for rep in range(numReplications):
             currIntermediate = List_IntermediateNode[indInt]
             List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)              
         
-        if np.mod(today+1,1000) == 0: # For updating while running
-            print('Rep ' + rep + ', Day ' + (today+1) + ' finished.')
+        if np.mod(today+1,200) == 0: # For updating while running
+            print('Rep ' + str(rep+1) + ', Day ' + str(today+1) + ' finished.')
+
+        if today == NumSimDays-1: # For updating while running
+            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**10)),400)
+            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**12)),400)
+            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**8)),400)
+            winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
+            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)            
         
         if warmUpRun == True and np.mod(today,warmUpIterationGap) == 0: # For storing dictionaries during long run
             warmUpFile = open(warmUpFileName,'rb') # Read the file 
             warmUpDict = pickle.load(warmUpFile)
             warmUpFile.close()
-            if not rep in warmUpDict.keys(): # Add a new dictionary for this rep
-                warmUpDict[rep] = {}
+            lastKey = len(warmUpDict.keys())-1
+            if today==0: # Add a new dictionary for this rep
+                lastKey += 1
+                warmUpDict[lastKey] = {}
             # Add the current objects, keyed by the simulation day
             currObjDict = {'rootList':List_RootNode,'intList':List_IntermediateNode,
                            'endList':List_EndNode,'nodeHeader':nodeListHeader,
@@ -231,7 +245,7 @@ for rep in range(numReplications):
                            'arcPrefs':arcPreferencesMatrix,'arcLTs':arcLTsMatrix,
                            'arcRs':arcRsMatrix,'rootConsumption':List_RootConsumption,
                            'DPList':List_DP}
-            warmUpDict[rep][today] = currObjDict
+            warmUpDict[lastKey][today] = currObjDict
             # Write the dictionary file back
             warmUpFile = open(warmUpFileName,'wb')
             pickle.dump(warmUpDict,warmUpFile)         
@@ -402,14 +416,15 @@ for rep in range(numReplications):
     ### END OF PRINT OUTPUT LOOP
     
     if warmUpRun == False:
+        pass
         # Update our output dictionary
-        currOutputLine = {'rootConsumption':[],
-                          'rootConsumption':[],
-                          'rootConsumption':[],
-                          'rootConsumption':[]}
-        outputDict[rep] = currOutputLine
+        #currOutputLine = {'rootConsumption':[],
+        #                  'holder1':[],
+        #                  'holder2':[],
+        #                  'holder3':[]}
+        #outputDict[rep] = currOutputLine
         
-        currObjDict # where our scenario came from
+        #currObjDict # where our scenario came from
         
 ########## END OF REPLICATION LOOP ##########
 
