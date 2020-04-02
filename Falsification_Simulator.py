@@ -70,7 +70,7 @@ elif useWarmUpFile == False and warmUpRun == True: # Generate warm-up runs file
     warmUpFileName =  os.path.basename(sys.argv[0]) # Current file name
     warmUpFileName = warmUpFileName [:-3] + '_WARM_UP' # Warm-up file name
     warmUpFileName = os.path.join(warmUpDirectory, warmUpFileName)
-    numReplications = 10 # How many scenarios to generate
+    numReplications = 5 # How many scenarios to generate
     random.seed(8) # So others generate the same starting files
     warmUpIterationGap = 1000 # How often to store the current object lists
     if os.path.exists(warmUpFileName): # Generate this file if one doesn't exist
