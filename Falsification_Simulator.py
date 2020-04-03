@@ -37,7 +37,7 @@ NumSimDays = 5001
 samplingBudget = NumSimDays*3
 numReplications = 100
 printOutput = False
-useWarmUpFile = False # True if we're going to pull a warm-up file
+useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 
 
 ##### WARM-UP SETTINGS #####
@@ -416,22 +416,37 @@ for rep in range(numReplications):
     ### END OF PRINT OUTPUT LOOP
     
     if warmUpRun == False:
-        pass
-        # Update our output dictionary
-        #currOutputLine = {'rootConsumption':[],
-        #                  'holder1':[],
-        #                  'holder2':[],
-        #                  'holder3':[]}
-        #outputDict[rep] = currOutputLine
-        
-        #currObjDict # where our scenario came from
+        if useWarmUpFile == False:
+            # Update our output dictionary
+            List_demandResultsInt = [] # For intermediate node demand results
+            for indInt in range(intermediateNum): 
+                currInt = List_IntermediateNode[indInt]
+                List_demandResultsInt.append(currInt.demandResults)
+            List_demandResultsEnd = [] # For end node demand results
+            for indEnd in range(endNum):
+                currEnd = List_EndNode[indEnd]
+                List_demandResultsEnd.append(currInt.demandResults)
+            
+            currOutputLine = {'rootConsumption':List_RootConsumption,
+                              'intDemandResults':List_demandResultsInt,
+                              'endDemandResults':List_demandResultsEnd,
+                              'testResults':TestReportTbl}
+            outputDict[rep] = currOutputLine # Save to the output dictionary
+            
+        else:
+            pass
+            #currObjDict # where our scenario came from
         
 ########## END OF REPLICATION LOOP ##########
 
-
-
-
-
+# Store the outputDict
+if warmUpRun == False:
+    outputFilePath  = os.getcwd() + '\\output dictionaries'
+    if not os.path.exists(outputFilePath): # Generate this folder if one does not already exist
+            os.makedirs(outputFilePath)
+    outputFileName = os.path.basename(sys.argv[0])[:-3] + '_OUTPUT' # Current file name
+    outputFileName = os.path.join(outputFilePath, outputFileName)
+    pickle.dump(outputDict, open(outputFileName,'wb'))
 
 
 # WRITE TO CSV FILE
