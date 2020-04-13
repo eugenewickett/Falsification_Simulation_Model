@@ -20,8 +20,8 @@ import pickle # for saving/loading objects in Python
 import winsound # for beeps
 
 # Run supporting files
-#os.getcwd() Run this command to get the current working directory string
-os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model') # Set directory    
+currDirectory = os.path.dirname(os.path.realpath(__file__)) #Run this command to get the current working directory string
+os.chdir(currDirectory) # Set directory    
 
 import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules # modules for the simulation
@@ -33,9 +33,9 @@ arcLTsFileString = 'LIB_Arcs_LTs_1.csv'
 arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 5001
+NumSimDays = 100
 samplingBudget = NumSimDays*3
-numReplications = 100
+numReplications = 1
 printOutput = False
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 

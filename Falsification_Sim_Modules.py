@@ -10,6 +10,7 @@ Stores modules for use with 'SC Simulator.py'
 import numpy as np
 import random
 import csv
+import matplotlib.pyplot as plt
 
 import Falsification_Sim_Classes as simClasses # modules for the simulation
 
@@ -234,24 +235,133 @@ def testingScheduleGenerator(nodes = [], int_numDays=1000,
  ### END "testingScheduleGenerator" ###
 
 
+def SimReplicationOutput(OPdict):
+    """
+    Generates output tables and plots for a given output dictionary, OPdict.
+    Each element of the output dictionary should be a dictionary for a given 
+    simulation replication containing the following keys:
+            0) 'rootConsumption': The root node consumption list
+            1) 'intDemandResults': Intermediate nodes demand results
+            2) 'endDemandResults': End nodes demand results
+            3) 'testResults': The list of test results, which comprises entries
+                where each entry is [simDay,testedNode,testResult], where the 
+                testResult is stored as the genesis node for the sample
+                procured; a testResult of -1 means there were no samples
+                available when the test was conducted.
+    """
+    rootConsumptionVec = [] # Store the root consumption data as a list
+    for rep in OPdict.keys():
+        currDictEntry = OPdict[rep]['rootConsumption']
+        rootConsumptionVec.append(currDictEntry)
+    
+    intDemandVec = [] # Store the intermediate node demand data as a list
+    for rep in OPdict.keys():
+        currDictEntry = OPdict[rep]['intDemandResults']
+        intDemandVec.append(currDictEntry)
+        
+    endDemandVec = [] # Store the end node demand data as a list
+    for rep in OPdict.keys():
+        currDictEntry = OPdict[rep]['endDemandResults']
+        endDemandVec.append(currDictEntry)
+        
+    testResultVec = [] # Store the testing data as a list of lists
+    for rep in OPdict.keys():
+        currDictEntry = OPdict[rep]['testResults']
+        testResultVec.append(currDictEntry)
+        
+    # Generate a vector of average root consumption percentages    
+    avgFalseConsumedVec = []
+    for item in rootConsumptionVec:
+        avgFalseConsumedVec.append(item[1]/(item[0]+item[1]))
+    
+    
+    # Generate summaries of our test results 
+    avgFalseTestedVec = []
+    avgStockoutTestedVec = []
+    avgGoodTestedVec = []
+    for item in testResultVec:
+        currNumFalse = 0
+        currNumStockout = 0
+        currNumGood = 0
+        currTotal = len(item)
+        for testResult in item:
+            if testResult[2] == 1:
+                currNumFalse += 1
+            elif testResult[2] == -1:
+                currNumStockout += 1
+            elif testResult[2] == 0:
+                currNumGood += 1
+                
+        avgFalseTestedVec.append(currNumFalse/currTotal)
+        avgStockoutTestedVec.append(currNumStockout/currTotal)
+        avgGoodTestedVec.append(currNumGood/currTotal)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # How different in stockout rates is lowest int node
+    #avgIntStockout1 = []
+    #for item in intDemandVec1:
+    #    currLowRate = 1
+    #    rateVec = []
+    #    for intNode in item:
+    #        rate = intNode[1]/(intNode[1]+intNode[0])
+    #        rateVec.append(rate)
+    #        if rate < currLowRate:
+    #            currLowRate = rate
+    #    currDiff = currLowRate - np.mean(rateVec)
+    #    avgIntStockout1.append(currDiff)
+        
+    
+    
+    # Variability in tested falsification rates
+    
+    
+    
+    # PLOTS 
+    # Histogram of SF consumption rates across replications
+    plt.title(r'Histogram of SF consumption rates')
+    plt.hist(avgFalseConsumedVec)
+    plt.show()
+    #plt.title(r'Histogram Intermediate stockout rates')
+    #plt.hist(avgIntStockout1)
+    
+    
+    alphaLevel = 0.8
+    g1 = (avgFalseConsumedVec,avgFalseTestedVec)
+    g2 = (avgFalseConsumedVec,avgStockoutTestedVec)
+    
+    color = ("red")
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    x, y = g1
+    ax.scatter(x, y, alpha=alphaLevel, c=color, edgecolors='none', s=30)
+    lims = [np.min(avgFalseConsumedVec), 
+            np.max(avgFalseConsumedVec)]
+    ax.plot(lims, lims, 'k-', alpha=0.25, zorder=0)
+    ax.set_aspect('equal')
+    ax.set_xlim([lims[0]-0.01,lims[1]+0.01])
+    ax.set_ylim([lims[0]-0.01,lims[1]+0.01])
+    ax.set_xlabel('True SF rate', fontsize=12)
+    ax.set_ylabel('Test result SFs', fontsize=12)
+    plt.title(r'Test results of SF FOUND vs. Underlying SF consumption rates', fontsize=14)
+    plt.show()
+    
+    color = ("blue")
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    x, y = g2
+    ax.scatter(x, y, alpha=alphaLevel, c=color, edgecolors='none', s=30)
+    ax.set_xlabel('True SF rate', fontsize=12)
+    ax.set_ylabel('Test result stockouts', fontsize=12)
+    plt.title(r'Test results of STOCKOUTS vs. Underlying SF consumption rates', fontsize=14)
+    plt.show()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ ### END "SimReplicationOutput" ###
