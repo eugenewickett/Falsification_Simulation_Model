@@ -136,6 +136,17 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
     
+    # Make a few end nodes procure only from the falsified root
+    for step in range(400):
+        done = False
+        while not done:
+            randEndInd = int(np.floor(np.random.uniform(0,endNum)))
+            currEnd = List_EndNode[randEndInd]
+            if len(currEnd.PreferenceList) > 2:
+                tempHolder = currEnd.PreferenceList.pop(-2)
+                tempHolder = currEnd.PreferenceLTsList.pop(-2)
+                tempHolder = currEnd.PreferenceRsList.pop(-2)
+                done = True
 
 
     if useWarmUpFile == True: # Randomly select a path from the dictionary

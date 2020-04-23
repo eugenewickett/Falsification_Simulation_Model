@@ -136,6 +136,10 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
     
+    # Make node 3 procure only from the falsified root
+    currIntermediate = List_IntermediateNode[1]
+    currIntermediate.PreferenceList = [1] # The falsifier node
+    currIntermediate.PreferenceLTsList = [1] # Much faster lead time
 
 
     if useWarmUpFile == True: # Randomly select a path from the dictionary
