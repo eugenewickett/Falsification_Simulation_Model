@@ -32,19 +32,23 @@ arcPreferencesFileString = 'LIB_Arcs_Preferences_1.csv'
 arcLTsFileString = 'LIB_Arcs_LTs_1.csv'
 arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
+##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 600
 samplingBudget = NumSimDays*3
 numReplications = 1
 testPolicy = 2
-printOutput = True
+printOutput = True # Whether individual replication output should be displayed
+diagnosticSensitivity = 0.95 # Tool sensitivity
+diagnosticSpecificity = 0.98 # Tool specificity
+
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
+warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
+# If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
+
 
 
 ##### WARM-UP SETTINGS #####
-warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
-
-# If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
 if useWarmUpFile == True and warmUpRun == True:
     print('Cannot use warm up files and conduct warm up runs at the same time!')
     warmUpRun = False
@@ -221,6 +225,16 @@ for rep in range(numReplications):
                     DPRoot = -1
                 # END IF
                 
+                # Conduct sensitivity and specificity filters
+                randUnif = random.uniform(0,1) # Generate a random uniform value
+                if DPRoot == 0: # Originally from a non-falsifier
+                    if randUnif > diagnosticSpecificity:
+                        DPRoot = 1 # Generate a false positive
+                elif DPRoot == 1: # Originally from a falsifier
+                    if randUnif > diagnosticSensitivity:
+                        DPRoot = 0 # Generate a false negative
+                        
+                
                 # Save the result to the reporting table
                 newTestRow = [today,currTestNodeID,DPRoot,invPileOriginList]
                 TestReportTbl.append(newTestRow) 
@@ -274,109 +288,131 @@ for rep in range(numReplications):
     # Simulation end time
     totalRunTime = [time.time() - startTime]
     
-    if printOutput == True: # Printing of tables and charts
-        # OUTPUT FUNCTIONS
-        # Report consumption levels from each node
-        # Loop through each root node
-        RootReportTbl = []
-        Root_Plot_x = []
-        Root_Plot_y = []
-        rootTotalConsumed = np.sum(List_RootConsumption)
-        for indRoot in range(rootNum):
-            currRoot = List_RootNode[indRoot]
-            currRootConsumption = List_RootConsumption[indRoot]
-            currPercConsumption = currRootConsumption / rootTotalConsumed
-            currPercString = "{0:.1%}".format(currPercConsumption)
-            currRootRow = [currRoot] + [currRootConsumption] + [currPercString]
-            RootReportTbl = RootReportTbl + [currRootRow]
-            Root_Plot_x.append(str(currRoot))
-            Root_Plot_y.append(currPercConsumption)
-        
-        IntermediateReportTbl = []
-        Intermediate_Plot_x = []
-        Intermediate_Plot_y = []
-        for indInt in range(intermediateNum):
-            currInt = List_IntermediateNode[indInt]
-            currInventory = np.sum(currInt.InventoryLevel)
-            currTotalDemand = np.sum(currInt.demandResults)
-            currPercString = "{0:.1%}".format(currInt.demandResults[1]/currTotalDemand)
-            currIntRow = [currInt.id] + currInt.demandResults + [currPercString] + [currInventory]
-            IntermediateReportTbl = IntermediateReportTbl + [currIntRow]
-            Intermediate_Plot_x.append(str(currInt.id))
-            Intermediate_Plot_y.append(currInt.demandResults[1]/currTotalDemand)
-            
-        EndReportTbl = []
-        End_Plot_x = []
-        End_Plot_y = []
-        for indEnd in range(endNum):
-            currEnd = List_EndNode[indEnd]
-            currInventory = np.sum(currEnd.InventoryLevel)
-            currTotalDemand = np.sum(currEnd.demandResults)
-            currStockoutDays = currEnd.DaysStockedOut
-            currPercString = "{0:.1%}".format(currEnd.demandResults[1]/currTotalDemand)
-            currEndRow = [currEnd.id] + currEnd.demandResults + [currStockoutDays] + [currPercString] + [currInventory]
-            EndReportTbl = EndReportTbl + [currEndRow]
-            End_Plot_x.append(str(currEnd.id))
-            End_Plot_y.append(currEnd.demandResults[1]/currTotalDemand)
-        
-        # Summarize sampling report
-        testNodeList = []
-        Test_Plot_x = []
-        Test_Plot_y1 = []
-        Test_Plot_y2 = []
-        Test_Plot_y3 = []
-        for sample in TestReportTbl:
-            if not sample[1] in testNodeList:
-                testNodeList.append(sample[1])
-        testNodeList.sort()
-        TestSummaryTbl = []
-        
-        InvCheckSummaryTbl = []
-        tempInvCheckVec = []
-        InvCheckHeadersVec = []
-        
-        for indInt in range(intermediateNum):
-            InvCheckHeadersVec.append('N'+str(List_IntermediateNode[indInt].id))
-            tempInvCheckVec.append(0)
-        for testedNode in testNodeList:
-            TestSummaryTbl.append([testedNode,0,0,0]) # Times tested, # falsified, # stocked out
-            InvCheckSummaryTbl.append([testedNode] + tempInvCheckVec)
-        for sample in TestReportTbl:
-            indNodeList = testNodeList.index(sample[1]) # The row of the summary table
-            TestSummaryTbl[indNodeList][1] += 1
-            if sample[2] == 1: # From falsified root
-                TestSummaryTbl[indNodeList][2] += 1
-            if sample[2] == -1: # Stocked out
-                TestSummaryTbl[indNodeList][3] += 1
-            currInvCheckList = sample[3]
-            for pile in currInvCheckList:
-                if not pile[0] == 1: # Can't be from the falsifier node
-                    InvCheckSummaryTbl[indNodeList][pile[0]-1] += pile[1]
-        i=0
-        for row in InvCheckSummaryTbl:
-            currSum = np.sum(row[1:])
-            for col in range(len(row)):
-                if (not col == 0) and (currSum>0):
-                    row[col] = row[col]/currSum
-                    row[col] = "{0:.1%}".format(row[col])
-            TestSummaryTbl[i] = TestSummaryTbl[i] + row[1:]
-            i += 1
-        TestOverallSummary = [0,0,0]
-        for testedNodeRow in TestSummaryTbl:
-            TestOverallSummary[0] += testedNodeRow[1] # Total tests
-            TestOverallSummary[1] += testedNodeRow[2] # Total falsifieds
-            TestOverallSummary[2] += testedNodeRow[3] # Total stock-outs
-        
-        counter = 0
-        for testedNode in testNodeList: # for plots
-            Test_Plot_x.append(testedNode)
-            Test_Plot_y1.append(TestSummaryTbl[counter][1]) # Times tested
-            Test_Plot_y2.append(TestSummaryTbl[counter][2]) # Times found falsified
-            Test_Plot_y3.append(TestSummaryTbl[counter][3]) # Times found stocked out
-            counter += 1
-               
-        # END OF RX REPORTING LOOP    
     
+    # OUTPUT FUNCTIONS
+    # Report consumption levels from each node
+    # Loop through each root node
+    RootReportTbl = []
+    Root_Plot_x = []
+    Root_Plot_y = []
+    rootTotalConsumed = np.sum(List_RootConsumption)
+    for indRoot in range(rootNum):
+        currRoot = List_RootNode[indRoot]
+        currRootConsumption = List_RootConsumption[indRoot]
+        currPercConsumption = currRootConsumption / rootTotalConsumed
+        currPercString = "{0:.1%}".format(currPercConsumption)
+        currRootRow = [currRoot] + [currRootConsumption] + [currPercString]
+        RootReportTbl = RootReportTbl + [currRootRow]
+        Root_Plot_x.append(str(currRoot))
+        Root_Plot_y.append(currPercConsumption)
+    
+    IntermediateReportTbl = []
+    Intermediate_Plot_x = []
+    Intermediate_Plot_y = []
+    for indInt in range(intermediateNum):
+        currInt = List_IntermediateNode[indInt]
+        currInventory = np.sum(currInt.InventoryLevel)
+        currTotalDemand = np.sum(currInt.demandResults)
+        currPercString = "{0:.1%}".format(currInt.demandResults[1]/currTotalDemand)
+        currIntRow = [currInt.id] + currInt.demandResults + [currPercString] + [currInventory]
+        IntermediateReportTbl = IntermediateReportTbl + [currIntRow]
+        Intermediate_Plot_x.append(str(currInt.id))
+        Intermediate_Plot_y.append(currInt.demandResults[1]/currTotalDemand)
+        
+    EndReportTbl = []
+    End_Plot_x = []
+    End_Plot_y = []
+    for indEnd in range(endNum):
+        currEnd = List_EndNode[indEnd]
+        currInventory = np.sum(currEnd.InventoryLevel)
+        currTotalDemand = np.sum(currEnd.demandResults)
+        currStockoutDays = currEnd.DaysStockedOut
+        currPercString = "{0:.1%}".format(currEnd.demandResults[1]/currTotalDemand)
+        currEndRow = [currEnd.id] + currEnd.demandResults + [currStockoutDays] + [currPercString] + [currInventory]
+        EndReportTbl = EndReportTbl + [currEndRow]
+        End_Plot_x.append(str(currEnd.id))
+        End_Plot_y.append(currEnd.demandResults[1]/currTotalDemand)
+    
+    # Summarize sampling report
+    testNodeList = []
+    Test_Plot_x = []
+    Test_Plot_y1 = []
+    Test_Plot_y2 = []
+    Test_Plot_y3 = []
+    for sample in TestReportTbl:
+        if not sample[1] in testNodeList:
+            testNodeList.append(sample[1])
+    testNodeList.sort()
+    TestSummaryTbl = []
+    
+    InvCheckSummaryTbl = [] # For counting inventory checks during sampling
+    tempInvCheckVec = []
+    InvCheckHeadersVec = []
+    estTransitionMatrix = np.zeros([endNum,intermediateNum]) # For storing transition data 
+    estFalseVector = np.zeros([endNum,1]) # For storing falsifieds found at each 
+    
+    for indInt in range(intermediateNum):
+        InvCheckHeadersVec.append('N'+str(List_IntermediateNode[indInt].id))
+        tempInvCheckVec.append(0)
+    for testedNode in testNodeList:
+        TestSummaryTbl.append([testedNode,0,0,0]) # Times tested, # falsified, # stocked out
+        InvCheckSummaryTbl.append([testedNode] + tempInvCheckVec)
+    for sample in TestReportTbl:
+        indNodeList = testNodeList.index(sample[1]) # The row of the summary table
+        TestSummaryTbl[indNodeList][1] += 1
+        if sample[2] == 1: # From falsified root
+            TestSummaryTbl[indNodeList][2] += 1
+        if sample[2] == -1: # Stocked out
+            TestSummaryTbl[indNodeList][3] += 1
+        currInvCheckList = sample[3]
+        for pile in currInvCheckList:
+            if not pile[0] == 1: # Can't be from the falsifier node
+                InvCheckSummaryTbl[indNodeList][pile[0]-1] += pile[1]
+    j=0            
+    for testedNode in testNodeList: # For storing the number of falsifieds found at each end node
+        percFalse = TestSummaryTbl[j][2] / TestSummaryTbl[j][1]
+        estFalseVector[j] = percFalse
+        j += 1
+    
+    i=0
+    for row in InvCheckSummaryTbl:
+        currSum = np.sum(row[1:])
+        for col in range(len(row)):
+            if (not col == 0) and (currSum>0):
+                row[col] = row[col]/currSum
+                estTransitionMatrix[i][col-1] = row[col]
+                row[col] = "{0:.1%}".format(row[col])
+        TestSummaryTbl[i] = TestSummaryTbl[i] + row[1:]
+        i += 1
+    TestOverallSummary = [0,0,0]
+    for testedNodeRow in TestSummaryTbl:
+        TestOverallSummary[0] += testedNodeRow[1] # Total tests
+        TestOverallSummary[1] += testedNodeRow[2] # Total falsifieds
+        TestOverallSummary[2] += testedNodeRow[3] # Total stock-outs
+    
+    counter = 0
+    for testedNode in testNodeList: # for plots
+        Test_Plot_x.append(testedNode)
+        Test_Plot_y1.append(TestSummaryTbl[counter][1]) # Times tested
+        Test_Plot_y2.append(TestSummaryTbl[counter][2]) # Times found falsified
+        Test_Plot_y3.append(TestSummaryTbl[counter][3]) # Times found stocked out
+        counter += 1
+               
+        # END OF RX REPORTING LOOP
+    
+    # Form regression estimates of suspected bad intermediate nodes
+    X = estFalseVector
+    A = estTransitionMatrix
+    try:
+        estIntFalsePerc = np.dot(np.linalg.inv(np.dot(A.T,A)),np.dot(A.T,X))
+        estEndFalsePerc = np.subtract(X,np.dot(A,estIntFalsePerc))
+    except:
+        print("Couldn't generate the estimated node falsification percentages")
+    
+    
+        
+    
+    if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES
         print('*'*100)
         print('ROOT NODE SUMMARY STATISTICS')
@@ -442,6 +478,26 @@ for rep in range(numReplications):
         plt.legend(('Times tested','Times falsified','Times stocked out'))
         plt.show()
         
+        # Estimated intermediate falsification percentages
+        # Intermediate stockout %'s
+        fig = plt.figure()
+        ax = fig.add_axes([0,0,1,0.5])
+        ax.set_xlabel('Intermediate Node',fontsize=16)
+        ax.set_ylabel('Estimated falsification percentage',fontsize=16)
+        #vals = ax.get_yticks()
+        #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+        ax.bar(Intermediate_Plot_x,np.ndarray.tolist(estIntFalsePerc.T[0]))
+        plt.show()
+        
+        # End stockout %'s
+        fig = plt.figure()
+        ax = fig.add_axes([0,0,3,0.5])
+        ax.set_xlabel('End Node',fontsize=16)
+        ax.set_ylabel('Estimated falsification percentage',fontsize=16)
+        #vals = ax.get_yticks()
+        #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+        ax.bar(End_Plot_x,np.ndarray.tolist(estEndFalsePerc.T[0]))
+        plt.show()
         
         
         # Code for line plots
@@ -454,6 +510,9 @@ for rep in range(numReplications):
         #plt.savefig('capacity_vs_iterations.png')
     
     ### END OF PRINT OUTPUT LOOP
+    
+   
+    
     
     if warmUpRun == False:
         if useWarmUpFile == False:

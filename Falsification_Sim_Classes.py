@@ -5,6 +5,7 @@ Created on Tue Nov 19 21:50:21 2019
 Stores classes for use with 'Falsification Simulator.py'
 """
 import numpy as np
+import random
 
 class DrugPacket:
     _numDP = 0 # Counter for our DPs
@@ -16,13 +17,14 @@ class DrugPacket:
         self.nodeIDList = nodeIDList #List
         
 class Node:
-    def __init__(self, nodeNum=0, reorderPoint=0, reorderAmount=0, preferredSupplierVec=[0], preferredSupplierLTsVec=[0], preferredSupplierRsVec=[0], endNodeTF = False, demandSched=[]):
+    def __init__(self, nodeNum=0, reorderPoint=0, reorderAmount=0, preferredSupplierVec=[0], preferredSupplierLTsVec=[0], preferredSupplierRsVec=[0], endNodeTF = False, falseProb = 0, demandSched=[]):
         self.id = nodeNum
         self.r = reorderPoint
         self.R = reorderAmount
         self.PreferenceList = preferredSupplierVec # A list of node numbers, in order of preference
         self.PreferenceLTsList = preferredSupplierLTsVec # A list of lead times
         self.PreferenceRsList = preferredSupplierRsVec
+        self.FalsifierProbability = falseProb
         self.InventoryLevel = [] # List of levels corresponding to each DPID
         self.InventoryDPID = [] # List of DP IDs
         self.InventoryPeriodsRemaining = [] # List of time periods remaining before corresponding inventory arrives; "0" means inventory is available for further distrubtion
@@ -82,6 +84,13 @@ class Node:
                         isRoot = True
                 # Place order if supplier is a root; otherwise need to check if inventory is available
                 if isRoot == True:
+                    # If this node has a positive falsifier procurement probability,
+                    # generate a random uniform and set the current supplier to 
+                    # the falsifier node (node 1) if the uniform is below the threshold
+                    if self.FalsifierProbability > random.uniform(0,1):
+                        currSupplier = 1
+                    
+                    
                     newDP = DrugPacket(size=Rremaining, nodeIDList=[currSupplier,self.id])
                     self.InventoryLevel.append(newDP.size)
                     self.InventoryDPID.append(newDP.id)
