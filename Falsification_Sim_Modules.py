@@ -346,15 +346,21 @@ def SimReplicationOutput(OPdict):
     
     
     # PLOTS
+    lowErrInd = int(np.floor(0.05*len(OPdict.keys()))) 
+    upErrInd = int(np.ceil(0.95*len(OPdict.keys()))) 
+     
+    avgFalseConsumedVec.sort()
     # Root node consumption
     rootNode1_mean = np.mean(avgFalseConsumedVec)
     rootNode0_mean = 1-rootNode1_mean
     # Calculate the standard deviation
-    rootNode1_std = np.std(avgFalseConsumedVec)
-    rootNode0_std = rootNode1_std
+    rootNode1_lowErr = rootNode1_mean-avgFalseConsumedVec[int(np.floor(0.05*len(avgFalseConsumedVec)))] 
+    rootNode1_upErr = avgFalseConsumedVec[int(np.ceil(0.95*len(avgFalseConsumedVec)))]-rootNode1_mean 
+    rootNode0_lowErr = rootNode1_upErr 
+    rootNode0_upErr = rootNode1_lowErr
     # Define positions, bar heights and error bar heights
     means = [rootNode0_mean, rootNode1_mean]
-    error = [1.6*rootNode0_std, 1.6*rootNode1_std]
+    error = [[rootNode0_lowErr,rootNode1_lowErr], [rootNode0_upErr,rootNode1_upErr]] 
     # Build the plot
     fig = plt.figure()
     ax = fig.add_axes([0,0,0.3,0.5])
@@ -371,19 +377,19 @@ def SimReplicationOutput(OPdict):
     plt.show()
     
     # Intermediate node stockouts
-    intNode_means = []
-    intNode_stds = []
+    intNode_SOs = []
     for i in range(numInts):
         repsAvgVec = []
         for rep in intDemandVec:
             newRow = rep[i]
             newSOPerc = newRow[1]/(newRow[0]+newRow[1])
             repsAvgVec.append(newSOPerc)
-        intNode_means.append(np.mean(repsAvgVec))
-        intNode_stds.append(np.std(repsAvgVec))
+        repsAvgVec.sort() 
+        intNode_SOs.append(repsAvgVec)
     # Define positions, bar heights and error bar heights
-    means = intNode_means
-    error = [x*1.6 for x in intNode_stds]
+    means = [np.mean(x) for x in intNode_SOs] 
+    error = [[np.mean(impVec)-impVec[lowErrInd] for impVec in intNode_SOs], 
+              [impVec[upErrInd]-np.mean(impVec) for impVec in intNode_SOs]]
     # Build the plot
     fig = plt.figure()
     ax = fig.add_axes([0,0,1,0.5])
@@ -396,22 +402,23 @@ def SimReplicationOutput(OPdict):
     plt.show()
     
     # End node stockouts
-    endNode_means = []
-    endNode_stds = []
+    endNode_SOs = []
     for i in range(numEnds):
         repsAvgVec = []
         for rep in endDemandVec:
             newRow = rep[i]
             newSOPerc = newRow[1]/(newRow[0]+newRow[1])
             repsAvgVec.append(newSOPerc)
-        endNode_means.append(np.mean(repsAvgVec))
-        endNode_stds.append(np.std(repsAvgVec))
+        repsAvgVec.sort() 
+        endNode_SOs.append(repsAvgVec)
     # Define positions, bar heights and error bar heights
-    endNode_stds = [x*1.6 for x in endNode_stds]
+    endNode_means = [np.mean(x) for x in endNode_SOs] 
+    endNode_err = [[np.mean(endVec)-endVec[lowErrInd] for endVec in endNode_SOs], 
+              [endVec[upErrInd]-np.mean(endVec) for endVec in endNode_SOs]]
     # Build the plot
     fig = plt.figure()
     ax = fig.add_axes([0,0,3,0.5])
-    ax.bar(End_Plot_x, endNode_means,yerr=endNode_stds,align='center',
+    ax.bar(End_Plot_x, endNode_means,yerr=endNode_err,align='center',
            ecolor='black',capsize=2,
            color='mintcream',edgecolor='mediumseagreen')
     ax.set_xlabel('End Node',fontsize=16)
@@ -426,49 +433,51 @@ def SimReplicationOutput(OPdict):
     #################################
     
     # Intermediate nodes falsification estimates
-    intNodeFalse_means = []
-    intNodeFalse_stds = []
+    intNodeFalseEsts = []
     for i in range(numInts):
         repsAvgVec = []
         for rep in intFalseEstVec:
             newItem = rep[i]
             repsAvgVec.append(newItem)
-        intNodeFalse_means.append(np.mean(repsAvgVec))
-        intNodeFalse_stds.append(np.std(repsAvgVec))
+        repsAvgVec.sort() 
+        intNodeFalseEsts.append(repsAvgVec)
     # Define positions, bar heights and error bar heights
-    intNodeFalse_stds = [x*1.6 for x in intNodeFalse_stds]
+    intEst_means = [np.mean(x) for x in intNodeFalseEsts] 
+    intEst_err = [[np.mean(intEstVec)-intEstVec[lowErrInd] for intEstVec in intNodeFalseEsts], 
+              [intEstVec[upErrInd]-np.mean(intEstVec) for intEstVec in intNodeFalseEsts]]
     # Build the plot
     fig = plt.figure()
     ax = fig.add_axes([0,0,1,0.5])
-    ax.bar(Int_Plot_x, intNodeFalse_means,yerr=intNodeFalse_stds,
+    ax.bar(Int_Plot_x, intEst_means,yerr=intEst_err,
            align='center',ecolor='black',
            capsize=5,color='lightcoral',edgecolor='firebrick')
     ax.set_xlabel('Intermediate Node',fontsize=16)
-    ax.set_ylabel('Estimated falsification percentage',fontsize=16)
+    ax.set_ylabel('Est. falsification %',fontsize=16)
     vals = ax.get_yticks()
     ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
     plt.show()
     
     # End nodes falsification estimates
-    endNodeFalse_means = []
-    endNodeFalse_stds = []
+    endNodeFalseEsts = []
     for i in range(numEnds):
         repsAvgVec = []
         for rep in endFalseEstVec:
             newItem = rep[i]
             repsAvgVec.append(newItem)
-        endNodeFalse_means.append(np.mean(repsAvgVec))
-        endNodeFalse_stds.append(np.std(repsAvgVec))
+        repsAvgVec.sort() 
+        endNodeFalseEsts.append(repsAvgVec)
     # Define positions, bar heights and error bar heights
-    endNodeFalse_stds = [x*1.6 for x in endNodeFalse_stds]
+    endEst_means = [np.mean(x) for x in endNodeFalseEsts] 
+    endEst_err = [[np.mean(endEstVec)-endEstVec[lowErrInd] for endEstVec in endNodeFalseEsts], 
+              [endEstVec[upErrInd]-np.mean(endEstVec) for endEstVec in endNodeFalseEsts]]
     # Build the plot
     fig = plt.figure()
     ax = fig.add_axes([0,0,3,0.5])
-    ax.bar(End_Plot_x, endNodeFalse_means,yerr=endNodeFalse_stds,
+    ax.bar(End_Plot_x, endEst_means,yerr=endEst_err,
            align='center',ecolor='black',
            capsize=1,color='aliceblue',edgecolor='dodgerblue')
     ax.set_xlabel('End Node',fontsize=16)
-    ax.set_ylabel('Estimated falsification percentage',fontsize=16)
+    ax.set_ylabel('Est. falsification %',fontsize=16)
     vals = ax.get_yticks()
     ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
     plt.xticks(rotation=90)

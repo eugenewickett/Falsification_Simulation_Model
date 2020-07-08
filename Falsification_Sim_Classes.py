@@ -106,7 +106,7 @@ class Node:
                             # Take the minimum of what's available or the demand; balance demand becomes stockout
                             inventoryToTake = min(Rremaining,supplierInventoryAvailable)
                             Rremaining -= inventoryToTake
-                            stockoutDemand = max(Rremaining - inventoryToTake,0) # Record stockout demand if taken inventory is less than the remaining reorder amount
+                            stockoutDemand = max(Rremaining,0) # Record stockout demand if taken inventory is less than the remaining reorder amount
                             intermediate.demandResults[1] += stockoutDemand # Increment dissatisfied customers
                             currInvPile = 0 # Start with intermediary's first inventory pile
                             while inventoryToTake > 0:

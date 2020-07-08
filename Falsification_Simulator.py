@@ -37,16 +37,16 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 20
 testPolicy = 1
-printOutput = True # Whether individual replication output should be displayed
+printOutput = False # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = False # Do we store the output in an output dictionary file?
+storeOutput = True # Do we store the output in an output dictionary file?
 alertIter = 5 # How frequently we're alerted of a set of replications being completed
 
 # Establish any warm-up settings 
