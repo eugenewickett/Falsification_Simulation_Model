@@ -23,8 +23,6 @@ os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsi
 import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules
 
-
-
 # BAD INTERMEDIATE NODE
 fileName1 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Falsification_Simulator_BADINT_OUTPUT'
 outputDict1 = pickle.load(open(fileName1, 'rb'))

@@ -10,9 +10,6 @@ Stores modules for use with 'SC Simulator.py'
 import numpy as np
 import random
 import csv
-import os
-import sys
-import pickle
 from tabulate import tabulate # for making outputs
 import matplotlib.pyplot as plt
 
@@ -254,14 +251,7 @@ def SimReplicationOutput(OPdict):
                 testResult is stored as the genesis node for the sample
                 procured; a testResult of -1 means there were no samples
                 available when the test was conducted.
-            4) 'intFalseEstimates': The list of calculated falsification
-                estimates for the intermediate nodes, using p=((A'A)^(-1))A'X,
-                where A is the estimated transition matrix between end nodes and
-                intermediate nodes, X is the observed falsification rate at the
-                end nodes, and p is the estimate for intermediate nodes
-            5) 'endFalseEstimates': X, as given in 4)
     """
-
     rootConsumptionVec = [] # Store the root consumption data as a list
     for rep in OPdict.keys():
         currDictEntry = OPdict[rep]['rootConsumption']
@@ -309,174 +299,80 @@ def SimReplicationOutput(OPdict):
         avgStockoutTestedVec.append(currNumStockout/currTotal)
         avgGoodTestedVec.append(currNumGood/currTotal)
     
-    # Generate summaries of our falsification estimates
-    intFalseEstVec = []
-    endFalseEstVec = []
-    for rep in OPdict.keys():
-        currIntVec = OPdict[rep]['intFalseEstimates']
-        intFalseEstVec.append(currIntVec)
-        currEndVec = OPdict[rep]['endFalseEstimates']
-        endFalseEstVec.append(currEndVec)
-    
-    
-    # For our plots' x axes
-    numRoots = len(OPdict[0]['rootConsumption'])
-    numInts = len(OPdict[0]['intDemandResults'])
-    numEnds = len(OPdict[0]['endDemandResults'])
-    Root_Plot_x = []
-    for i in range(numRoots):
-        Root_Plot_x.append(str(i))
-    Int_Plot_x = []
-    for i in range(numInts):
-        Int_Plot_x.append(str(i+numRoots))
-    End_Plot_x = []
-    for i in range(numEnds):
-        End_Plot_x.append(str(i+numRoots+numInts))
     
     
     
     '''
-    currOutputLine = {'rootConsumption':List_RootConsumption,
-                          'intDemandResults':List_demandResultsInt,
-                          'endDemandResults':List_demandResultsEnd,
-                          'testResults':TestReportTbl,
-                          'intFalseEstimates':estIntFalsePercList,
-                          'endFalseEstimates':estEndFalsePercList}
-    '''
+    aluminum = np.array([6.4e-5 , 3.01e-5 , 2.36e-5, 3.0e-5, 7.0e-5, 4.5e-5, 3.8e-5,
+                     4.2e-5, 2.62e-5, 3.6e-5])
+    copper = np.array([4.5e-5 , 1.97e-5 , 1.6e-5, 1.97e-5, 4.0e-5, 2.4e-5, 1.9e-5, 
+                   2.41e-5 , 1.85e-5, 3.3e-5 ])
+    steel = np.array([3.3e-5 , 1.2e-5 , 0.9e-5, 1.2e-5, 1.3e-5, 1.6e-5, 1.4e-5, 
+                      1.58e-5, 1.32e-5 , 2.1e-5])
     
-    
-    # PLOTS
-    # Root node consumption
-    rootNode1_mean = np.mean(avgFalseConsumedVec)
-    rootNode0_mean = 1-rootNode1_mean
+    # Calculate the average
+    aluminum_mean = np.mean(aluminum)
+    copper_mean = np.mean(copper)
+    steel_mean = np.mean(steel)
     # Calculate the standard deviation
-    rootNode1_std = np.std(avgFalseConsumedVec)
-    rootNode0_std = rootNode1_std
-    # Define positions, bar heights and error bar heights
-    means = [rootNode0_mean, rootNode1_mean]
-    error = [1.6*rootNode0_std, 1.6*rootNode1_std]
+    aluminum_std = np.std(aluminum)
+    copper_std = np.std(copper)
+    steel_std = np.std(steel)
+    # Define labels, positions, bar heights and error bar heights
+    labels = ['Aluminum', 'Copper', 'Steel']
+    x_pos = np.arange(len(labels))
+    CTEs = [aluminum_mean, copper_mean, steel_mean]
+    error = [aluminum_std, copper_std, steel_std]
     # Build the plot
-    fig = plt.figure()
-    ax = fig.add_axes([0,0,0.3,0.5])
-    ax.bar(Root_Plot_x, means,
+    fig, ax = plt.subplots()
+    ax.bar(x_pos, CTEs,
            yerr=error,
            align='center',
+           alpha=0.5,
            ecolor='black',
-           capsize=10,
-           color='thistle',edgecolor='indigo')
-    ax.set_xlabel('Root Node',fontsize=16)
-    ax.set_ylabel('Percentage consumption',fontsize=16)
-    vals = ax.get_yticks()
-    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+           capsize=10)
+    ax.set_ylabel('Coefficient of Thermal Expansion (\degreeC−1)')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(labels)
+    ax.set_title('Coefficent of Thermal Expansion (CTE) of Three Metals')
+    ax.yaxis.grid(True)
+    
+    # Save the figure and show
+    plt.tight_layout()
+    plt.savefig('bar_plot_with_error_bars.png')
     plt.show()
-    
-    # Intermediate node stockouts
-    intNode_means = []
-    intNode_stds = []
-    for i in range(numInts):
-        repsAvgVec = []
-        for rep in intDemandVec:
-            newRow = rep[i]
-            newSOPerc = newRow[1]/(newRow[0]+newRow[1])
-            repsAvgVec.append(newSOPerc)
-        intNode_means.append(np.mean(repsAvgVec))
-        intNode_stds.append(np.std(repsAvgVec))
-    # Define positions, bar heights and error bar heights
-    means = intNode_means
-    error = [x*1.6 for x in intNode_stds]
-    # Build the plot
-    fig = plt.figure()
-    ax = fig.add_axes([0,0,1,0.5])
-    ax.bar(Int_Plot_x, means,yerr=error,align='center',ecolor='black',
-           capsize=5,color='bisque',edgecolor='darkorange')
-    ax.set_xlabel('Intermediate Node',fontsize=16)
-    ax.set_ylabel('Percentage stocked out',fontsize=16)
-    vals = ax.get_yticks()
-    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    plt.show()
-    
-    # End node stockouts
-    endNode_means = []
-    endNode_stds = []
-    for i in range(numEnds):
-        repsAvgVec = []
-        for rep in endDemandVec:
-            newRow = rep[i]
-            newSOPerc = newRow[1]/(newRow[0]+newRow[1])
-            repsAvgVec.append(newSOPerc)
-        endNode_means.append(np.mean(repsAvgVec))
-        endNode_stds.append(np.std(repsAvgVec))
-    # Define positions, bar heights and error bar heights
-    endNode_stds = [x*1.6 for x in endNode_stds]
-    # Build the plot
-    fig = plt.figure()
-    ax = fig.add_axes([0,0,3,0.5])
-    ax.bar(End_Plot_x, endNode_means,yerr=endNode_stds,align='center',
-           ecolor='black',capsize=2,
-           color='mintcream',edgecolor='mediumseagreen')
-    ax.set_xlabel('End Node',fontsize=16)
-    ax.set_ylabel('Percentage stocked out',fontsize=16)
-    vals = ax.get_yticks()
-    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    plt.xticks(rotation=90)
-    plt.show()
-    
-    # Testing results
-    #### NEED TO DO LATER/FIGURE OUT
-    #################################
-    
-    # Intermediate nodes falsification estimates
-    intNodeFalse_means = []
-    intNodeFalse_stds = []
-    for i in range(numInts):
-        repsAvgVec = []
-        for rep in intFalseEstVec:
-            newItem = rep[i]
-            repsAvgVec.append(newItem)
-        intNodeFalse_means.append(np.mean(repsAvgVec))
-        intNodeFalse_stds.append(np.std(repsAvgVec))
-    # Define positions, bar heights and error bar heights
-    intNodeFalse_stds = [x*1.6 for x in intNodeFalse_stds]
-    # Build the plot
-    fig = plt.figure()
-    ax = fig.add_axes([0,0,1,0.5])
-    ax.bar(Int_Plot_x, intNodeFalse_means,yerr=intNodeFalse_stds,
-           align='center',ecolor='black',
-           capsize=5,color='lightcoral',edgecolor='firebrick')
-    ax.set_xlabel('Intermediate Node',fontsize=16)
-    ax.set_ylabel('Estimated falsification percentage',fontsize=16)
-    vals = ax.get_yticks()
-    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    plt.show()
-    
-    # End nodes falsification estimates
-    endNodeFalse_means = []
-    endNodeFalse_stds = []
-    for i in range(numEnds):
-        repsAvgVec = []
-        for rep in endFalseEstVec:
-            newItem = rep[i]
-            repsAvgVec.append(newItem)
-        endNodeFalse_means.append(np.mean(repsAvgVec))
-        endNodeFalse_stds.append(np.std(repsAvgVec))
-    # Define positions, bar heights and error bar heights
-    endNodeFalse_stds = [x*1.6 for x in endNodeFalse_stds]
-    # Build the plot
-    fig = plt.figure()
-    ax = fig.add_axes([0,0,3,0.5])
-    ax.bar(End_Plot_x, endNodeFalse_means,yerr=endNodeFalse_stds,
-           align='center',ecolor='black',
-           capsize=1,color='aliceblue',edgecolor='dodgerblue')
-    ax.set_xlabel('End Node',fontsize=16)
-    ax.set_ylabel('Estimated falsification percentage',fontsize=16)
-    vals = ax.get_yticks()
-    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    plt.xticks(rotation=90)
-    plt.show()
-    
-    
-    
     '''
+    
+    
+    
+    # How different in stockout rates is lowest int node
+    #avgIntStockout1 = []
+    #for item in intDemandVec1:
+    #    currLowRate = 1
+    #    rateVec = []
+    #    for intNode in item:
+    #        rate = intNode[1]/(intNode[1]+intNode[0])
+    #        rateVec.append(rate)
+    #        if rate < currLowRate:
+    #            currLowRate = rate
+    #    currDiff = currLowRate - np.mean(rateVec)
+    #    avgIntStockout1.append(currDiff)
+        
+    
+    
+    # Variability in tested falsification rates
+    
+    
+    
+    # PLOTS 
+    # Histogram of SF consumption rates across replications
+    plt.title(r'Histogram of SF consumption rates')
+    plt.hist(avgFalseConsumedVec)
+    plt.show()
+    #plt.title(r'Histogram Intermediate stockout rates')
+    #plt.hist(avgIntStockout1)
+    
+    
     alphaLevel = 0.8
     g1 = (avgFalseConsumedVec,avgFalseTestedVec)
     g2 = (avgFalseConsumedVec,avgStockoutTestedVec)
@@ -508,57 +404,5 @@ def SimReplicationOutput(OPdict):
     ax.set_ylabel('Test result stockouts', fontsize=12)
     plt.title(r'Test results of STOCKOUTS vs. Underlying SF consumption rates', fontsize=14)
     plt.show()
-    '''
+
  ### END "SimReplicationOutput" ###
-
-def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
-              currDirect = ''):
-    """
-    Sets up warm-up files as a function of the chosen parameters.
-    Warm-up dictionaries are saved to a folder 'warm up dictionaries' in the
-    current working directory.
-    """
-    warmUpDirectory = ''
-    warmUpFileName_str = ''
-    warmUpDict = {}
-    if useWarmUpFileBool == True and warmUpRunBool == True:
-        print('Cannot use warm up files and conduct warm up runs at the same time!')
-        useWarmUpFileBool = False
-        warmUpRunBool = False
-        numReps = 0
-
-    elif useWarmUpFileBool == True and warmUpRunBool == False:
-        warmUpDirectory = os.getcwd() + '\\warm up dictionaries' # Location of warm-up files
-        warmUpFileName_str =  os.path.basename(sys.argv[0]) # Current file name
-        warmUpFileName_str = warmUpFileName_str[:-3] + '_WARM_UP' # Warm-up file name
-        warmUpFileName_str = os.path.join(warmUpDirectory, warmUpFileName_str)
-        if not os.path.exists(warmUpFileName_str): # Flag if this directory not found
-            print('Warm up file not found.')
-            numReps = 0
-        else:
-            with open(warmUpFileName_str, 'rb') as f:
-                warmUpDict = pickle.load(f) # Load the dictionary
-            
-    elif useWarmUpFileBool == False and warmUpRunBool == True: # Generate warm-up runs file
-        # Generate a directory if one does not already exist
-        warmUpDirectory = os.getcwd() + '\\warm up dictionaries' # Location of warm-up files
-        if not os.path.exists(warmUpDirectory): # Generate this folder if one does not already exist
-            os.makedirs(warmUpDirectory)
-        warmUpFileName_str =  os.path.basename(sys.argv[0]) # Current file name
-        warmUpFileName_str = warmUpFileName_str[:-3] + '_WARM_UP' # Warm-up file name
-        warmUpFileName_str = os.path.join(warmUpDirectory, warmUpFileName_str)
-        if os.path.exists(warmUpFileName_str): # Generate this file if one doesn't exist
-            with open(warmUpFileName_str, 'rb') as f:
-                warmUpDict = pickle.load(f) # Load the dictionary
-        else:
-            warmUpDict = {} # Initialize the dictionary
-        pickle.dump(warmUpDict, open(warmUpFileName_str,'wb'))
-      
-    elif useWarmUpFileBool == False and warmUpRunBool == False: # Nothing done WRT warm-ups
-        pass  
-    
-    
-    return numReps, warmUpRunBool, useWarmUpFileBool, warmUpDirectory, warmUpFileName_str, warmUpDict
-    
-    
-  
