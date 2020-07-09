@@ -312,11 +312,17 @@ def SimReplicationOutput(OPdict):
     # Generate summaries of our falsification estimates
     intFalseEstVec = []
     endFalseEstVec = []
+    intFalseEstVec_Bern = []
+    endFalseEstVec_Bern = []
     for rep in OPdict.keys():
         currIntVec = OPdict[rep]['intFalseEstimates']
         intFalseEstVec.append(currIntVec)
         currEndVec = OPdict[rep]['endFalseEstimates']
         endFalseEstVec.append(currEndVec)
+        currIntVec_Bern = OPdict[rep]['intFalseEstimates_Bern']
+        intFalseEstVec_Bern.append(currIntVec_Bern)
+        currEndVec_Bern = OPdict[rep]['endFalseEstimates_Bern']
+        endFalseEstVec_Bern.append(currEndVec_Bern)
     
     
     # For our plots' x axes
@@ -457,6 +463,31 @@ def SimReplicationOutput(OPdict):
     ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
     plt.show()
     
+    # Intermediate nodes falsification estimates - Bernoulli
+    intNodeFalseEsts_Bern = []
+    for i in range(numInts):
+        repsAvgVec = []
+        for rep in intFalseEstVec_Bern:
+            newItem = rep[i]
+            repsAvgVec.append(newItem)
+        repsAvgVec.sort() 
+        intNodeFalseEsts_Bern.append(repsAvgVec)
+    # Define positions, bar heights and error bar heights
+    intEstBern_means = [np.mean(x) for x in intNodeFalseEsts_Bern] 
+    intEstBern_err =   [[np.mean(intEstVec)-intEstVec[lowErrInd] for intEstVec in intNodeFalseEsts_Bern], 
+                       [intEstVec[upErrInd]-np.mean(intEstVec) for intEstVec in intNodeFalseEsts_Bern]]
+    # Build the plot
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,1,0.5])
+    ax.bar(Int_Plot_x, intEstBern_means,yerr=intEstBern_err,
+           align='center',ecolor='black',
+           capsize=5,color='lightcoral',edgecolor='firebrick')
+    ax.set_xlabel('Intermediate Node',fontsize=16)
+    ax.set_ylabel('Est. logit parameter',fontsize=16)
+    #vals = ax.get_yticks()
+    #ax.set_yticklabels(['{:,.0}'.format(x) for x in vals])
+    plt.show()
+    
     # End nodes falsification estimates
     endNodeFalseEsts = []
     for i in range(numEnds):
@@ -483,6 +514,31 @@ def SimReplicationOutput(OPdict):
     plt.xticks(rotation=90)
     plt.show()
     
+    # End nodes falsification estimates - Bernoulli
+    endNodeFalseEsts_Bern = []
+    for i in range(numEnds):
+        repsAvgVec = []
+        for rep in endFalseEstVec_Bern:
+            newItem = rep[i]
+            repsAvgVec.append(newItem)
+        repsAvgVec.sort() 
+        endNodeFalseEsts_Bern.append(repsAvgVec)
+    # Define positions, bar heights and error bar heights
+    endEstBern_means = [np.mean(x) for x in endNodeFalseEsts_Bern] 
+    endEstBern_err = [[np.mean(endEstVec)-endEstVec[lowErrInd] for endEstVec in endNodeFalseEsts_Bern], 
+                      [endEstVec[upErrInd]-np.mean(endEstVec) for endEstVec in endNodeFalseEsts_Bern]]
+    # Build the plot
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,3,0.5])
+    ax.bar(End_Plot_x, endEstBern_means,yerr=endEstBern_err,
+           align='center',ecolor='black',
+           capsize=1,color='aliceblue',edgecolor='dodgerblue')
+    ax.set_xlabel('End Node',fontsize=16)
+    ax.set_ylabel('Est. falsification %',fontsize=16)
+    vals = ax.get_yticks()
+    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+    plt.xticks(rotation=90)
+    plt.show()
     
     
     '''
