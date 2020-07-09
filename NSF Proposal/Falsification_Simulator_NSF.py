@@ -394,7 +394,7 @@ for rep in range(numReplications):
                 
         # END OF RX REPORTING LOOP 
      
-    # Form regression estimates of suspected bad intermediate nodes 
+    # Form regression estimates of suspected bad intermediate nodes
     X = estFalseVector 
     A = estTransitionMatrix 
     try: 
@@ -415,7 +415,8 @@ for rep in range(numReplications):
         print("Couldn't generate the estimated node falsification percentages") 
         estIntFalsePercList = [] 
         estEndFalsePercList = [] 
-     
+    
+    
      
     if printOutput == True: # Printing of tables and charts 
         # PRINT RESULTS TABLES 

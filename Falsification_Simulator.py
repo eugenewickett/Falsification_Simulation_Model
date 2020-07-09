@@ -37,16 +37,16 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 20
+numReplications = 1
 testPolicy = 1
-printOutput = False # Whether individual replication output should be displayed
+printOutput = True # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = True # Do we store the output in an output dictionary file?
+storeOutput = False # Do we store the output in an output dictionary file?
 alertIter = 5 # How frequently we're alerted of a set of replications being completed
 
 # Establish any warm-up settings 
@@ -103,7 +103,7 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
     
-    #List_IntermediateNode[0].FalsifierProbability = 0.2
+    List_IntermediateNode[0].FalsifierProbability = 0.4
     
     
     ######### MODIFICATION LOOPS ######### ######### #########
@@ -366,6 +366,7 @@ for rep in range(numReplications):
         # END OF RX REPORTING LOOP
     
     # Form regression estimates of suspected bad intermediate nodes
+    #LINEAR PROJECTION
     X = estFalseVector
     A = estTransitionMatrix
     try:
@@ -387,6 +388,46 @@ for rep in range(numReplications):
         estIntFalsePercList = []
         estEndFalsePercList = []
     
+    #MLE OF BERNOULLI VARIABLE, USING ITERATIVELY REWEIGHTED LEAST SQUARES
+    try:
+        currGap = 10
+        tol = 1e-2
+        w_k = np.zeros([intermediateNum,1])
+        while currGap > tol:
+            mu_k = []
+            for i in range(endNum):
+                mu_k.append(1/(1+np.exp(-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
+            Sdiag = []
+            for i in range(endNum):
+                Sdiag.append(mu_k[i]*(1-mu_k[i]))            
+            mu_k = np.reshape(mu_k,(endNum,1))
+            S_k = np.diag(Sdiag)
+            w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
+            currGap = np.linalg.norm(w_k-w_k1)
+            w_k = np.copy(w_k1)
+        covarMat_Bern = np.linalg.inv(np.dot(A.T,np.dot(S_k,A)))
+        w_Var = np.diag(covarMat_Bern)
+        wald_stats = []
+        for j in range(intermediateNum):
+            wald_stats.append(np.asscalar((w_k[j]**2)/w_Var[j]))
+        
+        
+        #estEndFalsePerc = np.subtract(X,np.dot(A,estIntFalsePerc))
+    
+        # Estimated intermediate falsification percentages
+        # First, some stats for the plots
+        #estIntFalsePercList = np.ndarray.tolist(estIntFalsePerc.T[0])
+        #estIntFalsePerc_median = np.median(estIntFalsePercList)
+        #estIntFalsePerc_SD1 = np.std(estIntFalsePercList)
+        #estIntFalsePerc_SD2 = 2*estIntFalsePerc_SD1
+        # Store these values in one place
+        #plot_y = (estIntFalsePerc_median,estIntFalsePerc_median+estIntFalsePerc_SD1,estIntFalsePerc_median+estIntFalsePerc_SD2)
+        # For end nodes
+        #estEndFalsePercList = np.ndarray.tolist(estEndFalsePerc.T[0])
+    except:
+        print("Couldn't generate the estimated node falsification percentages for BERNOULLI MLE")
+        estIntFalsePercList_Bern = []
+        estEndFalsePercList_Bern = []
     
     if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES
@@ -461,7 +502,6 @@ for rep in range(numReplications):
         ax.set_xlabel('Intermediate Node',fontsize=16)
         ax.set_ylabel('Estimated falsification percentage',fontsize=16)
         ax.bar(Intermediate_Plot_x,estIntFalsePercList,color='thistle',edgecolor='indigo')
-        plt.hlines(y=plot_y,xmin=0,xmax=(intermediateNum-1),colors=("orangered"),linestyles=['solid','dashed','dotted'])
         plt.show()
              
         # End nodes
