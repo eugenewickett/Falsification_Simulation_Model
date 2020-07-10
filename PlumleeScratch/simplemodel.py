@@ -23,8 +23,8 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec):
         return -numpy.sum(ydata * numpy.log(probsz) + (numsamples-ydata) * numpy.log(1-probsz)) \
             + 4 * 1/2*numpy.sum((betaJ - beta0[A.shape[1]:]) ** 2) #have to regularize to prevent problems
     
-    bounds = spo.Bounds(beta0-5, beta0+5)
-    opval = spo.minimize(mynegloglik, -3 * numpy.ones(A.shape[1]+A.shape[0]),
+    bounds = spo.Bounds(beta0-2, beta0+8)
+    opval = spo.minimize(mynegloglik, beta0,
                          args=(ydata, numsamples, A, sens, spec),
                          method='L-BFGS-B',
                          options={'disp': False},
