@@ -37,17 +37,17 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 50
 testPolicy = 1
-printOutput = True # Whether individual replication output should be displayed
+printOutput = False # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = False # Do we store the output in an output dictionary file?
-alertIter = 5 # How frequently we're alerted of a set of replications being completed
+storeOutput = True # Do we store the output in an output dictionary file?
+alertIter = 10 # How frequently we're alerted of a set of replications being completed
 
 # Establish any warm-up settings 
 numReplications, warmUpRun, useWarmUpFile, warmUpDirectory, warmUpFileName, warmUpDict = simModules.setWarmUp(useWarmUpFileBool = useWarmUpFile, warmUpRunBool = warmUpRun, numReps = numReplications, currDirect = currDirectory)
@@ -103,7 +103,7 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
     
-    List_IntermediateNode[0].FalsifierProbability = 0.4
+    List_IntermediateNode[0].FalsifierProbability = 0.2
     
     
     ######### MODIFICATION LOOPS ######### ######### #########
@@ -376,11 +376,6 @@ for rep in range(numReplications):
         # Estimated intermediate falsification percentages
         # First, some stats for the plots
         estIntFalsePercList = np.ndarray.tolist(estIntFalsePerc.T[0])
-        estIntFalsePerc_median = np.median(estIntFalsePercList)
-        estIntFalsePerc_SD1 = np.std(estIntFalsePercList)
-        estIntFalsePerc_SD2 = 2*estIntFalsePerc_SD1
-        # Store these values in one place
-        plot_y = (estIntFalsePerc_median,estIntFalsePerc_median+estIntFalsePerc_SD1,estIntFalsePerc_median+estIntFalsePerc_SD2)
         # For end nodes
         estEndFalsePercList = np.ndarray.tolist(estEndFalsePerc.T[0])
     except:
@@ -389,6 +384,7 @@ for rep in range(numReplications):
         estEndFalsePercList = []
     
     #MLE OF BERNOULLI VARIABLE, USING ITERATIVELY REWEIGHTED LEAST SQUARES
+    #SEE WIKIPEDIA FOR NOTATION
     try:
         currGap = 10
         tol = 1e-2
@@ -405,25 +401,17 @@ for rep in range(numReplications):
             w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
             currGap = np.linalg.norm(w_k-w_k1)
             w_k = np.copy(w_k1)
+        # Now our importer SF rates are calculated; figure out variance + Wald statistics
         covarMat_Bern = np.linalg.inv(np.dot(A.T,np.dot(S_k,A)))
         w_Var = np.diag(covarMat_Bern)
         wald_stats = []
         for j in range(intermediateNum):
             wald_stats.append(np.asscalar((w_k[j]**2)/w_Var[j]))
+        # Store our estimates in new variables
+        estIntFalsePercList_Bern = w_k.T.tolist()[0]
+        errs_Bern = np.subtract(X,mu_k)
+        estEndFalsePercList_Bern = errs_Bern.T.tolist()[0]
         
-        
-        #estEndFalsePerc = np.subtract(X,np.dot(A,estIntFalsePerc))
-    
-        # Estimated intermediate falsification percentages
-        # First, some stats for the plots
-        #estIntFalsePercList = np.ndarray.tolist(estIntFalsePerc.T[0])
-        #estIntFalsePerc_median = np.median(estIntFalsePercList)
-        #estIntFalsePerc_SD1 = np.std(estIntFalsePercList)
-        #estIntFalsePerc_SD2 = 2*estIntFalsePerc_SD1
-        # Store these values in one place
-        #plot_y = (estIntFalsePerc_median,estIntFalsePerc_median+estIntFalsePerc_SD1,estIntFalsePerc_median+estIntFalsePerc_SD2)
-        # For end nodes
-        #estEndFalsePercList = np.ndarray.tolist(estEndFalsePerc.T[0])
     except:
         print("Couldn't generate the estimated node falsification percentages for BERNOULLI MLE")
         estIntFalsePercList_Bern = []
@@ -500,18 +488,37 @@ for rep in range(numReplications):
         fig = plt.figure()
         ax = fig.add_axes([0,0,1,0.5])
         ax.set_xlabel('Intermediate Node',fontsize=16)
-        ax.set_ylabel('Estimated falsification percentage',fontsize=16)
+        ax.set_ylabel('Est. falsification %',fontsize=16)
         ax.bar(Intermediate_Plot_x,estIntFalsePercList,color='thistle',edgecolor='indigo')
         plt.show()
-             
+        
+        # Intermediate nodes - Bernoulli model
+        fig = plt.figure()
+        ax = fig.add_axes([0,0,1,0.5])
+        ax.set_xlabel('Intermediate Node',fontsize=16)
+        ax.set_ylabel('Est. model parameter',fontsize=16)
+        ax.bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='thistle',edgecolor='indigo')
+        plt.show()
+        
         # End nodes
         fig = plt.figure()
         ax = fig.add_axes([0,0,3,0.5])
         ax.set_xlabel('End Node',fontsize=16)
-        ax.set_ylabel('Estimated falsification percentage',fontsize=16)
+        ax.set_ylabel('Est. falsification %',fontsize=16)
         #vals = ax.get_yticks()
         #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
         ax.bar(End_Plot_x,estEndFalsePercList,color='peachpuff',edgecolor='red')
+        plt.xticks(rotation=90)
+        plt.show()
+        
+        # End nodes
+        fig = plt.figure()
+        ax = fig.add_axes([0,0,3,0.5])
+        ax.set_xlabel('End Node',fontsize=16)
+        ax.set_ylabel('Est. falsification %',fontsize=16)
+        #vals = ax.get_yticks()
+        #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+        ax.bar(End_Plot_x,estEndFalsePercList_Bern,color='peachpuff',edgecolor='red')
         plt.xticks(rotation=90)
         plt.show()
     
@@ -534,7 +541,9 @@ for rep in range(numReplications):
                           'endDemandResults':List_demandResultsEnd,
                           'testResults':TestReportTbl,
                           'intFalseEstimates':estIntFalsePercList,
-                          'endFalseEstimates':estEndFalsePercList}
+                          'endFalseEstimates':estEndFalsePercList,
+                          'intFalseEstimates_Bern':estIntFalsePercList_Bern,
+                          'endFalseEstimates_Bern':estEndFalsePercList_Bern}
                           
         outputDict[rep] = currOutputLine # Save to the output dictionary
         
