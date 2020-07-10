@@ -9,6 +9,7 @@ to falsification and substandardization.
 """
 
 import numpy as np
+import scipy.optimize as spo
 import matplotlib.pyplot as plt
 import random #for seeds
 import sys
@@ -37,16 +38,16 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 50
+numReplications = 1
 testPolicy = 1
-printOutput = False # Whether individual replication output should be displayed
+printOutput = True # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = True # Do we store the output in an output dictionary file?
+storeOutput = False # Do we store the output in an output dictionary file?
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
 
 # Establish any warm-up settings 
@@ -327,8 +328,9 @@ for rep in range(numReplications):
         TestSummaryTbl[indNodeList][1] += 1
         if sample[2] == 1: # From falsified root
             TestSummaryTbl[indNodeList][2] += 1
-        if sample[2] == -1: # Stocked out
+        if sample[2] == -1: # Stocked out; remove 1 from the "samples collected" number
             TestSummaryTbl[indNodeList][3] += 1
+            TestSummaryTbl[indNodeList][1] -= 1
         currInvCheckList = sample[3]
         for pile in currInvCheckList:
             if not pile[0] == 1: # Can't be from the falsifier node
@@ -417,6 +419,50 @@ for rep in range(numReplications):
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
     
+    #PLUMLEE ESTIMATE 
+    try:
+        def PlumleeEstimates(ydata, numsamples, A, sens, spec):
+            beta0 = -5 * np.ones(A.shape[1]+A.shape[0])
+            def invlogit(beta):
+                return np.exp(beta)/(np.exp(beta)+1)
+            def logit(p):
+                return np.log(p/(1-p)) 
+            def mynegloglik(beta, ydata, numsamples, A, sens, spec):
+                betaI = beta[0:A.shape[1]]
+                betaJ = beta[A.shape[1]:]
+                probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
+                probsz = probs*sens + (1-probs) * (1-spec)
+                return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
+                    + 4 * 1/2*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
+            
+            bounds = spo.Bounds(beta0-2, beta0+8)
+            opval = spo.minimize(mynegloglik, beta0,
+                                 args=(ydata, numsamples, A, sens, spec),
+                                 method='L-BFGS-B',
+                                 options={'disp': False},
+                                 bounds=bounds)
+            return invlogit(opval.x)[0:A.shape[1]], invlogit(opval.x)[A.shape[1]:]
+        
+        # Get required arguments from the testing summary table
+        ydata = []
+        numSamples = []
+        for endNodeTestRow in TestSummaryTbl:
+            ydata.append(endNodeTestRow[2])
+            numSamples.append(endNodeTestRow[1])
+        
+        importerhat, outlethat = PlumleeEstimates(np.array(ydata), np.array(numSamples), np.asmatrix(A), diagnosticSensitivity, diagnosticSpecificity)
+        estIntFalsePercList_Plum = importerhat.tolist()
+        estEndFalsePercList_Plum = outlethat.tolist()
+        
+             
+        
+        
+    except:
+        print("Couldn't generate the estimated node falsification percentages for PLUMLEE ESTIMATE")
+        estIntFalsePercList_Plum = []
+        estEndFalsePercList_Plum = []
+        
+    
     if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES
         print('*'*100)
@@ -492,12 +538,12 @@ for rep in range(numReplications):
         ax.bar(Intermediate_Plot_x,estIntFalsePercList,color='thistle',edgecolor='indigo')
         plt.show()
         
-        # Intermediate nodes - Bernoulli model
+        # Intermediate nodes - Plumlee model
         fig = plt.figure()
         ax = fig.add_axes([0,0,1,0.5])
         ax.set_xlabel('Intermediate Node',fontsize=16)
         ax.set_ylabel('Est. model parameter',fontsize=16)
-        ax.bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='thistle',edgecolor='indigo')
+        ax.bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='thistle',edgecolor='indigo')
         plt.show()
         
         # End nodes
@@ -511,14 +557,14 @@ for rep in range(numReplications):
         plt.xticks(rotation=90)
         plt.show()
         
-        # End nodes
+        # End nodes - Plumlee model
         fig = plt.figure()
         ax = fig.add_axes([0,0,3,0.5])
         ax.set_xlabel('End Node',fontsize=16)
         ax.set_ylabel('Est. falsification %',fontsize=16)
         #vals = ax.get_yticks()
         #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-        ax.bar(End_Plot_x,estEndFalsePercList_Bern,color='peachpuff',edgecolor='red')
+        ax.bar(End_Plot_x,estEndFalsePercList_Plum,color='peachpuff',edgecolor='red')
         plt.xticks(rotation=90)
         plt.show()
     
@@ -542,8 +588,9 @@ for rep in range(numReplications):
                           'testResults':TestReportTbl,
                           'intFalseEstimates':estIntFalsePercList,
                           'endFalseEstimates':estEndFalsePercList,
-                          'intFalseEstimates_Bern':estIntFalsePercList_Bern,
-                          'endFalseEstimates_Bern':estEndFalsePercList_Bern}
+                          'intFalseEstimates_Plum':estIntFalsePercList_Plum,
+                          'endFalseEstimates_Plum':estEndFalsePercList_Plum
+                          }
                           
         outputDict[rep] = currOutputLine # Save to the output dictionary
         

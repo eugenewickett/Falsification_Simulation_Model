@@ -25,13 +25,9 @@ import Falsification_Sim_Modules as simModules
 
 beginStr = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\'
 
-fileName1 = beginStr + 'Falsification_Simulator_OUTPUT_40PERC'
+fileName1 = beginStr + 'Falsification_Simulator_OUTPUT'
 outputDict1 = pickle.load(open(fileName1, 'rb'))
 
-fileName2 = beginStr + 'Falsification_Simulator_OUTPUT_20PERC'
-outputDict2 = pickle.load(open(fileName2, 'rb'))
-
 simModules.SimReplicationOutput(outputDict1)
-simModules.SimReplicationOutput(outputDict2)
 
 
