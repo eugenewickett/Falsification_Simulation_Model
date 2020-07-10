@@ -21,7 +21,7 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec):
         probs = (1-invlogit(betaJ)) * numpy.array(A @ invlogit(betaI)) + invlogit(betaJ)
         probsz = probs*sens + (1-probs) * (1-spec)
         return -numpy.sum(ydata * numpy.log(probsz) + (numsamples-ydata) * numpy.log(1-probsz)) \
-            + 4 * 1/2*numpy.sum((betaJ - beta0[A.shape[1]:]) ** 2) #have to regularize to prevent problems
+            + 4 * 1/2*numpy.sum(numpy.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
     
     bounds = spo.Bounds(beta0-2, beta0+8)
     opval = spo.minimize(mynegloglik, beta0,
@@ -45,7 +45,7 @@ sens = 0.99
 spec = 0.99
 realproby = (1-pJ) * numpy.array((A @ pI)) + pJ #optimal testing
 realprobz = realproby * sens + (1-realproby) * (1-spec) #real testing
-numsamples = (1000 * numpy.ones(A.shape[0])).astype('int')
+numsamples = (100 * numpy.ones(A.shape[0])).astype('int')
 ydata =numpy.random.binomial(numsamples,realprobz)
 
 importerhat, outlethat = PlumleeEstimates(ydata, numsamples, A, sens, spec)
