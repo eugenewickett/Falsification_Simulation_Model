@@ -6,6 +6,7 @@ Created on Fri Jul 10 09:15:52 2020
 """
 import numpy
 import scipy.optimize as spo
+import matplotlib.pyplot as plt
 
 
 def PlumleeEstimates(ydata, numsamples, A, sens, spec):
@@ -24,7 +25,7 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec):
             + 4 * 1/2*numpy.sum(numpy.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
     
     bounds = spo.Bounds(beta0-2, beta0+8)
-    opval = spo.minimize(mynegloglik, beta0,
+    opval = spo.minimize(mynegloglik, beta0+5,
                          args=(ydata, numsamples, A, sens, spec),
                          method='L-BFGS-B',
                          options={'disp': False},
@@ -35,7 +36,7 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec):
 #test case
 A = numpy.matrix([[0.5, 0.25, 0.25], 
     [0.001, 0.499, 0.5],
-    [0.75, 0.001, 0.249],
+   [0.75, 0.001, 0.249],
     [0.499, 0.001, 0.5],
     [0.001, 0.249, 0.75],
     [0.001, 0.001, 0.998]])
@@ -49,8 +50,8 @@ numsamples = (100 * numpy.ones(A.shape[0])).astype('int')
 ydata =numpy.random.binomial(numsamples,realprobz)
 
 importerhat, outlethat = PlumleeEstimates(ydata, numsamples, A, sens, spec)
-print(importerhat)
-print(outlethat)
+#print(importerhat)
+#print(outlethat)
 
 
 yd = numpy.array([ 0,  0,  1,  0,  0,  0,  1,  0,  0,  2,  0,  1,  1,  0,  0,  1,  0,
@@ -281,8 +282,90 @@ A = numpy.matrix([[0.        , 0.        , 0.13410753, 0.04653763, 0.        ,
         0.        , 0.        , 0.        , 0.        , 0.        ],
        [0.        , 1.        , 0.        , 0.        , 0.        ,
         0.        , 0.        , 0.        , 0.        , 0.        ]])
-    
-importerhat, outlethat = PlumleeEstimates(yd, nsamp, A, sens, spec)
-print(importerhat)
-print(outlethat)
 
+### CHANGE INITIAL EPSILON FOR A
+epsVec = [0.001,1e-4,1e-5,1e-6]
+importerHatVec = []
+for e in epsVec:
+    A = A + e
+    importerhat, outlethat = PlumleeEstimates(yd, nsamp, A, sens, spec)
+    importerHatVec.append(importerhat.tolist())
+#print(importerhat)
+#print(outlethat)
+
+importerHatVec
+
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,0.5])
+#ax.bar(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[0],
+#       align='center',ecolor='black',
+#       capsize=5,color='lightcoral',edgecolor='firebrick')
+ax.set_xlabel('Intermediate Node',fontsize=16)
+ax.set_ylabel('Est. falsification %',fontsize=16)
+line1, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[0])
+line2, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[1])
+line3, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[2])
+line4, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[3])
+line1.set_label(epsVec[0])
+line2.set_label(epsVec[1])
+line3.set_label(epsVec[2])
+line4.set_label(epsVec[3])
+ax.legend()
+
+
+### CHANGE INITIAL BETA
+
+betaVec = [-1,0,1,2,3,4,5]
+importerHatVec = []
+for b in betaVec:
+    A = A + 0.001
+    def PlumleeEstimates(ydata, numsamples, A, sens, spec):
+        beta0 = -5 * numpy.ones(A.shape[1]+A.shape[0])
+        
+        def invlogit(beta):
+            return numpy.exp(beta)/(numpy.exp(beta)+1)
+        def logit(p):
+            return numpy.log(p/(1-p)) 
+        def mynegloglik(beta, ydata, numsamples, A, sens, spec):
+            betaI = beta[0:A.shape[1]]
+            betaJ = beta[A.shape[1]:]
+            probs = (1-invlogit(betaJ)) * numpy.array(A @ invlogit(betaI)) + invlogit(betaJ)
+            probsz = probs*sens + (1-probs) * (1-spec)
+            return -numpy.sum(ydata * numpy.log(probsz) + (numsamples-ydata) * numpy.log(1-probsz)) \
+                + 4 * 1/4*numpy.sum(numpy.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
+        
+        bounds = spo.Bounds(beta0-2, beta0+8)
+        opval = spo.minimize(mynegloglik, beta0+b,
+                             args=(ydata, numsamples, A, sens, spec),
+                             method='L-BFGS-B',
+                             options={'disp': False},
+                             bounds=bounds)
+        return invlogit(opval.x)[0:A.shape[1]], invlogit(opval.x)[A.shape[1]:]
+    
+    importerhat, outlethat = PlumleeEstimates(yd, nsamp, A, sens, spec)
+    importerHatVec.append(importerhat.tolist())
+
+importerHatVec
+
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,0.5])
+#ax.bar(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[0],
+#       align='center',ecolor='black',
+#       capsize=5,color='lightcoral',edgecolor='firebrick')
+ax.set_xlabel('Intermediate Node',fontsize=16)
+ax.set_ylabel('Est. falsification %',fontsize=16)
+line1, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[0])
+line2, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[1])
+line3, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[2])
+line4, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[3])
+line5, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[4])
+line6, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[5])
+line7, = ax.plot(['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'], importerHatVec[6])
+line1.set_label('beta add term: ' + str(betaVec[0]))
+line2.set_label('beta add term: ' + str(betaVec[1]))
+line3.set_label('beta add term: ' + str(betaVec[2]))
+line4.set_label('beta add term: ' + str(betaVec[3]))
+line5.set_label('beta add term: ' + str(betaVec[4]))
+line6.set_label('beta add term: ' + str(betaVec[5]))
+line7.set_label('beta add term: ' + str(betaVec[6]))
+ax.legend()

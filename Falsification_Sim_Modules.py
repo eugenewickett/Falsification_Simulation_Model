@@ -481,7 +481,7 @@ def SimReplicationOutput(OPdict):
     ax = fig.add_axes([0,0,1,0.5])
     ax.bar(Int_Plot_x, intEstPlum_means,yerr=intEstPlum_err,
            align='center',ecolor='black',
-           capsize=5,color='lightcoral',edgecolor='firebrick')
+           capsize=5,color='navajowhite',edgecolor='darkorange')
     ax.set_xlabel('Intermediate Node',fontsize=16)
     ax.set_ylabel('Est. falsification %',fontsize=16)
     #vals = ax.get_yticks()
@@ -532,7 +532,7 @@ def SimReplicationOutput(OPdict):
     ax = fig.add_axes([0,0,3,0.5])
     ax.bar(End_Plot_x, endEstPlum_means,yerr=endEstPlum_err,
            align='center',ecolor='black',
-           capsize=1,color='aliceblue',edgecolor='dodgerblue')
+           capsize=1,color='mintcream',edgecolor='forestgreen')
     ax.set_xlabel('End Node',fontsize=16)
     ax.set_ylabel('Est. falsification %',fontsize=16)
     vals = ax.get_yticks()

@@ -38,16 +38,16 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 50
 testPolicy = 1
-printOutput = True # Whether individual replication output should be displayed
+printOutput = False # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = False # Do we store the output in an output dictionary file?
+storeOutput = True # Do we store the output in an output dictionary file?
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
 
 # Establish any warm-up settings 
@@ -433,10 +433,10 @@ for rep in range(numReplications):
                 probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
                 probsz = probs*sens + (1-probs) * (1-spec)
                 return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
-                    + 4 * 1/2*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
+                    + 4 * 1/4*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
             
             bounds = spo.Bounds(beta0-2, beta0+8)
-            opval = spo.minimize(mynegloglik, beta0,
+            opval = spo.minimize(mynegloglik, beta0+1,
                                  args=(ydata, numsamples, A, sens, spec),
                                  method='L-BFGS-B',
                                  options={'disp': False},
@@ -543,7 +543,7 @@ for rep in range(numReplications):
         ax = fig.add_axes([0,0,1,0.5])
         ax.set_xlabel('Intermediate Node',fontsize=16)
         ax.set_ylabel('Est. model parameter',fontsize=16)
-        ax.bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='thistle',edgecolor='indigo')
+        ax.bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')
         plt.show()
         
         # End nodes
@@ -564,7 +564,7 @@ for rep in range(numReplications):
         ax.set_ylabel('Est. falsification %',fontsize=16)
         #vals = ax.get_yticks()
         #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-        ax.bar(End_Plot_x,estEndFalsePercList_Plum,color='peachpuff',edgecolor='red')
+        ax.bar(End_Plot_x,estEndFalsePercList_Plum,color='mintcream',edgecolor='forestgreen')
         plt.xticks(rotation=90)
         plt.show()
     
