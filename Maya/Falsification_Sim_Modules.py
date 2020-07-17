@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 
 import Falsification_Sim_Classes as simClasses # modules for the simulation
 
+
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',
                               arcLTsFileString='',
@@ -152,7 +153,8 @@ def demandScheduleGenerator_EndNode(int_numDays=1000,
 def testingScheduleGenerator(nodes = [], int_numDays=1000,
                              int_sampleBudget = 1000,
                              int_PolicyType = 0, 
-                             arr_PolicyParameter = [0]
+                             arr_PolicyParameter = [0],   
+                             List_False_Rates  = [1]*106
                              ):
     """
     Generates a testing schedule list for a desired number of time units, 
@@ -165,6 +167,8 @@ def testingScheduleGenerator(nodes = [], int_numDays=1000,
                 ...
             4) arr_PolicyParameter: Array of the parameters required for generatng
                 the test schedules
+            
+            6) List_False_Rates: used for int_PolicyType 3, greedy epsilon policy, each day the List_False_Rates is updates to include testing results of new falsifications
                 ...
     
     Outputs a Python list with the following elements within each entry:
@@ -173,6 +177,7 @@ def testingScheduleGenerator(nodes = [], int_numDays=1000,
     """
     #Initialize our output, a list with the above mentioned outputs
     sampleSchedule = []
+    boolStaticDynamic = False
     
     if int_PolicyType == 0: # Deterministic End-Node policy #one end node a day
         # Identify the list of end nodes #*MZ: Canuse  generateNideListFromFile fxn  to get list of endnodes,as well?
@@ -233,38 +238,54 @@ def testingScheduleGenerator(nodes = [], int_numDays=1000,
             sampleSchedule.append([day,currNode])
         ### END RANODMIZED END-NODE POLICY WITH MULTIPLE TESTS
     
-    #MZ policy 3
-    elif int_PolicyType == 3: 
-        # Identify the list of int nodes
-        intNodes = []
-        #print(nodes)
+    #MZ policy3 greedy epsilon
+    elif int_PolicyType  == 3: 
+        boolStaticDynamic =True
+        #initialize list of falsification rates as every end node has 100% falsification rates until proven otherwise
+        bud_rem = int_sampleBudget #initialize budget remaining to samplingBudget
+        days_rem = int_numDays #initialize sampling days remaining to NumSimDays
+        bud_over_days = bud_rem/days_rem
+        remainder_bud_over_days = int(bud_rem%days_rem) #get the remainder. How many days in the simulation can afford 1 extra tests / day 
+        floor_bud_over_days = int(bud_rem//days_rem) #get the regular tests / day 
+        List_tests_per_day = (([floor_bud_over_days]*(int_numDays-remainder_bud_over_days) + [floor_bud_over_days+1]*remainder_bud_over_days)) 
+        endNodes = []
+        Epsilon = .1
+        i = 0
         for nodeInd in range(len(nodes)):
-            if nodes[nodeInd][1] == 'FALSE' and nodes[nodeInd][0] == 'TRUE': #We have an int node
-                intNodes.append(nodeInd)
-        # Generate a sampling schedule iterating through each end node
-        nodeCount = 0
-        currNode = intNodes[nodeCount]
-        lastIntNode = intNodes[-1]        
-        for i in range(int_numDays): 
-            sampleSchedule.append([i,currNode])
-            if currNode == lastIntNode:
-                nodeCount = 0
-                currNode = intNodes[nodeCount]
-            else:
-                nodeCount += 1
-                currNode = intNodes[nodeCount]
-                
-    
+            if nodes[nodeInd][1] == 'TRUE': #We have an end node
+                endNodes.append(nodeInd)
+        if days_rem > 0 and bud_rem > 0:
+            
+            for ii in range(List_tests_per_day[i]):  #sample for amount of tests/ day
+                rand  = random.random()  
+                if rand < 1-Epsilon: #exploit
+                    currNode = endNodes[List_False_Rates.index(max(List_False_Rates))]
+                    sampleSchedule.append([i, currNode])
+                else: #explore
+                    currNode =random.choice(endNodes)
+                    sampleSchedule.append([i, currNode]) #
+                #List_False_Rates[List_False_Rates.index(currNode)] = simResults.update_List_Falsified_Found(node=currNode)
+            if List_tests_per_day[i] == floor_bud_over_days:
+                days_rem-=1
+                bud_rem -= floor_bud_over_days
+                i += 1
+            elif List_tests_per_day[i] == floor_bud_over_days+1:
+                days_rem-=1
+                bud_rem -= floor_bud_over_days+1
+                i+=1
+
     else:
         print('Error generating the sampling schedule.')
     
     # Need to sort this list before passing it through
     sampleSchedule.sort(key=lambda x: x[0])
-    return sampleSchedule
+    return sampleSchedule, boolStaticDynamic
 
  ### END "testingScheduleGenerator" ###
 
 
+
+    
 def SimReplicationOutput(OPdict):
     """
     Generates output tables and plots for a given output dictionary, OPdict.

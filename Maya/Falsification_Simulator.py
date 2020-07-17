@@ -36,10 +36,11 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'#how much each node orders from prev node
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 400
-samplingBudget = NumSimDays*5
+NumSimDays = 500
+samplingBudget = 700
 numReplications = 1
-testPolicy = 2
+testPolicy = 3
+epsilon =  .1 #MZ. relevant only for testpolicy 3
 printOutput = True # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
@@ -56,7 +57,7 @@ numReplications, warmUpRun, useWarmUpFile, warmUpDirectory, warmUpFileName, warm
 ##### MAIN SIMULATION CODE #####
 # Initialize output collection dictionary
 outputDict = {}
-
+dynamic_list = [0]*106
 # Iterate through each simulation replication
 for rep in range(numReplications):
 
@@ -76,7 +77,7 @@ for rep in range(numReplications):
     
     ### TESTING POLICIES GENERATED HERE ###
     # Generate sampling schedule for current graph, as well as a report table shell
-    List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = testPolicy, arr_PolicyParameter = [0])
+    List_TestingSchedule, dynamicbool = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = testPolicy, arr_PolicyParameter = [0])
     TestReportTbl = []
     
     ### THINGS TO CHANGE AND PLAY WITH ONCE THE LISTS ARE GENERATED ###
@@ -130,7 +131,15 @@ for rep in range(numReplications):
     unique_par_list  =[] #MZ
     # Main simulation code; iterate over each day
     
+    
+
+
+    
     for today in range(NumSimDays):
+        if dynamicbool:
+            for i  in range(len(List_TestingSchedule)):
+                currNode = List_TestingSchedule[i][1]
+
         # Intermediate nodes process arriving orders, moving incoming orders remaining days up by one day
         for indInt in range(intermediateNum):
             currIntermediate = List_IntermediateNode[indInt]
@@ -253,17 +262,100 @@ for rep in range(numReplications):
                         if randUnif > diagnosticSpecificity:
                             DPRoot = 1 # Generate a false positive
                     elif DPRoot == 1: # Originally from a falsifier
-                        DPRoot = 0 # Generate a false negative
+                        if randUnif > diagnosticSensitivity:
+                            DPRoot = 0 # Generate a false negative
                         
-                
-                    # Save the result to the reporting table
-                    newTestRow = [today,currTestNodeID,DPRoot,invPileOriginList, DP_parent] #updated
-                    TestReportTbl.append(newTestRow) 
-                    #MZ in output make list of how many tests i've had, how many unique batch #s have I seen, what is the distribution
 
-                #print(TestReportTbl, parent_list)
-                    if List_TestingSchedule == []: # Check if the testing schedule is now empty
-                        break
+                    
+                    
+                    
+                    #MZ epsilon greedy testingpolicy 3 
+                    if testPolicy  == 3: 
+                        dynamicbool =True
+                        #initialize list of falsification rates as every end node has 100% falsification rates until proven otherwise
+                        bud_rem = samplingBudget #initialize budget remaining to samplingBudget
+                        days_rem = NumSimDays #initialize sampling days remaining to NumSimDays
+                        bud_over_days = bud_rem/days_rem
+                        remainder_bud_over_days = int(bud_rem%days_rem) #get the remainder. How many days in the simulation can afford 1 extra tests / day 
+                        floor_bud_over_days = int(bud_rem//days_rem) #get the regular tests / day 
+                        List_tests_per_day = (([floor_bud_over_days]*(NumSimDays-remainder_bud_over_days) + [floor_bud_over_days+1]*remainder_bud_over_days)) 
+                        Epsilon =  .1
+                        List_False_Rates  = [[0,0,1] for x in range(106)] 
+                        List_Nodes_Tested=[]
+                        sampleSchedule = []
+                        i = 0
+                        
+                        while days_rem > 0 and bud_rem > 0:
+                            for ii in range(List_tests_per_day[i]):  #sample for amount of tests/ day
+                                rand  = random.random()  
+                                if rand < 1-Epsilon: #exploit
+                                    currNode = List_EndNode[List_False_Rates.index(max(List_False_Rates))]
+                                    if (currNode.InventoryPeriodsRemaining[invPile] == 0) and (currNode.InventoryLevel[invPile] > 0): #Test
+                                        currPileLevel = currNode.InventoryLevel[invPile] # Greater than 0
+                                        currPileDPID = currNode.InventoryDPID[invPile]
+                        
+                                        for indDP in List_DP: #update inventories 
+                                            if currPileDPID == indDP.id:
+                                                currPilePriorNode = indDP.nodeIDList[-2]
+                                                invPileOriginList.append([currPilePriorNode,currPileLevel])
+                                        if madeTest == False:
+                                            madeTest = True
+                                            testDPID = currNode.InventoryDPID[invPile] #DPID for this inventory pile
+                                            for indDP in List_DP: 
+                                                if testDPID == indDP.id:
+                                                    DPRoot = indDP.nodeIDList[0] # Source of this DP
+                                            currNode.InventoryLevel[invPile] -= 1 # "Buy" the sample
+                                            currNode.demandResults[0] += 1 # "Satisifed" demand
+                                            if madeTest == False: # Report -1 if no sample procured due to stockout
+                                                DPRoot = -1 #stocked out
+                                            randUnif = random.uniform(0,1) # Generate a random uniform value
+                                            if DPRoot == 0: # Originally from a non-falsifier
+                                                if randUnif > diagnosticSpecificity:
+                                                    DPRoot = 1 # Generate a false positive
+                                            elif DPRoot == 1: # Originally from a falsifier
+                                                if randUnif > diagnosticSensitivity:
+                                                    DPRoot = 0 # Generate a false negative
+
+                                    sampleSchedule.append([i, currNode.id])
+                                    List_Nodes_Tested.append(currNode.id)
+                                    if DPRoot > -1:
+                                        List_False_Rates[currNode.id-12][0] += DPRoot
+                                    List_False_Rates[currNode.id-12][1]= List_Nodes_Tested.count(currNode.id)
+                                    List_False_Rates[currNode.id-12][2] = List_False_Rates[currNode.id-12][0]/  List_False_Rates[currNode.id-12][1]
+                                else: #explore
+                                    currNode =random.choice(List_EndNode)
+                                    sampleSchedule.append([i, currNode])
+                                
+
+                                List_Nodes_Tested.append([currNode.id, DPRoot])
+                                
+                                    
+                                #List_False_Rates[List_False_Rates.index(currNode)] = simResults.update_List_Falsified_Found(node=currNode)
+                            if List_tests_per_day[i] == floor_bud_over_days:
+                                days_rem-=1
+                                bud_rem -= floor_bud_over_days
+                                i += 1
+                            elif List_tests_per_day[i] == floor_bud_over_days+1:
+                                days_rem-=1
+                                bud_rem -= floor_bud_over_days+1
+                                i+=1
+                    
+
+                    
+
+                    # Save the result to the reporting table 
+                    newTestRow = [today,currTestNodeID,DPRoot,invPileOriginList, DP_parent] #updated
+                    #update current list make a listof 106*3  [numTested, numPositive, posRate] 
+                    if dynamicbool and  DPRoot > -1: 
+                        numTested = List_NodeID_Tested.count(currNode)
+                        #code copied from below to get testing report
+                        for sample in TestReportTbl:
+                            if not sample[1] in testNodeList:
+                                testNodeList.append(sample[1])
+                        testNodeList.sort()
+                        TestSummaryTbl = []
+    
+                        
                
         # End nodes make orders if total inventory is leq the reorder point
         for indEnd in range(endNum):
@@ -397,7 +489,8 @@ for rep in range(numReplications):
         percFalse = TestSummaryTbl[j][2] / TestSummaryTbl[j][1]
         estFalseVector[j] = percFalse
         j += 1
-    
+  
+
     i=0
     for row in InvCheckSummaryTbl:
         currSum = np.sum(row[1:])
@@ -544,16 +637,35 @@ for rep in range(numReplications):
         plt.xticks(rotation=90)
         plt.show()
         ##MZ start      
-        freq  = [0] * len_unique_par_list
+        freq  = [] 
+        cons= []
+        not_completely_consumed = []
         unique_par_list.sort()  
         print(unique_par_list)
+        List_all_nodes = List_Root_and_IntermediateNode  + List_EndNode
         for p1 in range(len_unique_par_list):
-            freq[p1] = parent_list.count(unique_par_list[p1]) 
+            #freq[p1] = parent_list.count(unique_par_list[p1]) 
+            cons.append(List_all_nodes[(List_DP[unique_par_list[p1]].intNode)].InventoryLevel) #look at chld's parent inventory.lookat all batch id's at the importerlevel. go thrueachoutlet,see  what's stillthere. if theres a pile thats 
+            #print(cons, unique_par_list)
+            if (cons[p1])[-1] != 0:
+                not_completely_consumed.append(p1)
+            freq.append(parent_list.count(unique_par_list[p1]))
+        print(unique_par_list, freq, cons, not_completely_consumed)
+        copyfreq =freq
+        copyunique_par_list=unique_par_list
+        for p2 in range(len(not_completely_consumed)):
+            freq.pop((not_completely_consumed[p2]-1))
+            unique_par_list.pop((not_completely_consumed[p2]-1))
+        
+        print(unique_par_list)
         print(freq)
+        print(not_completely_consumed)
+
         plt.plot(unique_par_list, freq, '.')
-        plt.xlabel('Parent Nodes')
-        plt.ylabel('Frequency')
+        plt.xlabel('Batch Number')
+        plt.ylabel('Amount of Tests Performed')
         plt.show()
+        
         ##MZ end   
         """
         ### MZ HISTOGRAM#
