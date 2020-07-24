@@ -4,25 +4,25 @@ Created on Fri Jul 10 09:15:52 2020
 
 @author: FloYd
 """
-import numpy
+import numpy as np
 import scipy.optimize as spo
 import matplotlib.pyplot as plt
-
+import numpy.random as npr
 
 def PlumleeEstimates(ydata, numsamples, A, sens, spec):
-    beta0 = -5 * numpy.ones(A.shape[1]+A.shape[0])
+    beta0 = -5 * np.ones(A.shape[1]+A.shape[0])
     
     def invlogit(beta):
-        return numpy.exp(beta)/(numpy.exp(beta)+1)
+        return np.exp(beta)/(np.exp(beta)+1)
     def logit(p):
-        return numpy.log(p/(1-p)) 
+        return np.log(p/(1-p)) 
     def mynegloglik(beta, ydata, numsamples, A, sens, spec):
         betaI = beta[0:A.shape[1]]
         betaJ = beta[A.shape[1]:]
-        probs = (1-invlogit(betaJ)) * numpy.array(A @ invlogit(betaI)) + invlogit(betaJ)
+        probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
         probsz = probs*sens + (1-probs) * (1-spec)
-        return -numpy.sum(ydata * numpy.log(probsz) + (numsamples-ydata) * numpy.log(1-probsz)) \
-            + 4 * 1/2*numpy.sum(numpy.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
+        return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
+            + 4 * 1/2*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
     
     bounds = spo.Bounds(beta0-2, beta0+8)
     opval = spo.minimize(mynegloglik, beta0+5,
@@ -34,27 +34,27 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec):
 
 
 #test case
-A = numpy.matrix([[0.5, 0.25, 0.25], 
+A = np.matrix([[0.5, 0.25, 0.25], 
     [0.001, 0.499, 0.5],
    [0.75, 0.001, 0.249],
     [0.499, 0.001, 0.5],
     [0.001, 0.249, 0.75],
     [0.001, 0.001, 0.998]])
-pI = numpy.array((0.001, 0.2, 0.001))
-pJ = numpy.array((0.001, 0.001, 0.2, 0.001, 0.001, 0.001))
+pI = np.array((0.001, 0.2, 0.001))
+pJ = np.array((0.001, 0.001, 0.2, 0.001, 0.001, 0.001))
 sens = 0.99
 spec = 0.99
-realproby = (1-pJ) * numpy.array((A @ pI)) + pJ #optimal testing
+realproby = (1-pJ) * np.array((A @ pI)) + pJ #optimal testing
 realprobz = realproby * sens + (1-realproby) * (1-spec) #real testing
-numsamples = (100 * numpy.ones(A.shape[0])).astype('int')
-ydata =numpy.random.binomial(numsamples,realprobz)
+numsamples = (100 * np.ones(A.shape[0])).astype('int')
+ydata =np.random.binomial(numsamples,realprobz)
 
 importerhat, outlethat = PlumleeEstimates(ydata, numsamples, A, sens, spec)
 #print(importerhat)
 #print(outlethat)
 
 
-yd = numpy.array([ 0,  0,  1,  0,  0,  0,  1,  0,  0,  2,  0,  1,  1,  0,  0,  1,  0,
+yd = np.array([ 0,  0,  1,  0,  0,  0,  1,  0,  0,  2,  0,  1,  1,  0,  0,  1,  0,
         0,  0,  0,  0,  1,  0,  0,  3,  0,  0,  2,  1,  0,  0,  1,  1,  0,
         0,  1,  1,  2,  0,  0,  0,  0,  0,  0,  0,  1,  5,  4,  3,  0,  0,
         0, 16,  0,  1,  2,  0,  1,  0,  2,  3,  0,  0,  1,  3,  1,  0,  2,
@@ -62,7 +62,7 @@ yd = numpy.array([ 0,  0,  1,  0,  0,  0,  1,  0,  0,  2,  0,  1,  1,  0,  0,  1
         0,  1,  1,  0,  1,  0,  0,  0,  0,  1,  0,  0,  0,  0,  3,  2,  1,
         4,  0,  0,  1])
     
-nsamp = numpy.array([17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 16, 16, 17, 17, 17, 17, 17,
+nsamp = np.array([17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 16, 16, 17, 17, 17, 17, 17,
        17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
        16, 16, 17, 17, 17, 17, 17, 15, 16, 17, 17, 15, 18, 18, 18, 18, 18,
        18, 18, 18, 18, 18, 18, 18, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
@@ -70,7 +70,7 @@ nsamp = numpy.array([17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 16, 16, 17, 17, 17,
        17, 17, 17, 17, 17, 17, 17, 16, 16, 17, 16, 17, 17, 17, 15, 17, 17,
        17, 17, 17, 17])
 
-A = numpy.matrix([[0.        , 0.        , 0.13410753, 0.04653763, 0.        ,
+A = np.matrix([[0.        , 0.        , 0.13410753, 0.04653763, 0.        ,
         0.81935484, 0.        , 0.        , 0.        , 0.        ],
        [0.        , 0.        , 0.        , 0.        , 0.        ,
         0.        , 0.        , 0.        , 0.        , 1.        ],
@@ -283,6 +283,9 @@ A = numpy.matrix([[0.        , 0.        , 0.13410753, 0.04653763, 0.        ,
        [0.        , 1.        , 0.        , 0.        , 0.        ,
         0.        , 0.        , 0.        , 0.        , 0.        ]])
 
+sens = 0.99
+spec = 0.99
+
 ### CHANGE INITIAL EPSILON FOR A
 epsVec = [0.001,1e-4,1e-5,1e-6]
 importerHatVec = []
@@ -320,19 +323,19 @@ importerHatVec = []
 for b in betaVec:
     A = A + 0.001
     def PlumleeEstimates(ydata, numsamples, A, sens, spec):
-        beta0 = -5 * numpy.ones(A.shape[1]+A.shape[0])
+        beta0 = -5 * np.ones(A.shape[1]+A.shape[0])
         
         def invlogit(beta):
-            return numpy.exp(beta)/(numpy.exp(beta)+1)
+            return np.exp(beta)/(np.exp(beta)+1)
         def logit(p):
-            return numpy.log(p/(1-p)) 
+            return np.log(p/(1-p)) 
         def mynegloglik(beta, ydata, numsamples, A, sens, spec):
             betaI = beta[0:A.shape[1]]
             betaJ = beta[A.shape[1]:]
-            probs = (1-invlogit(betaJ)) * numpy.array(A @ invlogit(betaI)) + invlogit(betaJ)
+            probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
             probsz = probs*sens + (1-probs) * (1-spec)
-            return -numpy.sum(ydata * numpy.log(probsz) + (numsamples-ydata) * numpy.log(1-probsz)) \
-                + 4 * 1/4*numpy.sum(numpy.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
+            return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
+                + 10 * 1/2*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
         
         bounds = spo.Bounds(beta0-2, beta0+8)
         opval = spo.minimize(mynegloglik, beta0+b,
@@ -369,3 +372,56 @@ line5.set_label('beta add term: ' + str(betaVec[4]))
 line6.set_label('beta add term: ' + str(betaVec[5]))
 line7.set_label('beta add term: ' + str(betaVec[6]))
 ax.legend()
+
+# METROPOLIS-HASTINGS
+p = 0.05 # initialize w presumed SF rate
+lapScale = 1 # initialize w 1; LOOK TO MODIFY
+jumpDistStDev = 0.01 # standard deviation for the jumping distribution; LOOK TO MODIFY
+x0 = npr.laplace(logit(p),lapScale,A.shape[0]+A.shape[1]) 
+xinv = np.exp(x0)/(1+np.exp(x0))
+
+ptArr = []
+ptArr.append(x0)
+numGens = 10000 # how many points to generate?
+numRej = 0 # counter for rejections
+for i in range(numGens):
+    xCurr = ptArr[-1] #Last submitted point
+    xProp = xCurr + npr.normal(loc=0.0,scale=jumpDistStDev,size=len(xCurr)) #Proposed point
+    aRatio = mynegloglik(xProp, yd, nsamp, A, sens, spec) \
+         - mynegloglik(xCurr, yd, nsamp, A, sens, spec)
+    if npr.uniform(size=1) < np.exp(aRatio):
+        ptArr.append(xProp)
+        xCurr = np.copy(xProp)
+    else:
+        ptArr.append(np.copy(xCurr))
+        numRej += 1
+  
+#plot of resulting distribution
+plt.hist(ptArr)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
