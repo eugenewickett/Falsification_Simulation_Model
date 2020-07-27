@@ -352,8 +352,8 @@ def SimReplicationOutput(OPdict):
     
     
     # PLOTS
-    lowErrInd = int(np.floor(0.05*len(OPdict.keys()))) 
-    upErrInd = int(np.ceil(0.95*len(OPdict.keys()))) 
+    lowErrInd = int(np.floor(0.05*len(OPdict.keys())))
+    upErrInd = int(np.ceil(0.95*len(OPdict.keys())))-1
      
     avgFalseConsumedVec.sort()
     # Root node consumption
@@ -361,7 +361,7 @@ def SimReplicationOutput(OPdict):
     rootNode0_mean = 1-rootNode1_mean
     # Calculate the standard deviation
     rootNode1_lowErr = rootNode1_mean-avgFalseConsumedVec[int(np.floor(0.05*len(avgFalseConsumedVec)))] 
-    rootNode1_upErr = avgFalseConsumedVec[int(np.ceil(0.95*len(avgFalseConsumedVec)))]-rootNode1_mean 
+    rootNode1_upErr = avgFalseConsumedVec[int(np.ceil(0.95*len(avgFalseConsumedVec)))-1]-rootNode1_mean 
     rootNode0_lowErr = rootNode1_upErr 
     rootNode0_upErr = rootNode1_lowErr
     # Define positions, bar heights and error bar heights

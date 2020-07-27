@@ -38,7 +38,7 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 50
+numReplications = 10
 testPolicy = 1
 printOutput = False # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
