@@ -258,7 +258,7 @@ def dynamicTestingGenerator(resultsList,
             5) int_PolicyType: Desired policy type, one of the following:
                 0 = Epsilon-Greedy; with probability epsilon, exploit one of the
                 nodes with the highest positive rate
-                ...
+                1 = Epsilon first; begin mostly exploring nodes, then overtime have a greater chance of exploitation node with highest positive rate 
             6) arr_PolicyParameter: Array of the parameters required for generatng
                 the test schedules
                 ...
@@ -301,12 +301,43 @@ def dynamicTestingGenerator(resultsList,
             sampleSchedule.append([nextTestDay,NodeToTest])
         ### END EPSILON-GREEDY POLICY    
     
+    elif int_PolicyType==1:
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        eps = arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay]  # Our exploit parameter
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        # First grab the pool of highest SF rate nodes
+        maxSFRate = 0
+        maxIndsList = []
+        for rw in resultsList:
+            if rw[3] > maxSFRate:
+                maxSFRate = rw[3]
+        for currInd in range(len(resultsList)):
+            if resultsList[currInd][3] == maxSFRate:
+                maxIndsList.append(currInd)
+        for testNum in range(numToTest):
+            # Explore or exploit?
+            if np.random.uniform() < 1-eps: # Exploit
+                exploitBool = True
+            else:
+                exploitBool = False
+            # Based on the previous dice roll, generate a sampling point
+            if exploitBool:
+                testInd = np.random.choice(maxIndsList)
+                NodeToTest = resultsList[testInd][0]
+            else:
+                testInd = np.random.choice(len(resultsList))
+                NodeToTest = resultsList[testInd][0]
+
+            sampleSchedule.append([nextTestDay,NodeToTest])
+
     else:
         print('Error generating the sampling schedule.')
     
     # Need to sort this list before passing it through
     sampleSchedule.sort(key=lambda x: x[0])
     return sampleSchedule
+
 
  ### END "dynamicTestingGenerator" ###
 
@@ -355,7 +386,7 @@ def SimReplicationOutput(OPdict):
     avgFalseConsumedVec = []
     for item in rootConsumptionVec:
         avgFalseConsumedVec.append(item[1]/(item[0]+item[1]))
-    avgFalseConsumedVec_unsort = avgFalseConsumedVec
+    
     
     # Generate summaries of our test results 
     avgFalseTestedVec = []
@@ -609,26 +640,13 @@ def SimReplicationOutput(OPdict):
     plt.xticks(rotation=90)
     plt.show()
     
-    #Scatterplot of true vs. testing positive rates
-    alphaLevel = 0.7 # transparency
-    g1 = (avgFalseConsumedVec_unsort,avgFalseTestedVec)
-    color = ("blue")
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    x, y = g1
-    ax.scatter(x, y, alpha=alphaLevel, c=color, edgecolors='none', s=30)
-    ax.scatter(x, x, alpha=alphaLevel, c="black", edgecolors='none', s=20)
-    ax.set_xlabel('True SF rate', fontsize=12)
-    ax.set_ylabel('Test result positive rate', fontsize=12)
-    plt.title(r'Test results of TRUE SF rate vs. DETECTED SF consumption Rate', fontsize=14)
-    plt.show()
-    
     
     '''
-    # Plot of testing SF rate vs underlying SF rate
     alphaLevel = 0.8
     g1 = (avgFalseConsumedVec,avgFalseTestedVec)
     g2 = (avgFalseConsumedVec,avgStockoutTestedVec)
+    
+    # Plot of testing SF rate vs underlying SF rate
     color = ("red")
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -707,5 +725,3 @@ def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
     
     return numReps, warmUpRunBool, useWarmUpFileBool, warmUpDirectory, warmUpFileName_str, warmUpDict
     
-    
-  
