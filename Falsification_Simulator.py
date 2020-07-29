@@ -38,16 +38,18 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 10
-testPolicy = 1
-printOutput = False # Whether individual replication output should be displayed
+numReplications = 1
+testPolicy = 0
+testPolicyParam = [0.01] # Set testing policy parameter list here
+testingIsDynamic = True # Is our testing policy dynamic or static?
+printOutput = True # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = True # Do we store the output in an output dictionary file?
+storeOutput = False # Do we store the output in an output dictionary file?
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
 
 # Establish any warm-up settings 
@@ -76,7 +78,18 @@ for rep in range(numReplications):
     
     ### TESTING POLICIES GENERATED HERE ###
     # Generate sampling schedule for current graph, as well as a report table shell
-    List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = testPolicy, arr_PolicyParameter = [0])
+    # Depends on whether the sampling plan is static or dynamic
+    if testingIsDynamic == False:
+        List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = testPolicy, arr_PolicyParameter = [0])
+    else:
+        #Initialize our results list for conducting dynamic decisions
+        BudgetRemaining = samplingBudget
+        List_DynamicTestResults = []
+        for indEnd in range(endNum):
+            List_DynamicTestResults.append([rootNum+intermediateNum+indEnd,0,0,1.0]) # Each row is [node ID, numTests (not including stockouts), numSF, SFRate]
+        List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_DynamicTestResults,int_totalDays=NumSimDays, int_numDaysRemain=NumSimDays, int_totalBudget=samplingBudget, int_sampleBudgetRemain=BudgetRemaining, int_PolicyType=testPolicy, arr_PolicyParameter=testPolicyParam)
+    
+    # Initialize our testing results reporting table
     TestReportTbl = []
     
     ### THINGS TO CHANGE AND PLAY WITH ONCE THE LISTS ARE GENERATED ###
@@ -89,10 +102,12 @@ for rep in range(numReplications):
             maxLT = max(currIntermediate.PreferenceLTsList)
     for indEnd in range(endNum): # Change demand at the end nodes to zero for these first few days
         currEnd = List_EndNode[indEnd]
-        currEnd.demandSched[0:(maxLT+2)] = 0
+        currEnd.demandSched[0:(maxLT+5)] = 0
     # Also freeze testing for this number of days plus the max number of LT days for end nodes
-    List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > (maxLT*7)]
+    if testingIsDynamic == False:
+        List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > (maxLT*7)]
     
+        
     
     ######### MODIFICATION LOOPS ######### ######### #########
     
@@ -104,7 +119,7 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
     
-    List_IntermediateNode[0].FalsifierProbability = 0.2
+    List_IntermediateNode[6].FalsifierProbability = 0.25
     
     
     ######### MODIFICATION LOOPS ######### ######### #########
@@ -187,6 +202,10 @@ for rep in range(numReplications):
                                     DPRoot = indDP.nodeIDList[0] # Source of this DP
                             currNode.InventoryLevel[invPile] -= 1 # "Buy" the sample
                             currNode.demandResults[0] += 1 # "Satisifed" demand
+                            # Update dynamic budget list if using a dynamic testing policy
+                            if testingIsDynamic == True:
+                                BudgetRemaining -= 1 # Reduce our budget balance by 1
+                                
                         # END IF
                     # END IF
                 if madeTest == False: # Report -1 if no sample procured due to stockout
@@ -206,7 +225,15 @@ for rep in range(numReplications):
                 # Save the result to the reporting table
                 newTestRow = [today,currTestNodeID,DPRoot,invPileOriginList]
                 TestReportTbl.append(newTestRow) 
-            
+                
+                if testingIsDynamic == True and madeTest == True: # Recalculate the dynamic results list
+                    for currInd in range(len(List_DynamicTestResults)):
+                        if List_DynamicTestResults[currInd][0] == currTestNodeID: # Found matching node ID
+                            List_DynamicTestResults[currInd][1] += 1 # Add 1 to the number of samples
+                            if DPRoot == 1:
+                                List_DynamicTestResults[currInd][2] += 1
+                            List_DynamicTestResults[currInd][3] = List_DynamicTestResults[currInd][2] / List_DynamicTestResults[currInd][1]
+                    
                 if List_TestingSchedule == []: # Check if the testing schedule is now empty
                     break
         
@@ -219,6 +246,10 @@ for rep in range(numReplications):
         for indInt in range(intermediateNum):
             currIntermediate = List_IntermediateNode[indInt]
             List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)              
+        
+        # Update dynamic testing if relevant
+        if testingIsDynamic == True and today != NumSimDays-1:
+            List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_DynamicTestResults,int_totalDays=NumSimDays, int_numDaysRemain=NumSimDays-(today+1), int_totalBudget=samplingBudget, int_sampleBudgetRemain=BudgetRemaining, int_PolicyType=testPolicy, arr_PolicyParameter=testPolicyParam)
         
         if np.mod(today+1,200) == 0: # For updating while running
             print('Rep ' + str(rep+1) + ', Day ' + str(today+1) + ' finished.')
@@ -250,6 +281,8 @@ for rep in range(numReplications):
             warmUpFile = open(warmUpFileName,'wb')
             pickle.dump(warmUpDict,warmUpFile)         
             warmUpFile.close()
+        
+        
         
     # END OF SIMULATIONS DAYS LOOP
     # Simulation end time
@@ -453,15 +486,14 @@ for rep in range(numReplications):
         importerhat, outlethat = PlumleeEstimates(np.array(ydata), np.array(numSamples), np.asmatrix(A), diagnosticSensitivity, diagnosticSpecificity)
         estIntFalsePercList_Plum = importerhat.tolist()
         estEndFalsePercList_Plum = outlethat.tolist()
-        
-             
-        
-        
+       
     except:
         print("Couldn't generate the estimated node falsification percentages for PLUMLEE ESTIMATE")
         estIntFalsePercList_Plum = []
         estEndFalsePercList_Plum = []
         
+    
+    
     
     if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES

@@ -240,6 +240,75 @@ def testingScheduleGenerator(nodes = [], int_numDays=1000,
 
  ### END "testingScheduleGenerator" ###
 
+def dynamicTestingGenerator(resultsList,
+                             int_totalDays = 1000,
+                             int_numDaysRemain = 1000,
+                             int_totalBudget = 1000,
+                             int_sampleBudgetRemain = 1000,
+                             int_PolicyType = 0, 
+                             arr_PolicyParameter = [0]
+                             ):
+    """
+    Generates a dynamic testing schedule list for the following day, using the following:
+            0) resultsList: A list of testing results so far, with each entry formatted [Node ID, Num Samples, Num Positive, Positive Rate]
+            1) int_totalDays: Number of simulation days started with
+            2) int_numDaysRemain: Number of simulation days remaining
+            3) int_totalBudget: Budget amount, in number of samples
+            4) int_sampleBudgetRemain: Remaining budget, in number of samples
+            5) int_PolicyType: Desired policy type, one of the following:
+                0 = Epsilon-Greedy; with probability epsilon, exploit one of the
+                nodes with the highest positive rate
+                ...
+            6) arr_PolicyParameter: Array of the parameters required for generatng
+                the test schedules
+                ...
+    
+    Outputs a Python list with the following elements within each entry:
+            1) Day: Simulation day of the test
+            2) Node: Which node to test that day
+    """
+    #Initialize our output, a list with the above mentioned outputs
+    sampleSchedule = []
+    
+    if int_PolicyType == 0: # Basic epsilon-greedy algorithm
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        eps = arr_PolicyParameter[0] # Our exploit parameter
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        # First grab the pool of highest SF rate nodes
+        maxSFRate = 0
+        maxIndsList = []
+        for rw in resultsList:
+            if rw[3] > maxSFRate:
+                maxSFRate = rw[3]
+        for currInd in range(len(resultsList)):
+            if resultsList[currInd][3] == maxSFRate:
+                maxIndsList.append(currInd)
+        for testNum in range(numToTest):
+            # Explore or exploit?
+            if np.random.uniform() < 1-eps: # Exploit
+                exploitBool = True
+            else:
+                exploitBool = False
+            # Based on the previous dice roll, generate a sampling point
+            if exploitBool:
+                testInd = np.random.choice(maxIndsList)
+                NodeToTest = resultsList[testInd][0]
+            else:
+                testInd = np.random.choice(len(resultsList))
+                NodeToTest = resultsList[testInd][0]
+
+            sampleSchedule.append([nextTestDay,NodeToTest])
+        ### END EPSILON-GREEDY POLICY    
+    
+    else:
+        print('Error generating the sampling schedule.')
+    
+    # Need to sort this list before passing it through
+    sampleSchedule.sort(key=lambda x: x[0])
+    return sampleSchedule
+
+ ### END "dynamicTestingGenerator" ###
 
 def SimReplicationOutput(OPdict):
     """
