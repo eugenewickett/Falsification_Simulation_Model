@@ -355,7 +355,7 @@ def SimReplicationOutput(OPdict):
     avgFalseConsumedVec = []
     for item in rootConsumptionVec:
         avgFalseConsumedVec.append(item[1]/(item[0]+item[1]))
-    
+    avgFalseConsumedVec_unsort = avgFalseConsumedVec
     
     # Generate summaries of our test results 
     avgFalseTestedVec = []
@@ -609,13 +609,26 @@ def SimReplicationOutput(OPdict):
     plt.xticks(rotation=90)
     plt.show()
     
+    #Scatterplot of true vs. testing positive rates
+    alphaLevel = 0.7 # transparency
+    g1 = (avgFalseConsumedVec_unsort,avgFalseTestedVec)
+    color = ("blue")
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    x, y = g1
+    ax.scatter(x, y, alpha=alphaLevel, c=color, edgecolors='none', s=30)
+    ax.scatter(x, x, alpha=alphaLevel, c="black", edgecolors='none', s=20)
+    ax.set_xlabel('True SF rate', fontsize=12)
+    ax.set_ylabel('Test result positive rate', fontsize=12)
+    plt.title(r'Test results of TRUE SF rate vs. DETECTED SF consumption Rate', fontsize=14)
+    plt.show()
+    
     
     '''
+    # Plot of testing SF rate vs underlying SF rate
     alphaLevel = 0.8
     g1 = (avgFalseConsumedVec,avgFalseTestedVec)
     g2 = (avgFalseConsumedVec,avgStockoutTestedVec)
-    
-    # Plot of testing SF rate vs underlying SF rate
     color = ("red")
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)

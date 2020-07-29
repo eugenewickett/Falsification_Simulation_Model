@@ -24,20 +24,8 @@ import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules
 
 # BAD INTERMEDIATE NODE
-fileName1 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Falsification_Simulator_BADINT_OUTPUT'
+fileName1 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Falsification_Simulator_OUTPUT'
 outputDict1 = pickle.load(open(fileName1, 'rb'))
 
-# BAD END NODES
-fileName2 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Falsification_Simulator_BADENDS_OUTPUT'
-outputDict2 = pickle.load(open(fileName2, 'rb'))
-
-# BAD END NODES
-fileName3 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Falsification_Simulator_BADENDS2_OUTPUT'
-outputDict3 = pickle.load(open(fileName3, 'rb'))
-
-
-
 simModules.SimReplicationOutput(outputDict1)
-simModules.SimReplicationOutput(outputDict2)
-simModules.SimReplicationOutput(outputDict3)
 
