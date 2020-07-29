@@ -330,7 +330,39 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
+        ### END LINEAR-DECAY EPSILON POLICY
+        
+    elif int_PolicyType==2: #Exponential-decay epsilon
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        eps = np.exp(-1*(nextTestDay/int_totalDays)/arr_PolicyParameter[0])
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        # First grab the pool of highest SF rate nodes
+        maxSFRate = 0
+        maxIndsList = []
+        for rw in resultsList:
+            if rw[3] > maxSFRate:
+                maxSFRate = rw[3]
+        for currInd in range(len(resultsList)):
+            if resultsList[currInd][3] == maxSFRate:
+                maxIndsList.append(currInd)
+        for testNum in range(numToTest):
+            # Explore or exploit?
+            if np.random.uniform() < 1-eps: # Exploit
+                exploitBool = True
+            else:
+                exploitBool = False
+            # Based on the previous dice roll, generate a sampling point
+            if exploitBool:
+                testInd = np.random.choice(maxIndsList)
+                NodeToTest = resultsList[testInd][0]
+            else:
+                testInd = np.random.choice(len(resultsList))
+                NodeToTest = resultsList[testInd][0]
 
+            sampleSchedule.append([nextTestDay,NodeToTest])
+        ### END LINEAR-DECAY EPSILON POLICY
+        
     else:
         print('Error generating the sampling schedule.')
     
