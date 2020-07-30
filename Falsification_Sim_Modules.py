@@ -258,8 +258,10 @@ def dynamicTestingGenerator(resultsList,
             5) int_PolicyType: Desired policy type, one of the following:
                 0 = Epsilon-Greedy; with probability epsilon, exploit one of the
                 nodes with the highest positive rate
-                1 = Epsilon-Decreasing; begin mostly exploring nodes, then overtime have a greater chance of exploitation node with highest positive rate 
+                1 = Epsilon-Decreasing; (epsilon cubed) begin mostly exploring nodes, then overtime have a greater chance of exploitation node with highest positive rate (J curve of epsilon values) 
                 3 = Epsilon-First; fully explore for eps*int_totalDays. Then exploit for the remaining (1-eps)*int_totalDays
+                5 = Every other; explore when creating even sampling schedules, exploit when creating odd sampling schedules. 
+                6 = Epsilon-Decreasing; (square root epsilon) begin mostly exploring nodes, then overtime have a greater chance of exploitation node with highest positive rate (rcurve of epsilon values) 
             6) arr_PolicyParameter: Array of the parameters required for generatng
                 the test schedules
                 ...
@@ -411,6 +413,96 @@ def dynamicTestingGenerator(resultsList,
             sampleSchedule.append([nextTestDay,NodeToTest])
         
         ### END THOMPSON SAMPLING ###
+    elif int_PolicyType == 5: #Every-other sampling. Explore on even days, exploit on odd days
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        eps = arr_PolicyParameter[0] # Our exploit parameter
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        # First grab the pool of highest SF rate nodes
+        maxSFRate = 0
+        maxIndsList = []
+        for rw in resultsList:
+            if rw[3] > maxSFRate:
+                maxSFRate = rw[3]
+        for currInd in range(len(resultsList)):
+            if resultsList[currInd][3] == maxSFRate:
+                maxIndsList.append(currInd)
+        for testNum in range(numToTest):
+            # Explore or exploit?
+            if nextTestDay%2  == 1: # Exploit if we are on an odd sampling schedule day
+                exploitBool = True
+            else:
+                exploitBool = False
+            # Based on the previous dice roll, generate a sampling point
+            if exploitBool:
+                testInd = np.random.choice(maxIndsList)
+                NodeToTest = resultsList[testInd][0]
+            else:
+                testInd = np.random.choice(len(resultsList))
+                NodeToTest = resultsList[testInd][0]
+
+            sampleSchedule.append([nextTestDay,NodeToTest])
+        
+    elif int_PolicyType==6: #epsilon decreasing by r-curve (take square root of epsilon values)
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        eps = np.sqrt(arr_PolicyParameter[nextTestDay]) # Our exploit parameter
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        # First grab the pool of highest SF rate nodes
+        maxSFRate = 0
+        maxIndsList = []
+        for rw in resultsList:
+            if rw[3] > maxSFRate:
+                maxSFRate = rw[3]
+        for currInd in range(len(resultsList)):
+            if resultsList[currInd][3] == maxSFRate:
+                maxIndsList.append(currInd)
+        for testNum in range(numToTest):
+            # Explore or exploit?
+            if np.random.uniform() < 1-eps: # Exploit
+                exploitBool = True
+            else:
+                exploitBool = False
+            # Based on the previous dice roll, generate a sampling point
+            if exploitBool:
+                testInd = np.random.choice(maxIndsList)
+                NodeToTest = resultsList[testInd][0]
+            else:
+                testInd = np.random.choice(len(resultsList))
+                NodeToTest = resultsList[testInd][0]
+
+            sampleSchedule.append([nextTestDay,NodeToTest])
+    elif int_PolicyType==7: #epsilon changing by sin
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        eps = (np.sin(12.4*arr_PolicyParameter[nextTestDay])) # Our exploit parameter
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        # First grab the pool of highest SF rate nodes
+        maxSFRate = 0
+        maxIndsList = []
+        for rw in resultsList:
+            if rw[3] > maxSFRate:
+                maxSFRate = rw[3]
+        for currInd in range(len(resultsList)):
+            if resultsList[currInd][3] == maxSFRate:
+                maxIndsList.append(currInd)
+        for testNum in range(numToTest):
+            # Explore or exploit?
+            if 0 < eps: # Exploit
+                exploitBool = True
+            else:
+                exploitBool = False
+            # Based on the previous dice roll, generate a sampling point
+            if exploitBool:
+                testInd = np.random.choice(maxIndsList)
+                NodeToTest = resultsList[testInd][0]
+            else:
+                testInd = np.random.choice(len(resultsList))
+                NodeToTest = resultsList[testInd][0]
+
+            sampleSchedule.append([nextTestDay,NodeToTest])
+
+
     else:
         print('Error generating the sampling schedule.')
     
