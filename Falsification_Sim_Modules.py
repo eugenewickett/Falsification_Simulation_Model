@@ -258,7 +258,8 @@ def dynamicTestingGenerator(resultsList,
             5) int_PolicyType: Desired policy type, one of the following:
                 0 = Epsilon-Greedy; with probability epsilon, exploit one of the
                 nodes with the highest positive rate
-                1 = Epsilon first; begin mostly exploring nodes, then overtime have a greater chance of exploitation node with highest positive rate 
+                1 = Epsilon-Decreasing; begin mostly exploring nodes, then overtime have a greater chance of exploitation node with highest positive rate 
+                3 = Epsilon-First; fully explore for eps*int_totalDays. Then exploit for the remaining (1-eps)*int_totalDays
             6) arr_PolicyParameter: Array of the parameters required for generatng
                 the test schedules
                 ...
@@ -299,8 +300,7 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
-        ### END EPSILON-GREEDY POLICY    
-    
+        ### END EPSILON-DECREASING STRATEGY    
     elif int_PolicyType==1:
         nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
         eps = arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay]  # Our exploit parameter
@@ -330,8 +330,7 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
-        ### END LINEAR-DECAY EPSILON POLICY
-        
+    
     elif int_PolicyType==2: #Exponential-decay epsilon
         nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
         eps = np.exp(-1*(nextTestDay/int_totalDays)/arr_PolicyParameter[0])
@@ -363,6 +362,38 @@ def dynamicTestingGenerator(resultsList,
             sampleSchedule.append([nextTestDay,NodeToTest])
         ### END LINEAR-DECAY EPSILON POLICY
         
+    
+    
+    
+    elif int_PolicyType==3: #EPSILON FIRST STRATEGY
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        eps = arr_PolicyParameter[0] # Our exploit parameter
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        # First grab the pool of highest SF rate nodes
+        maxSFRate = 0
+        maxIndsList = []
+        for rw in resultsList:
+            if rw[3] > maxSFRate:
+                maxSFRate = rw[3]
+        for currInd in range(len(resultsList)):
+            if resultsList[currInd][3] == maxSFRate:
+                maxIndsList.append(currInd)
+        for testNum in range(numToTest):
+            # Explore or exploit?
+            if nextTestDay > (1-eps)*int_totalBudget: # Exploit
+                exploitBool = True
+            else:
+                exploitBool = False
+            # Based on the previous dice roll, generate a sampling point
+            if exploitBool:
+                testInd = np.random.choice(maxIndsList)
+                NodeToTest = resultsList[testInd][0]
+            else:
+                testInd = np.random.choice(len(resultsList))
+                NodeToTest = resultsList[testInd][0]
+
+            sampleSchedule.append([nextTestDay,NodeToTest])
     else:
         print('Error generating the sampling schedule.')
     
