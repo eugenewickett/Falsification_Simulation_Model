@@ -360,12 +360,9 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
-        ### END LINEAR-DECAY EPSILON POLICY
+        ### END Exponential-decay epsilon policy ###
         
-    
-    
-    
-    elif int_PolicyType==3: #EPSILON FIRST STRATEGY
+    elif int_PolicyType==3: #EPSILON FIRST POLICY
         nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
         eps = arr_PolicyParameter[0] # Our exploit parameter
         numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
@@ -394,6 +391,26 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
+        ### EPSILON FIRST POLICY
+    
+    elif int_PolicyType == 4: # THOMPSON-SAMPLING
+        nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
+        numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
+        # Generate a sampling schedule using the current list of results
+        for testNum in range(numToTest):
+            # Iterate through each end node, generating an RV according to the beta distribution of samples + positives
+            betaSamples = []
+            for rw in resultsList:
+                alphaCurr = 1 + rw[2]
+                betaCurr = 1 + (rw[1]-rw[2])
+                sampleCurr = np.random.beta(alphaCurr,betaCurr)
+                betaSamples.append(sampleCurr)
+            # Select the highest variable
+            maxSampleInd = betaSamples.index(max(betaSamples))
+            NodeToTest = resultsList[maxSampleInd][0]
+            sampleSchedule.append([nextTestDay,NodeToTest])
+        
+        ### END THOMPSON SAMPLING ###
     else:
         print('Error generating the sampling schedule.')
     
