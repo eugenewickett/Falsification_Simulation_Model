@@ -23,7 +23,7 @@ os.chdir(dirStr) # Set directory
 import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules
 
-epsStrVec = ['1','2','3','4']
+epsStrVec = ['01','1','2','3','4']
 
 #Compare different epsilon values
 epsResultList = []
