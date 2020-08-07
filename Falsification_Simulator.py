@@ -9,7 +9,6 @@ to falsification and substandardization.
 """
 
 import numpy as np
-import scipy.optimize as spo
 import matplotlib.pyplot as plt
 import random #for seeds
 import sys
@@ -38,19 +37,23 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 50
-testPolicy = 4
+numReplications = 1
+testPolicy = 1
 testPolicyParam = [1] # Set testing policy parameter list here
-testingIsDynamic = True # Is our testing policy dynamic or static?
-printOutput = False # Whether individual replication output should be displayed
+testingIsDynamic = False # Is our testing policy dynamic or static?
+printOutput = True # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = True # Do we store the output in an output dictionary file?
+storeOutput = False # Do we store the output in an output dictionary file?
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
+lklhdBool = True #Generate the estimates using the likelihood estimator (takes time)
+lklhdEst_M = 50
+lklhdEst_Madapt = 20
+lklhdEst_delta = 0.2
 
 # Establish any warm-up settings 
 numReplications, warmUpRun, useWarmUpFile, warmUpDirectory, warmUpFileName, warmUpDict = simModules.setWarmUp(useWarmUpFileBool = useWarmUpFile, warmUpRunBool = warmUpRun, numReps = numReplications, currDirect = currDirectory)
@@ -452,30 +455,8 @@ for rep in range(numReplications):
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
     
-    #PLUMLEE ESTIMATE 
+    #PLUMLEE ESTIMATE - USES NONLINEAR OPTIMIZER
     try:
-        def PlumleeEstimates(ydata, numsamples, A, sens, spec):
-            beta0 = -5 * np.ones(A.shape[1]+A.shape[0])
-            def invlogit(beta):
-                return np.exp(beta)/(np.exp(beta)+1)
-            def logit(p):
-                return np.log(p/(1-p)) 
-            def mynegloglik(beta, ydata, numsamples, A, sens, spec):
-                betaI = beta[0:A.shape[1]]
-                betaJ = beta[A.shape[1]:]
-                probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
-                probsz = probs*sens + (1-probs) * (1-spec)
-                return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
-                    + 4 * 1/4*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
-            
-            bounds = spo.Bounds(beta0-2, beta0+8)
-            opval = spo.minimize(mynegloglik, beta0+1,
-                                 args=(ydata, numsamples, A, sens, spec),
-                                 method='L-BFGS-B',
-                                 options={'disp': False},
-                                 bounds=bounds)
-            return invlogit(opval.x)[0:A.shape[1]], invlogit(opval.x)[A.shape[1]:]
-        
         # Get required arguments from the testing summary table
         ydata = []
         numSamples = []
@@ -483,7 +464,7 @@ for rep in range(numReplications):
             ydata.append(endNodeTestRow[2])
             numSamples.append(endNodeTestRow[1])
         
-        importerhat, outlethat = PlumleeEstimates(np.array(ydata), np.array(numSamples), np.asmatrix(A), diagnosticSensitivity, diagnosticSpecificity)
+        importerhat, outlethat = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), np.asmatrix(A), diagnosticSensitivity, diagnosticSpecificity)
         estIntFalsePercList_Plum = importerhat.tolist()
         estEndFalsePercList_Plum = outlethat.tolist()
        
@@ -492,7 +473,37 @@ for rep in range(numReplications):
         estIntFalsePercList_Plum = []
         estEndFalsePercList_Plum = []
         
-    
+    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION 
+    if lklhdBool == True:
+        try:
+            # Get required arguments from the testing summary table
+            ydata = []
+            numSamples = []
+            for endNodeTestRow in TestSummaryTbl:
+                ydata.append(endNodeTestRow[2])
+                numSamples.append(endNodeTestRow[1])
+            
+            def exampletargetfornuts(beta):
+                """
+                Example of a target distribution that could be sampled from using NUTS.
+                (Although of course you could sample from it more efficiently)
+                Doesn't include the normalizing constant.
+                """
+                return simModules.mylogpost(beta,ydata, numSamples, A, diagnosticSensitivity, diagnosticSpecificity), simModules.mylogpost_grad(beta,ydata, numSamples, A, diagnosticSensitivity, diagnosticSpecificity)
+            
+            beta0 = -2 * np.ones(intermediateNum + endNum)
+            samples, lnprob, epsilon = simModules.nuts6(exampletargetfornuts, lklhdEst_M, lklhdEst_Madapt, beta0, lklhdEst_delta)
+            
+            
+            estFalsePerc_LklhdSamples = samples 
+        
+        except:
+            print("Couldn't generate the estimated node falsification percentages for LIKELIHOOD ESTIMATE")
+            estFalsePerc_LklhdSamples = []
+            
+    else:
+        estFalsePerc_LklhdSamples = []
+    ### END LIKELIHOOD ESTIMATOR ###
     
     
     if printOutput == True: # Printing of tables and charts
@@ -599,7 +610,24 @@ for rep in range(numReplications):
         ax.bar(End_Plot_x,estEndFalsePercList_Plum,color='mintcream',edgecolor='forestgreen')
         plt.xticks(rotation=90)
         plt.show()
-    
+        
+        #Intermediate nodes - likelihood samples
+        if lklhdBool == True:
+            fig = plt.figure()
+            ax = fig.add_axes([0,0,2,1])
+            ax.set_xlabel('Intermediate Node',fontsize=16)
+            ax.set_ylabel('Est. model parameter distribution',fontsize=16)
+            for i in range(intermediateNum):
+                plt.hist(simModules.invlogit(samples[:,i]))
+            
+            fig = plt.figure()
+            ax = fig.add_axes([0,0,2,1])
+            ax.set_xlabel('End Node',fontsize=16)
+            ax.set_ylabel('Est. model parameter distribution',fontsize=16)
+            for i in range(endNum):
+                plt.hist(simModules.invlogit(samples[:,intermediateNum+i]))
+                     
+        
     ### END OF PRINT OUTPUT LOOP
     
    
@@ -621,7 +649,8 @@ for rep in range(numReplications):
                           'intFalseEstimates':estIntFalsePercList,
                           'endFalseEstimates':estEndFalsePercList,
                           'intFalseEstimates_Plum':estIntFalsePercList_Plum,
-                          'endFalseEstimates_Plum':estEndFalsePercList_Plum
+                          'endFalseEstimates_Plum':estEndFalsePercList_Plum,
+                          'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples                          
                           }
                           
         outputDict[rep] = currOutputLine # Save to the output dictionary
@@ -631,7 +660,7 @@ for rep in range(numReplications):
 
 # Store the outputDict
 if warmUpRun == False and storeOutput == True:
-    outputFilePath  = os.getcwd() + '\\output dictionaries'
+    outputFilePath  = os.getcwd() + '\\outputDictionaries'
     if not os.path.exists(outputFilePath): # Generate this folder if one does not already exist
             os.makedirs(outputFilePath)
     outputFileName = os.path.basename(sys.argv[0])[:-3] + '_OUTPUT' # Current file name

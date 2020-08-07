@@ -7,21 +7,15 @@ Created on Thu Apr  2 00:42:07 2020
 
 import numpy as np
 import matplotlib.pyplot as plt
-import random #for seeds
-import sys
-import time # for time tracking
 import os # for directories
-from tabulate import tabulate # for making outputs
 import pickle # for saving/loading objects in Python
-import winsound # for beeps
 
 # Run supporting files
 #os.getcwd() Run this command to get the current working directory string
 dirStr = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Expo-Decay Epsilon'
 os.chdir(dirStr) # Set directory    
 
-import Falsification_Sim_Classes as simClasses # our class objects and methods
-import Falsification_Sim_Modules as simModules
+#import Falsification_Sim_Modules as simModules
 
 epsStrVec = ['01','1','2','3','4','TS','EG01','EG05','EG10','EG30','EG50','EG70','EG90']
 
@@ -111,7 +105,7 @@ fig = plt.figure()
 ax = fig.add_axes([0,0,2,1])
 ax.bar(epsStrVec, means,yerr=error,align='center',ecolor='black',
        capsize=5,color='bisque',edgecolor='darkorange')
-ax.set_xlabel('Epsilon',fontsize=16)
+ax.set_xlabel('Dynamic Sampling Policy',fontsize=16)
 ax.set_ylabel('Difference from underlying SF rate',fontsize=16)
 vals = ax.get_yticks()
 ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
