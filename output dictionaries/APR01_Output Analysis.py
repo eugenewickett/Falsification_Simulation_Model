@@ -24,7 +24,7 @@ import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules
 
 # BAD INTERMEDIATE NODE
-fileName1 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Falsification_Simulator_OUTPUT'
+fileName1 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Fals_Sim_debug_OUTPUT_d'
 outputDict1 = pickle.load(open(fileName1, 'rb'))
 
 simModules.SimReplicationOutput(outputDict1)

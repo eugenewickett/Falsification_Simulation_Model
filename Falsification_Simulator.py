@@ -12,7 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random #for seeds
 import sys
-import csv # for csv manipulation
 import time # for time tracking
 import os # for directories
 from tabulate import tabulate # for making outputs
@@ -50,10 +49,17 @@ warmUpIterationGap = 1000 # How often, in sim days, to store the current object 
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
 storeOutput = False # Do we store the output in an output dictionary file?
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
-lklhdBool = True #Generate the estimates using the likelihood estimator (takes time)
-lklhdEst_M = 50
-lklhdEst_Madapt = 20
-lklhdEst_delta = 0.2
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 50, 20, 0.2 #NUTS parameters
+intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
+
+inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBudget,
+                            'testPolicy':testPolicy,'testPolicyParam':testPolicyParam,
+                            'testingIsDynamic':testingIsDynamic,'diagnosticSensitivity':diagnosticSensitivity,
+                            'diagnosticSpecificity':diagnosticSpecificity,
+                            'lklhdBool':lklhdBool,'lklhdEst_M':lklhdEst_M, 
+                            'lklhdEst_Madapt':lklhdEst_Madapt, 'lklhdEst_delta':lklhdEst_delta}
+
 
 # Establish any warm-up settings 
 numReplications, warmUpRun, useWarmUpFile, warmUpDirectory, warmUpFileName, warmUpDict = simModules.setWarmUp(useWarmUpFileBool = useWarmUpFile, warmUpRunBool = warmUpRun, numReps = numReplications, currDirect = currDirectory)
@@ -109,11 +115,23 @@ for rep in range(numReplications):
     # Also freeze testing for this number of days plus the max number of LT days for end nodes
     if testingIsDynamic == False:
         List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > (maxLT*7)]
-    
         
-    
     ######### MODIFICATION LOOPS ######### ######### #########
     
+    # Generate an importer SF scenario if the boolean is active
+    intSFVec = []
+    if intSFscenario_bool == True:
+        SFscenarios = [0,0.1,0.25,0.5,0.75,0.9]
+        for indInt in range(intermediateNum):
+            intSFVec.append(np.random.choice(SFscenarios))
+    else:
+        for indInt in range(intermediateNum):
+            intSFVec.append(0)
+    
+    for indInt in range(intermediateNum):
+        currIntermediate = List_IntermediateNode[indInt]
+        currIntermediate.FalsifierProbability = intSFVec[indInt]
+        
     # Intermediate nodes - put something inside this loop
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
@@ -122,11 +140,7 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
     
-    List_IntermediateNode[6].FalsifierProbability = 0.25
-    
-    
-    ######### MODIFICATION LOOPS ######### ######### #########
-    
+    ######### END MODIFICATION LOOPS ######### ######### #########
     
     if useWarmUpFile == True: # Randomly select a path from the dictionary
         numScenarios = len(warmUpDict.keys())
@@ -303,7 +317,7 @@ for rep in range(numReplications):
         currRootConsumption = List_RootConsumption[indRoot]
         currPercConsumption = currRootConsumption / rootTotalConsumed
         currPercString = "{0:.1%}".format(currPercConsumption)
-        currRootRow = [currRoot] + [currRootConsumption] + [currPercString]
+        currRootRow = [currRoot] + [currPercConsumption] + [currPercString]
         RootReportTbl = RootReportTbl + [currRootRow]
         Root_Plot_x.append(str(currRoot))
         Root_Plot_y.append(currPercConsumption)
@@ -404,85 +418,48 @@ for rep in range(numReplications):
         # END OF RX REPORTING LOOP
     
     # Form regression estimates of suspected bad intermediate nodes
-    #LINEAR PROJECTION
     X = estFalseVector
     A = estTransitionMatrix
-    try:
-        estIntFalsePerc = np.dot(np.linalg.inv(np.dot(A.T,A)),np.dot(A.T,X))
-        estEndFalsePerc = np.subtract(X,np.dot(A,estIntFalsePerc))
+    # Get required arguments from the testing summary table
+    ydata = []
+    numSamples = []
+    for endNodeTestRow in TestSummaryTbl:
+        ydata.append(endNodeTestRow[2])
+        numSamples.append(endNodeTestRow[1])
     
-        # Estimated intermediate falsification percentages
-        # First, some stats for the plots
+    #LINEAR PROJECTION
+    try:
+        estIntFalsePerc, estEndFalsePerc = simModules.Est_LinearProjection(A,X)    
+        # Formatted for the plots
         estIntFalsePercList = np.ndarray.tolist(estIntFalsePerc.T[0])
-        # For end nodes
         estEndFalsePercList = np.ndarray.tolist(estEndFalsePerc.T[0])
     except:
-        print("Couldn't generate the estimated node falsification percentages")
+        print("Couldn't generate the LINEAR PROJECTION estimates")
         estIntFalsePercList = []
         estEndFalsePercList = []
     
-    #MLE OF BERNOULLI VARIABLE, USING ITERATIVELY REWEIGHTED LEAST SQUARES
-    #SEE WIKIPEDIA FOR NOTATION
+    #BERNOULLI MLE
     try:
-        currGap = 10
-        tol = 1e-2
-        w_k = np.zeros([intermediateNum,1])
-        while currGap > tol:
-            mu_k = []
-            for i in range(endNum):
-                mu_k.append(1/(1+np.exp(-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
-            Sdiag = []
-            for i in range(endNum):
-                Sdiag.append(mu_k[i]*(1-mu_k[i]))            
-            mu_k = np.reshape(mu_k,(endNum,1))
-            S_k = np.diag(Sdiag)
-            w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
-            currGap = np.linalg.norm(w_k-w_k1)
-            w_k = np.copy(w_k1)
-        # Now our importer SF rates are calculated; figure out variance + Wald statistics
-        covarMat_Bern = np.linalg.inv(np.dot(A.T,np.dot(S_k,A)))
-        w_Var = np.diag(covarMat_Bern)
-        wald_stats = []
-        for j in range(intermediateNum):
-            wald_stats.append(np.asscalar((w_k[j]**2)/w_Var[j]))
-        # Store our estimates in new variables
-        estIntFalsePercList_Bern = w_k.T.tolist()[0]
-        errs_Bern = np.subtract(X,mu_k)
-        estEndFalsePercList_Bern = errs_Bern.T.tolist()[0]
-        
+        estIntFalsePercList_Bern, estEndFalsePercList_Bern, covarMat_Bern, wald_stats = simModules.Est_BernMLEProjection(A,X)        
     except:
-        print("Couldn't generate the estimated node falsification percentages for BERNOULLI MLE")
+        print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
     
-    #PLUMLEE ESTIMATE - USES NONLINEAR OPTIMIZER
+    #MLE USING NONLINEAR OPTIMIZER
     try:
-        # Get required arguments from the testing summary table
-        ydata = []
-        numSamples = []
-        for endNodeTestRow in TestSummaryTbl:
-            ydata.append(endNodeTestRow[2])
-            numSamples.append(endNodeTestRow[1])
-        
         importerhat, outlethat = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), np.asmatrix(A), diagnosticSensitivity, diagnosticSpecificity)
         estIntFalsePercList_Plum = importerhat.tolist()
         estEndFalsePercList_Plum = outlethat.tolist()
        
     except:
-        print("Couldn't generate the estimated node falsification percentages for PLUMLEE ESTIMATE")
+        print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_Plum = []
         estEndFalsePercList_Plum = []
         
-    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION 
+    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION, NUTS, 
     if lklhdBool == True:
         try:
-            # Get required arguments from the testing summary table
-            ydata = []
-            numSamples = []
-            for endNodeTestRow in TestSummaryTbl:
-                ydata.append(endNodeTestRow[2])
-                numSamples.append(endNodeTestRow[1])
-            
             def exampletargetfornuts(beta):
                 """
                 Example of a target distribution that could be sampled from using NUTS.
@@ -535,9 +512,9 @@ for rep in range(numReplications):
         ax = fig.add_axes([0,0,0.3,0.5])
         ax.set_xlabel('Root Node',fontsize=16)
         ax.set_ylabel('Percentage consumption',fontsize=16)
+        ax.bar(Root_Plot_x,Root_Plot_y)
         vals = ax.get_yticks()
         ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-        ax.bar(Root_Plot_x,Root_Plot_y)
         plt.show()
         
         # Intermediate stockout %'s
@@ -574,41 +551,48 @@ for rep in range(numReplications):
         plt.show()
         
         # Intermediate nodes
-        fig = plt.figure()
-        ax = fig.add_axes([0,0,1,0.5])
-        ax.set_xlabel('Intermediate Node',fontsize=16)
-        ax.set_ylabel('Est. falsification %',fontsize=16)
-        ax.bar(Intermediate_Plot_x,estIntFalsePercList,color='thistle',edgecolor='indigo')
-        plt.show()
-        
-        # Intermediate nodes - Plumlee model
-        fig = plt.figure()
-        ax = fig.add_axes([0,0,1,0.5])
-        ax.set_xlabel('Intermediate Node',fontsize=16)
-        ax.set_ylabel('Est. model parameter',fontsize=16)
-        ax.bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')
+        fig, axs = plt.subplots(3, 1,figsize=(9,13))
+        fig.suptitle('Intermediate Node SF % Estimates',fontsize=18)
+        for subP in range(3):
+            axs[subP].set_xlabel('Intermediate Node',fontsize=12)
+            axs[subP].set_ylabel('Est. SF %',fontsize=12)        
+            axs[subP].set_ylim([0.0,1.0])
+            vals = axs[subP].get_yticks()
+            axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+        # Linear projection
+        axs[0].set_title('Linear projection',fontweight='bold')        
+        axs[0].bar(Intermediate_Plot_x,estIntFalsePercList,color='thistle',edgecolor='indigo')
+        # Bernoulli MLE projection
+        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+        axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='mediumspringgreen',edgecolor='green')      
+        # MLE w Nonlinear optimizer        
+        axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
+        axs[2].bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')   
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.94)
         plt.show()
         
         # End nodes
-        fig = plt.figure()
-        ax = fig.add_axes([0,0,3,0.5])
-        ax.set_xlabel('End Node',fontsize=16)
-        ax.set_ylabel('Est. falsification %',fontsize=16)
-        #vals = ax.get_yticks()
-        #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-        ax.bar(End_Plot_x,estEndFalsePercList,color='peachpuff',edgecolor='red')
-        plt.xticks(rotation=90)
-        plt.show()
-        
-        # End nodes - Plumlee model
-        fig = plt.figure()
-        ax = fig.add_axes([0,0,3,0.5])
-        ax.set_xlabel('End Node',fontsize=16)
-        ax.set_ylabel('Est. falsification %',fontsize=16)
-        #vals = ax.get_yticks()
-        #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-        ax.bar(End_Plot_x,estEndFalsePercList_Plum,color='mintcream',edgecolor='forestgreen')
-        plt.xticks(rotation=90)
+        fig, axs = plt.subplots(3, 1,figsize=(17,13))
+        fig.suptitle('End Node SF % Estimates',fontsize=18)
+        for subP in range(3):
+            axs[subP].set_xlabel('End Node',fontsize=12)
+            axs[subP].set_ylabel('Est. SF %',fontsize=12)
+            axs[subP].tick_params(labelrotation=90)
+            axs[subP].set_ylim([-0.6,0.6])
+            vals = axs[subP].get_yticks()
+            axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+        # Linear projection
+        axs[0].set_title('Linear projection',fontweight='bold')        
+        axs[0].bar(End_Plot_x,estEndFalsePercList,color='peachpuff',edgecolor='red')
+        # Bernoulli MLE projection
+        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+        axs[1].bar(End_Plot_x,estEndFalsePercList_Bern,color='khaki',edgecolor='goldenrod')      
+        # MLE w Nonlinear optimizer        
+        axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
+        axs[2].bar(End_Plot_x,estEndFalsePercList_Plum,color='lightcyan',edgecolor='teal')   
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.94)
         plt.show()
         
         #Intermediate nodes - likelihood samples
@@ -642,15 +626,21 @@ for rep in range(numReplications):
             currEnd = List_EndNode[indEnd]
             List_demandResultsEnd.append(currEnd.demandResults)
         
-        currOutputLine = {'rootConsumption':List_RootConsumption,
+        currOutputLine = {'inputParameterDictionary':inputParameterDictionary,
+                          'rootConsumption':List_RootConsumption,
                           'intDemandResults':List_demandResultsInt,
                           'endDemandResults':List_demandResultsEnd,
                           'testResults':TestReportTbl,
                           'intFalseEstimates':estIntFalsePercList,
                           'endFalseEstimates':estEndFalsePercList,
+                          'intFalseEstimates_Bern':estIntFalsePercList_Bern,
+                          'endFalseEstimates_Bern':estEndFalsePercList_Bern,
                           'intFalseEstimates_Plum':estIntFalsePercList_Plum,
                           'endFalseEstimates_Plum':estEndFalsePercList_Plum,
-                          'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples                          
+                          'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples,
+                          'intSFTrueValues':intSFVec,
+                          'simStartTime':startTime,
+                          'simRunTime':totalRunTime
                           }
                           
         outputDict[rep] = currOutputLine # Save to the output dictionary

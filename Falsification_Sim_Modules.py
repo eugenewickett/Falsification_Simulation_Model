@@ -511,6 +511,56 @@ def dynamicTestingGenerator(resultsList,
 
  ### END "dynamicTestingGenerator" ###
 
+ ########################### SF RATE ESTIMATORS ###########################
+def Est_LinearProjection(A,X): # Linear Projection
+    # Uses the (estimated) transition matrix, A, and the (estimated) percentage SF
+    # at each end node, X
+    intProj = np.dot(np.linalg.inv(np.dot(A.T,A)),np.dot(A.T,X))
+    endProj = np.subtract(X,np.dot(A,intProj))
+    return np.ndarray.tolist(intProj.T[0]), np.ndarray.tolist(endProj.T[0])
+
+def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
+    # USING ITERATIVELY REWEIGHTED LEAST SQUARES, SEE WIKIPEDIA FOR NOTATION
+    np.seterr(all='print')
+    currGap = 10
+    tol = 1e-2
+    n = A.shape[0] # Number of end nodes
+    m = A.shape[1] # Number of intermediate nodes
+    w_k = np.zeros([m,1])
+    bigM = 15 # Max value for w_k
+    while currGap > tol:
+        mu_k = []
+        for i in range(n):
+            mu_k.append(1/(1+np.exp(-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
+        Sdiag = []
+        for i in range(n):
+            Sdiag.append(mu_k[i]*(1-mu_k[i]))            
+        mu_k = np.reshape(mu_k,(n,1))
+        S_k = np.diag(Sdiag)
+        w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
+        currGap = np.linalg.norm(w_k-w_k1)
+        w_k = np.copy(w_k1)
+        if np.asscalar(max(w_k)) > bigM:
+            print('Big M exceeded in Bernoulli MLE calculations')
+            w_k = np.zeros([m,1])
+            break
+    # Now our importer SF rates are calculated; figure out variance + Wald statistics
+    covarMat_Bern = np.linalg.inv(np.dot(A.T,np.dot(S_k,A)))
+    w_Var = np.diag(covarMat_Bern)
+    wald_stats = []
+    for j in range(m):
+        wald_stats.append(np.asscalar((w_k[j]**2)/w_Var[j]))
+    
+    # Convert to intermediate and end node estimates
+    intProj = np.ndarray.tolist(invlogit(w_k.T.tolist()[0]))
+    errs_Bern = np.subtract(X,mu_k)
+    endProj= errs_Bern.T.tolist()[0]    
+    return intProj, endProj, covarMat_Bern, wald_stats
+
+
+
+########################### END SF RATE ESTIMATORS ###########################
+
 def SimReplicationOutput(OPdict):
     """
     Generates output tables and plots for a given output dictionary, OPdict.
