@@ -429,10 +429,7 @@ for rep in range(numReplications):
     
     #LINEAR PROJECTION
     try:
-        estIntFalsePerc, estEndFalsePerc = simModules.Est_LinearProjection(A,X)    
-        # Formatted for the plots
-        estIntFalsePercList = np.ndarray.tolist(estIntFalsePerc.T[0])
-        estEndFalsePercList = np.ndarray.tolist(estEndFalsePerc.T[0])
+        estIntFalsePercList, estEndFalsePercList = simModules.Est_LinearProjection(A,X)
     except:
         print("Couldn't generate the LINEAR PROJECTION estimates")
         estIntFalsePercList = []
