@@ -36,13 +36,13 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 100
-testPolicy = 7
+numReplications = 1
+testPolicy = 1
 testPolicyParam = [1] # Set testing policy parameter list here
-testingIsDynamic = True # Is our testing policy dynamic or static?
+testingIsDynamic = False # Is our testing policy dynamic or static?
 printOutput = False # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
-diagnosticSpecificity = 0.90 # Tool specificity
+diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists

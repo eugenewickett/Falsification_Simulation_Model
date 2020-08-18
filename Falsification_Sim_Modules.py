@@ -13,7 +13,8 @@ import os
 import sys
 import pickle
 import matplotlib.pyplot as plt
-
+import warnings
+warnings.filterwarnings('error')
 import Falsification_Sim_Classes as simClasses # modules for the simulation
 
 def generateNodeListsFromFile(nodeInputFileString='',
@@ -534,9 +535,12 @@ def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
         print(counter)
         mu_k = []
         for i in range(n):
-            print(w_k.T)
-            print(A[i])
-            mu_k.append(1/(1+np.exp(-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
+            try:
+                mu_k.append(1/(1+np.exp(-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
+            except Warning:
+                print(w_k.T)
+                print(A[i])
+                
         Sdiag = []
         for i in range(n):
             Sdiag.append(mu_k[i]*(1-mu_k[i]))            
