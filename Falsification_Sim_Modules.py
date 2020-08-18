@@ -528,11 +528,15 @@ def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
     m = A.shape[1] # Number of intermediate nodes
     w_k = np.zeros([m,1])
     bigM = 15 # Max value for w_k
-    eps = 1e-6
+    counter = 0
     while currGap > tol:
+        counter += 1
+        print(counter)
         mu_k = []
         for i in range(n):
-            mu_k.append(1/(1+np.exp(eps-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
+            print(w_k.T)
+            print(A[i])
+            mu_k.append(1/(1+np.exp(-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
         Sdiag = []
         for i in range(n):
             Sdiag.append(mu_k[i]*(1-mu_k[i]))            
