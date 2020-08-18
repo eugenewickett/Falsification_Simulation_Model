@@ -472,7 +472,7 @@ def dynamicTestingGenerator(resultsList,
             sampleSchedule.append([nextTestDay,NodeToTest])
     elif int_PolicyType==7: #epsilon changing by sin
         nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
-        eps = (np.sin(12.4*arr_PolicyParameter[nextTestDay])) # Our exploit parameter
+        eps = (np.sin(12.4*nextTestDay)) # Our exploit parameter
         numToTest = int(np.floor(int_sampleBudgetRemain / int_numDaysRemain)) + min(int_sampleBudgetRemain % int_numDaysRemain,1) # How many samples to conduct in the next day
         # Generate a sampling schedule using the current list of results
         # First grab the pool of highest SF rate nodes
@@ -897,6 +897,390 @@ def SimReplicationOutput(OPdict):
     '''
  ### END "SimReplicationOutput" ###
 
+def SimSFEstimateOutput(OPdicts):
+    '''
+    Generates comparison tables and plots for a LIST of output dictionaries.
+    Intended for comparison with the underlying "true" SF rates at the
+    importer level.
+    '''
+    numDicts = len(OPdicts)
+    scenarioList = [] # Initialize a list of possible 'true' underyling SF rates
+    # Initialize deviation lists; contains lists of deviations for each replication
+    avgDevList_Lin = []
+    avgDevList_Bern = []
+    avgDevList_MLE = []
+    stdDevList_Lin = []
+    stdDevList_Bern = []
+    stdDevList_MLE = []    
+    
+    # For each output dictionary, generate deviation estimates of varying types
+    for currDict in OPdicts:
+        # Loop through each replication contained in the current output dictionary
+        currDict_avgDevList_Lin = []
+        currDict_avgDevList_Bern = []
+        currDict_avgDevList_MLE = []
+        currDict_stdDevList_Lin = []
+        currDict_stdDevList_Bern = []
+        currDict_stdDevList_MLE = []
+        
+        for repNum in currDict.keys():
+            currTrueSFVec = currDict[repNum]['intSFTrueValues']
+            for scen in currTrueSFVec:
+                if not scen in scenarioList:
+                    scenarioList.append(scen)
+                    scenarioList.sort()
+            currLinProj = currDict[repNum]['intFalseEstimates']
+            currBernProj = currDict[repNum]['intFalseEstimates_Bern']
+            currMLEProj = currDict[repNum]['intFalseEstimates_Plum']
+            currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            
+            currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
+            currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
+            currDict_avgDevList_MLE.append(np.mean(currMLEProjdevs))
+            currDict_stdDevList_Lin.append(np.std(currLinProjdevs))
+            currDict_stdDevList_Bern.append(np.std(currBernProjdevs))
+            currDict_stdDevList_MLE.append(np.std(currMLEProjdevs))
+        
+        avgDevList_Lin.append(currDict_avgDevList_Lin)
+        avgDevList_Bern.append(currDict_avgDevList_Bern)
+        avgDevList_MLE.append(currDict_avgDevList_MLE)
+        stdDevList_Lin.append(currDict_stdDevList_Lin)
+        stdDevList_Bern.append(currDict_stdDevList_Bern)
+        stdDevList_MLE.append(currDict_stdDevList_MLE)
+    
+    # Scenario-dependent looks at performance
+    scenDict = {}
+    ind = 0 
+    for currScen in scenarioList:
+        SCENavgDevList_Lin = []
+        SCENavgDevList_Bern = []
+        SCENavgDevList_MLE = []
+        SCENstdDevList_Lin = []
+        SCENstdDevList_Bern = []
+        SCENstdDevList_MLE = []
+        for currDict in OPdicts:
+        # Loop through each replication contained in the current output dictionary
+            currScenDict_avgDevList_Lin = []
+            currScenDict_avgDevList_Bern = []
+            currScenDict_avgDevList_MLE = []
+            currScenDict_stdDevList_Lin = []
+            currScenDict_stdDevList_Bern = []
+            currScenDict_stdDevList_MLE = []
+            
+            for repNum in currDict.keys():
+                currTrueSFVec = currDict[repNum]['intSFTrueValues']
+                currScenInds = [i for i, val in enumerate(currTrueSFVec) if val == currScen]
+                if not not currScenInds: #Only find deviations if the scenario was used (list is nonempty)
+                    currScenTrueSFVec = [currTrueSFVec[i] for i in currScenInds]
+                    currScenLinProj = [currDict[repNum]['intFalseEstimates'][i] for i in currScenInds]
+                    currScenBernProj = [currDict[repNum]['intFalseEstimates_Bern'][i] for i in currScenInds]
+                    currScenMLEProj = [currDict[repNum]['intFalseEstimates_Plum'][i] for i in currScenInds]
+                    currScenLinProjdevs = [currScenLinProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    currScenBernProjdevs = [currScenBernProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    currScenMLEProjdevs = [currScenMLEProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    
+                    currScenDict_avgDevList_Lin.append(np.mean(currScenLinProjdevs))
+                    currScenDict_avgDevList_Bern.append(np.mean(currScenBernProjdevs))
+                    currScenDict_avgDevList_MLE.append(np.mean(currScenMLEProjdevs))
+                    currScenDict_stdDevList_Lin.append(np.std(currScenLinProjdevs))
+                    currScenDict_stdDevList_Bern.append(np.std(currScenBernProjdevs))
+                    currScenDict_stdDevList_MLE.append(np.std(currScenMLEProjdevs))
+            
+            SCENavgDevList_Lin.append(currScenDict_avgDevList_Lin)
+            SCENavgDevList_Bern.append(currScenDict_avgDevList_Bern)
+            SCENavgDevList_MLE.append(currScenDict_avgDevList_MLE)
+            SCENstdDevList_Lin.append(currScenDict_stdDevList_Lin)
+            SCENstdDevList_Bern.append(currScenDict_stdDevList_Bern)
+            SCENstdDevList_MLE.append(currScenDict_stdDevList_MLE)
+        
+        currOutputLine = {'scenario': currScen,
+                          'SCENavgDevList_Lin':SCENavgDevList_Lin,
+                          'SCENavgDevList_Bern':SCENavgDevList_Bern,
+                          'SCENavgDevList_MLE':SCENavgDevList_MLE,
+                          'SCENstdDevList_Lin':SCENstdDevList_Lin,
+                          'SCENstdDevList_Bern':SCENstdDevList_Bern,
+                          'SCENstdDevList_MLE':SCENstdDevList_MLE
+                          }
+        scenDict[ind] = currOutputLine
+        ind += 1
+        
+    ### Plots of our results
+    #Some initial plotting needs
+    #Indices
+    lowErrIndVec = []
+    upErrIndVec = []
+    for dictNum in range(numDicts):
+        lowErrIndVec.append(int(np.floor(0.05*len(OPdicts[dictNum].keys()))))
+        upErrIndVec.append(int(np.ceil(0.95*len(OPdicts[dictNum].keys())))-1)
+    #x-axis title
+    Plot_XLabels = [str(i) for i in range(numDicts)]
+    
+    # Linear projection - avgs
+    dictAvgDevs_Lin = []
+    dictAvgLows_Lin = []
+    dictAvgUps_Lin = []
+    for i in range(numDicts):
+        lowErrInd = lowErrIndVec[i]
+        upErrInd = upErrIndVec[i]
+        currAvgDevList = avgDevList_Lin[i]
+        currAvgDevList.sort()
+        meanDev = np.mean(currAvgDevList)
+        lowDev = currAvgDevList[lowErrInd]
+        upDev = currAvgDevList[upErrInd]
+        dictAvgDevs_Lin.append(meanDev)
+        dictAvgLows_Lin.append(lowDev)
+        dictAvgUps_Lin.append(upDev)
+    dictAvgErr_Lin = [[dictAvgDevs_Lin[i]-dictAvgLows_Lin[i] for i in range(numDicts)], 
+              [dictAvgUps_Lin[j]-dictAvgDevs_Lin[j] for j in range(numDicts)]]
+    
+    # Bernoulli - avgs
+    dictAvgDevs_Bern = []
+    dictAvgLows_Bern = []
+    dictAvgUps_Bern = []
+    for i in range(numDicts):
+        lowErrInd = lowErrIndVec[i]
+        upErrInd = upErrIndVec[i]
+        currAvgDevList = avgDevList_Bern[i]
+        currAvgDevList.sort()
+        meanDev = np.mean(currAvgDevList)
+        lowDev = currAvgDevList[lowErrInd]
+        upDev = currAvgDevList[upErrInd]
+        dictAvgDevs_Bern.append(meanDev)
+        dictAvgLows_Bern.append(lowDev)
+        dictAvgUps_Bern.append(upDev)
+    dictAvgErr_Bern = [[dictAvgDevs_Bern[i]-dictAvgLows_Bern[i] for i in range(numDicts)], 
+              [dictAvgUps_Bern[j]-dictAvgDevs_Bern[j] for j in range(numDicts)]]
+    
+    # MLE w Optimizer - avgs
+    dictAvgDevs_MLE = []
+    dictAvgLows_MLE = []
+    dictAvgUps_MLE = []
+    for i in range(numDicts):
+        lowErrInd = lowErrIndVec[i]
+        upErrInd = upErrIndVec[i]
+        currAvgDevList = avgDevList_MLE[i]
+        currAvgDevList.sort()
+        meanDev = np.mean(currAvgDevList)
+        lowDev = currAvgDevList[lowErrInd]
+        upDev = currAvgDevList[upErrInd]
+        dictAvgDevs_MLE.append(meanDev)
+        dictAvgLows_MLE.append(lowDev)
+        dictAvgUps_MLE.append(upDev)
+    dictAvgErr_MLE = [[dictAvgDevs_MLE[i]-dictAvgLows_MLE[i] for i in range(numDicts)], 
+              [dictAvgUps_MLE[j]-dictAvgDevs_MLE[j] for j in range(numDicts)]]
+    
+    # Linear projection - standard deviations
+    dictStdDevs_Lin = []
+    dictStdLows_Lin = []
+    dictStdUps_Lin = []
+    for i in range(numDicts):
+        lowErrInd = lowErrIndVec[i]
+        upErrInd = upErrIndVec[i]
+        currDevList = stdDevList_Lin[i]
+        currDevList.sort()
+        meanDev = np.mean(currDevList)
+        lowDev = currDevList[lowErrInd]
+        upDev = currDevList[upErrInd]
+        dictStdDevs_Lin.append(meanDev)
+        dictStdLows_Lin.append(lowDev)
+        dictStdUps_Lin.append(upDev)
+    dictStdErr_Lin = [[dictStdDevs_Lin[i]-dictStdLows_Lin[i] for i in range(numDicts)], 
+              [dictStdUps_Lin[j]-dictStdDevs_Lin[j] for j in range(numDicts)]]
+    
+    # Bernoulli - standard deviations
+    dictStdDevs_Bern = []
+    dictStdLows_Bern = []
+    dictStdUps_Bern = []
+    for i in range(numDicts):
+        lowErrInd = lowErrIndVec[i]
+        upErrInd = upErrIndVec[i]
+        currDevList = stdDevList_Bern[i]
+        currDevList.sort()
+        meanDev = np.mean(currDevList)
+        lowDev = currDevList[lowErrInd]
+        upDev = currDevList[upErrInd]
+        dictStdDevs_Bern.append(meanDev)
+        dictStdLows_Bern.append(lowDev)
+        dictStdUps_Bern.append(upDev)
+    dictStdErr_Bern = [[dictStdDevs_Bern[i]-dictStdLows_Bern[i] for i in range(numDicts)], 
+              [dictStdUps_Bern[j]-dictStdDevs_Bern[j] for j in range(numDicts)]]
+    
+    # MLE w Optimizer - standard deviations
+    dictStdDevs_MLE = []
+    dictStdLows_MLE = []
+    dictStdUps_MLE = []
+    for i in range(numDicts):
+        lowErrInd = lowErrIndVec[i]
+        upErrInd = upErrIndVec[i]
+        currDevList = stdDevList_MLE[i]
+        currDevList.sort()
+        meanDev = np.mean(currDevList)
+        lowDev = currDevList[lowErrInd]
+        upDev = currDevList[upErrInd]
+        dictStdDevs_MLE.append(meanDev)
+        dictStdLows_MLE.append(lowDev)
+        dictStdUps_MLE.append(upDev)
+    dictStdErr_MLE = [[dictStdDevs_MLE[i]-dictStdLows_MLE[i] for i in range(numDicts)], 
+              [dictStdUps_MLE[j]-dictStdDevs_MLE[j] for j in range(numDicts)]]
+    
+    
+    # Build plots
+    # Devaition averages (biases)
+    fig, axs = plt.subplots(3, 1,figsize=(9,13))
+    fig.suptitle('Estimate Deviation AVERAGES',fontsize=18)
+    for subP in range(3):
+        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
+        axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)        
+        axs[subP].set_ylim([-0.4,0.4])
+        #vals = axs[subP].get_yticks()
+        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+    # Linear projection
+    axs[0].set_title('Linear projection',fontweight='bold')        
+    axs[0].errorbar(Plot_XLabels,dictAvgDevs_Lin,yerr=dictAvgErr_Lin,
+                   ecolor='mediumpurple',capsize=5,color='indigo')
+    # Bernoulli MLE projection
+    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+    axs[1].errorbar(Plot_XLabels,dictAvgDevs_Bern,yerr=dictAvgErr_Bern,
+                   ecolor='seagreen',capsize=5,color='green')      
+    # MLE w Nonlinear optimizer        
+    axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
+    axs[2].errorbar(Plot_XLabels,dictAvgDevs_MLE,yerr=dictAvgErr_MLE,
+                   ecolor='orange',capsize=5,color='darkorange')   
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.94)
+    plt.show()
+    
+    #Deviation variation
+    fig, axs = plt.subplots(3, 1,figsize=(9,13))
+    fig.suptitle('Estimate Deviation STANDARD DEVIATIONS',fontsize=18)
+    for subP in range(3):
+        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
+        axs[subP].set_ylabel('Est. StDev of Deviation',fontsize=12)        
+        axs[subP].set_ylim([0,0.4])
+        #vals = axs[subP].get_yticks()
+        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+    # Linear projection
+    axs[0].set_title('Linear projection',fontweight='bold')        
+    axs[0].errorbar(Plot_XLabels,dictStdDevs_Lin,yerr=dictStdErr_Lin,
+                   ecolor='mediumpurple',capsize=5,color='indigo')
+    # Bernoulli MLE projection
+    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+    axs[1].errorbar(Plot_XLabels,dictStdDevs_Bern,yerr=dictStdErr_Bern,
+                   ecolor='seagreen',capsize=5,color='green')      
+    # MLE w Nonlinear optimizer        
+    axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
+    axs[2].errorbar(Plot_XLabels,dictStdDevs_MLE,yerr=dictStdErr_MLE,
+                   ecolor='orange',capsize=5,color='darkorange')   
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.94)
+    plt.show()
+    
+    # For each scenario; only find average deviations
+    for scenInd in range(len(scenarioList)):
+        currScenDict = scenDict[scenInd]
+        avgDevListLin_scen = currScenDict['SCENavgDevList_Lin']
+        avgDevListBern_scen = currScenDict['SCENavgDevList_Bern']
+        avgDevListMLE_scen = currScenDict['SCENavgDevList_MLE']
+        
+        lowErrIndVec = []
+        upErrIndVec = []
+        for dictNum in range(numDicts):
+            lowErrIndVec.append(int(np.floor(0.05*len(avgDevListLin_scen[dictNum]))))
+            upErrIndVec.append(int(np.ceil(0.95*len(avgDevListLin_scen[dictNum])))-1)
+        #x-axis title
+        Plot_XLabels = [str(i) for i in range(numDicts)]
+        
+        # Linear projection - avgs
+        dictAvgDevs_Lin = []
+        dictAvgLows_Lin = []
+        dictAvgUps_Lin = []
+        for i in range(numDicts):
+            lowErrInd = lowErrIndVec[i]
+            upErrInd = upErrIndVec[i]
+            currAvgDevList = avgDevListLin_scen[i]
+            currAvgDevList.sort()
+            meanDev = np.mean(currAvgDevList)
+            lowDev = currAvgDevList[lowErrInd]
+            upDev = currAvgDevList[upErrInd]
+            dictAvgDevs_Lin.append(meanDev)
+            dictAvgLows_Lin.append(lowDev)
+            dictAvgUps_Lin.append(upDev)
+        dictAvgErr_Lin = [[dictAvgDevs_Lin[i]-dictAvgLows_Lin[i] for i in range(numDicts)], 
+                  [dictAvgUps_Lin[j]-dictAvgDevs_Lin[j] for j in range(numDicts)]]
+        
+        # Bernoulli - avgs
+        dictAvgDevs_Bern = []
+        dictAvgLows_Bern = []
+        dictAvgUps_Bern = []
+        for i in range(numDicts):
+            lowErrInd = lowErrIndVec[i]
+            upErrInd = upErrIndVec[i]
+            currAvgDevList = avgDevListBern_scen[i]
+            currAvgDevList.sort()
+            meanDev = np.mean(currAvgDevList)
+            lowDev = currAvgDevList[lowErrInd]
+            upDev = currAvgDevList[upErrInd]
+            dictAvgDevs_Bern.append(meanDev)
+            dictAvgLows_Bern.append(lowDev)
+            dictAvgUps_Bern.append(upDev)
+        dictAvgErr_Bern = [[dictAvgDevs_Bern[i]-dictAvgLows_Bern[i] for i in range(numDicts)], 
+                  [dictAvgUps_Bern[j]-dictAvgDevs_Bern[j] for j in range(numDicts)]]
+        
+        # MLE w Optimizer - avgs
+        dictAvgDevs_MLE = []
+        dictAvgLows_MLE = []
+        dictAvgUps_MLE = []
+        for i in range(numDicts):
+            lowErrInd = lowErrIndVec[i]
+            upErrInd = upErrIndVec[i]
+            currAvgDevList = avgDevListMLE_scen[i]
+            currAvgDevList.sort()
+            meanDev = np.mean(currAvgDevList)
+            lowDev = currAvgDevList[lowErrInd]
+            upDev = currAvgDevList[upErrInd]
+            dictAvgDevs_MLE.append(meanDev)
+            dictAvgLows_MLE.append(lowDev)
+            dictAvgUps_MLE.append(upDev)
+        dictAvgErr_MLE = [[dictAvgDevs_MLE[i]-dictAvgLows_MLE[i] for i in range(numDicts)], 
+                  [dictAvgUps_MLE[j]-dictAvgDevs_MLE[j] for j in range(numDicts)]]
+    
+        # Generate plots for each scenario
+        # Devaition averages (biases)
+        fig, axs = plt.subplots(3, 1,figsize=(9,13))
+        fig.suptitle('Estimate Deviation AVERAGES for SF RATE OF '+str(scenarioList[scenInd]),fontsize=18)
+        for subP in range(3):
+            axs[subP].set_xlabel('Output Dictionary',fontsize=12)
+            axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)        
+            axs[subP].set_ylim([-0.4,0.4])
+            #vals = axs[subP].get_yticks()
+            #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+        # Linear projection
+        axs[0].set_title('Linear projection',fontweight='bold')        
+        axs[0].errorbar(Plot_XLabels,dictAvgDevs_Lin,yerr=dictAvgErr_Lin,
+                       ecolor='mediumpurple',capsize=5,color='indigo')
+        # Bernoulli MLE projection
+        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+        axs[1].errorbar(Plot_XLabels,dictAvgDevs_Bern,yerr=dictAvgErr_Bern,
+                       ecolor='seagreen',capsize=5,color='green')      
+        # MLE w Nonlinear optimizer        
+        axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
+        axs[2].errorbar(Plot_XLabels,dictAvgDevs_MLE,yerr=dictAvgErr_MLE,
+                       ecolor='orange',capsize=5,color='darkorange')   
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.94)
+        plt.show()
+        
+        
+    # END OF SCENARIOS LOOP
+        
+        
+    
+    
+    
+ ### END "SimSFEstimateOutput" ###   
+    
 def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
               currDirect = ''):
     """
@@ -1038,7 +1422,13 @@ def mylogpost(beta, ydata, nsamp, A, sens, spec):
 def mylogpost_grad(beta, ydata, nsamp, A, sens, spec):
     return mylogprior_grad(beta, ydata, nsamp, A, sens, spec)-mynegloglik_grad(beta, ydata, nsamp, A, sens, spec) #modified by EOW
 
-    
+def exampletargetfornuts(beta):
+    """
+    Example of a target distribution that could be sampled from using NUTS.
+    (Although of course you could sample from it more efficiently)
+    Doesn't include the normalizing constant.
+    """
+    return mylogpost(beta,ydata, nsamp, A, sens, spec), mylogpost_grad(beta,ydata, nsamp, A, sens, spec) 
 
 
 #### Necessary NUTS module ####
@@ -1376,6 +1766,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.6):
         ### EOW ADDITION
         if np.mod(m,10)==0:
             print('Round '+str(m)+' of nuts6 finished' )
+        ### END EOW
         
     samples = samples[Madapt:, :]
     lnprob = lnprob[Madapt:]
