@@ -528,13 +528,15 @@ def Est_LinearProjection(A,X): # Linear Projection
 
 def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
     # USING ITERATIVELY REWEIGHTED LEAST SQUARES, SEE WIKIPEDIA FOR NOTATION
+    A = np.array(A)
+    X = np.array(X)
     np.seterr(all='print')
     currGap = 10
     tol = 1e-2
     n = A.shape[0] # Number of end nodes
     m = A.shape[1] # Number of intermediate nodes
+    X = np.reshape(X,(n,1))
     w_k = np.zeros([m,1])
-    bigM = 15 # Max value for w_k
     while currGap > tol:
         mu_k = []
         for i in range(n):
@@ -547,10 +549,6 @@ def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
         w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
         currGap = np.linalg.norm(w_k-w_k1)
         w_k = np.copy(w_k1)
-        if float(max(w_k)) > bigM:
-            print('Big M exceeded in Bernoulli MLE calculations')
-            w_k = np.zeros([m,1])
-            break
     # Now our importer SF rates are calculated; figure out variance + Wald statistics
     covarMat_Bern = np.linalg.inv(np.dot(A.T,np.dot(S_k,A)))
     w_Var = np.diag(covarMat_Bern)
