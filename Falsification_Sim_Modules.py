@@ -529,18 +529,10 @@ def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
     m = A.shape[1] # Number of intermediate nodes
     w_k = np.zeros([m,1])
     bigM = 15 # Max value for w_k
-    counter = 0
     while currGap > tol:
-        counter += 1
-        print(counter)
         mu_k = []
         for i in range(n):
-            try:
-                mu_k.append(1/(1+np.exp(-1*(np.asscalar(np.dot(w_k.T,A[i]))))))
-            except Warning:
-                print(w_k.T)
-                print(A[i])
-                
+            mu_k.append(float(1/(1+np.exp(-1*((np.dot(w_k.T,A[i])))))))
         Sdiag = []
         for i in range(n):
             Sdiag.append(mu_k[i]*(1-mu_k[i]))            
@@ -549,7 +541,7 @@ def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
         w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
         currGap = np.linalg.norm(w_k-w_k1)
         w_k = np.copy(w_k1)
-        if np.asscalar(max(w_k)) > bigM:
+        if float(max(w_k)) > bigM:
             print('Big M exceeded in Bernoulli MLE calculations')
             w_k = np.zeros([m,1])
             break
@@ -558,15 +550,33 @@ def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
     w_Var = np.diag(covarMat_Bern)
     wald_stats = []
     for j in range(m):
-        wald_stats.append(np.asscalar((w_k[j]**2)/w_Var[j]))
+        wald_stats.append(float((w_k[j]**2)/w_Var[j]))
     
     # Convert to intermediate and end node estimates
     intProj = np.ndarray.tolist(invlogit(w_k.T.tolist()[0]))
     errs_Bern = np.subtract(X,mu_k)
-    endProj= errs_Bern.T.tolist()[0]    
+    endProj = errs_Bern.T.tolist()[0]    
     return intProj, endProj, covarMat_Bern, wald_stats
 
-
+def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
+    beta0 = -6 * np.ones(A.shape[1]+A.shape[0])
+    def invlogit_INTERIOR(beta):
+        return np.exp(beta)/(np.exp(beta)+1)
+    def mynegloglik_INTERIOR(beta, ydata, numsamples, A, sens, spec):
+        betaI = beta[0:A.shape[1]]
+        betaJ = beta[A.shape[1]:]
+        probs = (1-invlogit_INTERIOR(betaJ)) * np.matmul(A,invlogit_INTERIOR(betaI)) + invlogit_INTERIOR(betaJ)
+        probsz = probs*sens + (1-probs) * (1-spec)
+        return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
+            + rglrWt*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
+    
+    bounds = spo.Bounds(beta0-3, beta0+8)
+    opval = spo.minimize(mynegloglik_INTERIOR, beta0+1,
+                         args=(ydata, numsamples, A, sens, spec),
+                         method='L-BFGS-B',
+                         options={'disp': False},
+                         bounds=bounds)
+    return invlogit_INTERIOR(opval.x)[0:A.shape[1]], invlogit_INTERIOR(opval.x)[A.shape[1]:]
 
 ########################### END SF RATE ESTIMATORS ###########################
 
@@ -1339,28 +1349,6 @@ def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
     return numReps, warmUpRunBool, useWarmUpFileBool, warmUpDirectory, warmUpFileName_str, warmUpDict
     
 #### Likelihood estimate functions
-def PlumleeEstimates(ydata, numsamples, A, sens, spec):
-    beta0 = -5 * np.ones(A.shape[1]+A.shape[0])
-    def invlogit(beta):
-        return np.exp(beta)/(np.exp(beta)+1)
-    def logit(p):
-        return np.log(p/(1-p)) 
-    def mynegloglik(beta, ydata, numsamples, A, sens, spec):
-        betaI = beta[0:A.shape[1]]
-        betaJ = beta[A.shape[1]:]
-        probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
-        probsz = probs*sens + (1-probs) * (1-spec)
-        return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
-            + 4 * 1/4*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
-    
-    bounds = spo.Bounds(beta0-2, beta0+8)
-    opval = spo.minimize(mynegloglik, beta0+1,
-                         args=(ydata, numsamples, A, sens, spec),
-                         method='L-BFGS-B',
-                         options={'disp': False},
-                         bounds=bounds)
-    return invlogit(opval.x)[0:A.shape[1]], invlogit(opval.x)[A.shape[1]:]
-
 def invlogit(beta):
     return np.array(np.exp(beta)/(np.exp(beta)+1))
 

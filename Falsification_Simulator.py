@@ -40,14 +40,14 @@ numReplications = 1
 testPolicy = 1
 testPolicyParam = [1] # Set testing policy parameter list here
 testingIsDynamic = False # Is our testing policy dynamic or static?
-printOutput = False # Whether individual replication output should be displayed
+printOutput = True # Whether individual replication output should be displayed
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = True # Do we store the output in an output dictionary file?
+storeOutput = False # Do we store the output in an output dictionary file?
 alertIter = 20 # How frequently we're alerted of a set of replications being completed
 lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 50, 10, 0.2 #NUTS parameters
@@ -445,7 +445,7 @@ for rep in range(numReplications):
     
     #MLE USING NONLINEAR OPTIMIZER
     try:
-        importerhat, outlethat = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), np.asmatrix(A), diagnosticSensitivity, diagnosticSpecificity)
+        importerhat, outlethat = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), A, diagnosticSensitivity, diagnosticSpecificity, rglrWt = 0.1)
         estIntFalsePercList_Plum = importerhat.tolist()
         estEndFalsePercList_Plum = outlethat.tolist()
        
@@ -478,7 +478,6 @@ for rep in range(numReplications):
     else:
         estFalsePerc_LklhdSamples = []
     ### END LIKELIHOOD ESTIMATOR ###
-    
     
     if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES
