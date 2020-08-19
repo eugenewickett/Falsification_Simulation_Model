@@ -16,9 +16,8 @@ import time # for time tracking
 import os # for directories
 from tabulate import tabulate # for making outputs
 import pickle # for saving/loading objects in Python
-import winsound # for beeps
 
-import Falsification_Sim_Classes as simClasses # our class objects and methods
+#import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules # modules for the simulation
 
 # Run supporting files
@@ -36,18 +35,18 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 40
 testPolicy = 1
 testPolicyParam = [1] # Set testing policy parameter list here
 testingIsDynamic = False # Is our testing policy dynamic or static?
-printOutput = True # Whether individual replication output should be displayed
+printOutput = False # Whether individual replication output should be displayed
+storeOutput = True # Do we store the output in an output dictionary file?
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-storeOutput = False # Do we store the output in an output dictionary file?
 alertIter = 20 # How frequently we're alerted of a set of replications being completed
 lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 50, 10, 0.2 #NUTS parameters
@@ -272,11 +271,7 @@ for rep in range(numReplications):
             print('Rep ' + str(rep+1) + ', Day ' + str(today+1) + ' finished.')
 
         if today == NumSimDays-1 and np.mod(rep,alertIter)==0: # For updating while running
-            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**10)),400)
-            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**12)),400)
-            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**8)),400)
-            winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
-            winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)            
+            simModules.CEOTTKbeep()          
         
         if warmUpRun == True and np.mod(today,warmUpIterationGap) == 0: # For storing dictionaries during long run
             warmUpFile = open(warmUpFileName,'rb') # Read the file 
@@ -445,7 +440,7 @@ for rep in range(numReplications):
     
     #MLE USING NONLINEAR OPTIMIZER
     try:
-        importerhat, outlethat = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), A, diagnosticSensitivity, diagnosticSpecificity, rglrWt = 0.1)
+        importerhat, outlethat = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), A, diagnosticSensitivity, diagnosticSpecificity, rglrWt = 0.5)
         estIntFalsePercList_Plum = importerhat.tolist()
         estEndFalsePercList_Plum = outlethat.tolist()
        

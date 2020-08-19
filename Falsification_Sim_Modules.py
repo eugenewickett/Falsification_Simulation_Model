@@ -13,9 +13,15 @@ import os
 import sys
 import pickle
 import matplotlib.pyplot as plt
-import warnings
-warnings.filterwarnings('error')
+import winsound
 import Falsification_Sim_Classes as simClasses # modules for the simulation
+
+def CEOTTKbeep():
+    winsound.Beep(int(32.7032 * (2**3)*(1.059463094**10)),400)
+    winsound.Beep(int(32.7032 * (2**3)*(1.059463094**12)),400)
+    winsound.Beep(int(32.7032 * (2**3)*(1.059463094**8)),400)
+    winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
+    winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)  
 
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',
@@ -1358,7 +1364,7 @@ def invlogit_grad(beta):
 def myloglik(beta, ydata, nsamp, A, sens, spec):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]
-    probs = (1-invlogit(betaJ)) * np.squeeze(np.array(A @ invlogit(betaI)))  + invlogit(betaJ)
+    probs = (1-invlogit(betaJ)) * np.squeeze(np.matmul(A,invlogit(betaI)))  + invlogit(betaJ)
     probsz = probs*sens + (1-probs) * (1-spec)
     return np.sum(ydata * np.log(probsz) + (np.asarray(nsamp)-np.asarray(ydata)) * np.log(1-probsz))
 
@@ -1382,11 +1388,11 @@ def myloglik_grad(beta, ydata, nsamp, A, sens, spec):
 def mynegloglik_grad(beta, ydata, nsamp, A, sens, spec):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]
-    probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
+    probs = (1-invlogit(betaJ)) * np.matmul(A,invlogit(betaI)) + invlogit(betaJ)
     
-    probs_dirJ = -(invlogit_grad(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit_grad(betaJ)
+    probs_dirJ = -(invlogit_grad(betaJ)) * np.matmul(A,invlogit(betaI)) + invlogit_grad(betaJ)
     ilJ = np.array([invlogit(betaJ).T,]*(betaI.shape[0]))
-    probs_dirI =   (ilJ + ((1- ilJ).T * np.array(A @ invlogit_grad(betaI))).T)
+    probs_dirI =   (ilJ + ((1- ilJ).T * np.matmul(A,invlogit_grad(betaI))).T)
     
     probz_dirI = probs_dirI*sens - (probs_dirI) * (1-spec)
     probz_dirJ = probs_dirJ*sens - (probs_dirJ) * (1-spec)
@@ -1399,7 +1405,7 @@ def mynegloglik_grad(beta, ydata, nsamp, A, sens, spec):
 def mynegloglik(beta, ydata, nsamp, A, sens, spec):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]   
-    probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
+    probs = (1-invlogit(betaJ)) * np.matmul(A,invlogit(betaI)) + invlogit(betaJ)
     probsz = probs*sens + (1-probs) * (1-spec)
     return -np.sum(np.asarray(ydata) * np.log(probsz) + (np.asarray(nsamp)-np.asarray(ydata)) * np.log(1-probsz))
 
