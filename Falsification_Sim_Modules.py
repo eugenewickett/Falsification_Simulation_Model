@@ -563,6 +563,8 @@ def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
     return intProj, endProj, covarMat_Bern, wald_stats
 
 def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
+    ydata = np.array(ydata)
+    numsamples = np.array(numsamples)
     beta0 = -6 * np.ones(A.shape[1]+A.shape[0])
     def invlogit_INTERIOR(beta):
         return np.exp(beta)/(np.exp(beta)+1)
@@ -574,12 +576,12 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
         return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
             + rglrWt*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
     
-    bounds = spo.Bounds(beta0-3, beta0+8)
+    bds = spo.Bounds(beta0-8, beta0+8)
     opval = spo.minimize(mynegloglik_INTERIOR, beta0+1,
                          args=(ydata, numsamples, A, sens, spec),
                          method='L-BFGS-B',
                          options={'disp': False},
-                         bounds=bounds)
+                         bounds=bds)
     return invlogit_INTERIOR(opval.x)[0:A.shape[1]], invlogit_INTERIOR(opval.x)[A.shape[1]:]
 
 ########################### END SF RATE ESTIMATORS ###########################

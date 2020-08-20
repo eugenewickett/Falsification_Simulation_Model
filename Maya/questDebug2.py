@@ -5,7 +5,7 @@ Created on Wed Aug 19 16:49:53 2020
 @author: eugen
 """
 import numpy as np
-import scipy 
+import scipy.optimize as spo
 
 def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
     ydata = np.array(ydata)
@@ -43,9 +43,9 @@ nsamp = [100,100,100,100,100,100]
 
 
 
-#iProj, eProj = PlumleeEstimates(ydat,nsamp,Amat,0.99,0.99)
-#print(iProj)
-#print(eProj)
+iProj, eProj = PlumleeEstimates(ydat,nsamp,Amat,0.99,0.99)
+print(iProj)
+print(eProj)
 
 '''
 def sqrdFunc(x):
@@ -54,8 +54,7 @@ bds = spo.Bounds(np.array([1]),np.array([1e3]))
 x0 = np.array([2])
 opval = spo.minimize(sqrdFunc,x0,options={'disp':False},bounds=bds)
 print(opval.x)
-'''
 
 print(scipy.__version__)
-
+'''
 
