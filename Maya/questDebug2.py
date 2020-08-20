@@ -49,10 +49,10 @@ nsamp = [100,100,100,100,100,100]
 
 def sqrdFunc(x):
     return x**2
-opval = spo.minimize(sqrdFunc,-2,options={'disp':False})
+bds = spo.Bounds(np.array([1]),np.array([1e3]))
+x0 = np.array([2])
+opval = spo.minimize(sqrdFunc,x0,options={'disp':False},bounds=bds)
 print(opval.x)
-
-
 
 
 
