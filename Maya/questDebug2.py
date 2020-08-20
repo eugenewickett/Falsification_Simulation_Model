@@ -21,12 +21,12 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
         return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
             + rglrWt*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
     
-    bounds = spo.Bounds(beta0-8, beta0+8)
+    bds = spo.Bounds(beta0-8, beta0+8)
     opval = spo.minimize(mynegloglik_INTERIOR, beta0+1,
                          args=(ydata, numsamples, A, sens, spec),
                          method='L-BFGS-B',
                          options={'disp': False},
-                         bounds=bounds)
+                         bounds=bds)
     return invlogit_INTERIOR(opval.x)[0:A.shape[1]], invlogit_INTERIOR(opval.x)[A.shape[1]:]
 
 
@@ -43,12 +43,14 @@ nsamp = [100,100,100,100,100,100]
 
 
 
-iProj, eProj = PlumleeEstimates(ydat,nsamp,Amat,0.99,0.99)
-print(iProj)
-print(eProj)
+#iProj, eProj = PlumleeEstimates(ydat,nsamp,Amat,0.99,0.99)
+#print(iProj)
+#print(eProj)
 
-
-
+def sqrdFunc(x):
+    return x**2
+opval = spo.minimize(sqrdFunc,-2,options={'disp':False})
+print(opval.x)
 
 
 
