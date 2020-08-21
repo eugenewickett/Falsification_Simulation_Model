@@ -31,7 +31,7 @@ simModules.SimSFEstimateOutput(outputDicts)
 
 #Compare different epsilon values
 epsResultList = []
-for epsStr in epsStrVec:
+for epsStr in strVec:
     
     if epsStr == 'TS':
         fileName = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\output dictionaries\\Thompson Sampling\\TS'
@@ -113,7 +113,7 @@ for row in epsResultList:
 error = [lowErrVec, upErrVec] 
 fig = plt.figure()
 ax = fig.add_axes([0,0,2,1])
-ax.bar(epsStrVec, means,yerr=error,align='center',ecolor='black',
+ax.bar(strVec, means,yerr=error,align='center',ecolor='black',
        capsize=5,color='bisque',edgecolor='darkorange')
 ax.set_xlabel('Dynamic Sampling Policy',fontsize=16)
 ax.set_ylabel('Difference from underlying SF rate',fontsize=16)
