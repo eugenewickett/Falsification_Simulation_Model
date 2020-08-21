@@ -54,6 +54,14 @@ realprobz = realproby * sens + (1-realproby) * (1-spec) #real testing
 nsamp = (500 * np.ones(A.shape[0])).astype('int')
 ydata = np.squeeze(np.random.binomial(nsamp,realprobz))
 
+'''
+Other estimate methods:
+X = np.array([ydata[i]/nsamp[i] for i in range(len(ydata))])
+imps_Lin, outs_Lin = simModules.Est_LinearProjection(A,X)
+imps_Bern, outs_Bern, d1, d2 = simModules.Est_BernMLEProjection(A,X)
+imps_MLE, outs_MLE = simModules.PlumleeEstimates(ydata, nsamp, A, sens, spec, rglrWt = 0.1)
+
+'''
 # Questions:
 #   effect of M,Madapt,delta,beta0 on time?
 #   " on quality of samples (if there exists a difference)?
