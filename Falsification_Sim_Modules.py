@@ -8,6 +8,7 @@ Stores modules for use with 'SC Simulator.py'
 """
 import numpy as np
 import scipy.optimize as spo
+import scipy.special as sps
 import csv
 import os
 import sys
@@ -1356,7 +1357,7 @@ def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
     
 #### Likelihood estimate functions
 def invlogit(beta):
-    return np.array(np.exp(beta)/(np.exp(beta)+1))
+    return sps.expit(beta)
 
 def invlogit_grad(beta):
     return np.diag(np.exp(beta)/((np.exp(beta)+1) ** 2))
@@ -1388,11 +1389,16 @@ def myloglik_grad(beta, ydata, nsamp, A, sens, spec):
 def mynegloglik_grad(beta, ydata, nsamp, A, sens, spec):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]
-    probs = (1-invlogit(betaJ)) * np.matmul(A,invlogit(betaI)) + invlogit(betaJ)
+    iliJ = invlogit(betaJ)
+    iliJg = np.diag(iliJ * (1-iliJ))
+    iliI = invlogit(betaI)
+    AiliI = A * iliI
+    AiliIg = AiliI * (1-iliI)
+    AiliI = np.sum(AiliI,1)
+    probs = (1-iliJ) * AiliI + iliJ
     
-    probs_dirJ = -(invlogit_grad(betaJ)) * np.matmul(A,invlogit(betaI)) + invlogit_grad(betaJ)
-    ilJ = np.array([invlogit(betaJ).T,]*(betaI.shape[0]))
-    probs_dirI =   (ilJ + ((1- ilJ).T * np.matmul(A,invlogit_grad(betaI))).T)
+    probs_dirJ = -iliJg * AiliI + iliJg
+    probs_dirI =  AiliIg.T * (1- iliJ)
     
     probz_dirI = probs_dirI*sens - (probs_dirI) * (1-spec)
     probz_dirJ = probs_dirJ*sens - (probs_dirJ) * (1-spec)
@@ -1534,9 +1540,10 @@ def leapfrog(theta, r, grad, epsilon, f):
     return thetaprime, rprime, gradprime, logpprime
 
 
-def find_reasonable_epsilon(theta0, grad0, logp0, f):
+
+def find_reasonable_epsilon(theta0, grad0, logp0, f, epsilonLB = 0.05, epsilonUB = 0.5):
     """ Heuristic for choosing an initial value of epsilon """
-    epsilon = 1.
+    epsilon = (1)
     r0 = np.random.normal(0., 1., len(theta0))
 
     # Figure out what direction we should be moving epsilon.
@@ -1549,8 +1556,7 @@ def find_reasonable_epsilon(theta0, grad0, logp0, f):
         k *= 0.5
         _, rprime, _, logpprime = leapfrog(theta0, r0, grad0, epsilon * k, f)
 
-    epsilon = 0.5 * k * epsilon
-
+    epsilon = np.minimum(np.maximum(0.5 * k * epsilon, 2.*epsilonLB),epsilonUB/(2.))
     # acceptprob = np.exp(logpprime - logp0 - 0.5 * (np.dot(rprime, rprime.T) - np.dot(r0, r0.T)))
     # a = 2. * float((acceptprob > 0.5)) - 1.
     logacceptprob = logpprime-logp0-0.5*(np.dot(rprime, rprime)-np.dot(r0,r0))
@@ -1558,7 +1564,9 @@ def find_reasonable_epsilon(theta0, grad0, logp0, f):
     # Keep moving epsilon in that direction until acceptprob crosses 0.5.
     # while ( (acceptprob ** a) > (2. ** (-a))):
     while a * logacceptprob > -a * np.log(2):
-        epsilon = epsilon * (2. ** a)
+        epsilon = epsilon * (1.5 ** a)
+        if epsilon < epsilonLB or epsilon > epsilonUB:
+            break
         _, rprime, _, logpprime = leapfrog(theta0, r0, grad0, epsilon, f)
         # acceptprob = np.exp(logpprime - logp0 - 0.5 * ( np.dot(rprime, rprime.T) - np.dot(r0, r0.T)))
         logacceptprob = logpprime-logp0-0.5*(np.dot(rprime, rprime)-np.dot(r0,r0))
@@ -1635,7 +1643,7 @@ def build_tree(theta, r, grad, logu, v, j, epsilon, f, joint0):
     return thetaminus, rminus, gradminus, thetaplus, rplus, gradplus, thetaprime, gradprime, logpprime, nprime, sprime, alphaprime, nalphaprime
 
 
-def nuts6(f, M, Madapt, theta0, delta=0.6):
+def nuts6(f, M, Madapt, theta0, delta=0.25):
     """
     Implements the No-U-Turn Sampler (NUTS) algorithm 6 from from the NUTS
     paper (Hoffman & Gelman, 2011).
@@ -1729,7 +1737,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.6):
         j = 0  # initial heigth j = 0
         n = 1  # Initially the only valid point is the initial point.
         s = 1  # Main loop: will keep going until s == 0.
-
+        
         while (s == 1):
             # Choose a direction. -1 = backwards, 1 = forwards.
             v = int(2 * (np.random.uniform() < 0.5) - 1)
@@ -1750,8 +1758,9 @@ def nuts6(f, M, Madapt, theta0, delta=0.6):
                 grad = gradprime[:]
             # Update number of valid points we've seen.
             n += nprime
+            
             # Decide if it's time to stop.
-            s = sprime and stop_criterion(thetaminus, thetaplus, rminus, rplus)
+            s = sprime and stop_criterion(thetaminus, thetaplus, rminus, rplus) and (n < 50)
             # Increment depth.
             j += 1
 
@@ -1760,6 +1769,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.6):
         Hbar = (1. - eta) * Hbar + eta * (delta - alpha / float(nalpha))
         if (m <= Madapt):
             epsilon = exp(mu - sqrt(m) / gamma * Hbar)
+            epsilon = np.minimum(np.maximum(epsilon, 0.001),1)
             eta = m ** -kappa
             epsilonbar = exp((1. - eta) * log(epsilonbar) + eta * log(epsilon))
         else:

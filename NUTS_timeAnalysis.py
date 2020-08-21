@@ -94,6 +94,17 @@ for rep in range(10):
         for lklhdEst_M in M_Vec:
             for lklhdEst_delta in delta_Vec:
                 startTime = time.time()
+                beta0 = beta0 + np.random.uniform(-1,1,np.size(beta0))
+                print(beta0)
+                L0 = simModules.mylogpost(beta0,ydata, nsamp, A, sens, spec)
+                dL0 = simModules.mylogpost_grad(beta0,ydata, nsamp, A, sens, spec)
+                for k in range(0,beta0.shape[0]):
+                    beta1 = 1*beta0[:]
+                    beta1[k] = beta1[k] + 10**(-5)
+                    
+                    L1 = simModules.mylogpost(beta1,ydata, nsamp, A, sens, spec)
+                    print((L1-L0) * (10 **(5)))
+                    print(dL0[k])
                 samples, lnprob, epsilon = simModules.nuts6(exampletargetfornuts, lklhdEst_M, lklhdEst_Madapt, beta0, lklhdEst_delta)
                 totalTime = time.time() - startTime
                 reportRow = [lklhdEst_Madapt,lklhdEst_M,lklhdEst_delta,totalTime,epsilon]
