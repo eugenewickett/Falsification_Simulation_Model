@@ -524,7 +524,7 @@ def Est_LinearProjection(A,X): # Linear Projection
     # at each end node, X
     intProj = np.dot(np.linalg.inv(np.dot(A.T,A)),np.dot(A.T,X))
     endProj = np.subtract(X,np.dot(A,intProj))
-    return np.ndarray.tolist(intProj.T[0]), np.ndarray.tolist(endProj.T[0])
+    return np.ndarray.tolist(intProj.T), np.ndarray.tolist(endProj.T)
 
 def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
     # USING ITERATIVELY REWEIGHTED LEAST SQUARES, SEE WIKIPEDIA FOR NOTATION
@@ -582,7 +582,7 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
                          method='L-BFGS-B',
                          options={'disp': False},
                          bounds=bds)
-    return invlogit_INTERIOR(opval.x)[0:A.shape[1]], invlogit_INTERIOR(opval.x)[A.shape[1]:]
+    return invlogit_INTERIOR(opval.x)[0:A.shape[1]].tolist(), invlogit_INTERIOR(opval.x)[A.shape[1]:]
 
 ########################### END SF RATE ESTIMATORS ###########################
 
