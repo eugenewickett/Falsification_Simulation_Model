@@ -308,7 +308,7 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
-        ### END EPSILON-DECREASING STRATEGY    
+        ### END EPSILON-GREEDY STRATEGY    
     elif int_PolicyType==1:
         nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
         eps = arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay]  # Our exploit parameter

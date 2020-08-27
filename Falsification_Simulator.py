@@ -35,7 +35,7 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 1000
 testPolicy = 1
 testPolicyParam = [1] # Set testing policy parameter list here
 testingIsDynamic = False # Is our testing policy dynamic or static?
@@ -48,7 +48,7 @@ warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
 alertIter = 20 # How frequently we're alerted of a set of replications being completed
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 50, 10, 0.2 #NUTS parameters
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
