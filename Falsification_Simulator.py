@@ -36,9 +36,9 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 NumSimDays = 400
 samplingBudget = NumSimDays*5
 numReplications = 1
-testPolicy = 1
-testPolicyParam = [1] # Set testing policy parameter list here
-testingIsDynamic = False # Is our testing policy dynamic or static?
+testPolicy = 9
+testPolicyParam = [100] # Set testing policy parameter list here
+testingIsDynamic = True # Is our testing policy dynamic or static?
 printOutput = True # Whether individual replication output should be displayed
 storeOutput = False # Do we store the output in an output dictionary file?
 diagnosticSensitivity = 0.95 # Tool sensitivity
@@ -49,8 +49,17 @@ warmUpIterationGap = 1000 # How often, in sim days, to store the current object 
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
 alertIter = 20 # How frequently we're alerted of a set of replications being completed
 lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
-lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 50, 10, 0.2 #NUTS parameters
+lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
+
+if testingIsDynamic == True and testPolicy in [8,9]:
+    # Sanity checks on the entered parameters for these particular testing policies
+    if testPolicyParam[0] > NumSimDays:
+        testPolicyParam[0] = NumSimDays # Testing interval can't be more than the total number of days
+    if testPolicyParam[0] < 1:
+        testPolicyParam[0] = 1 # Minimum planning interval is 1 day
+    lklhdBool = True
+    testPolicyParam.extend((diagnosticSensitivity,diagnosticSpecificity,lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta))
 
 inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBudget,
                             'testPolicy':testPolicy,'testPolicyParam':testPolicyParam,
@@ -94,7 +103,8 @@ for rep in range(numReplications):
         BudgetRemaining = samplingBudget
         List_DynamicTestResults = []
         for indEnd in range(endNum):
-            List_DynamicTestResults.append([rootNum+intermediateNum+indEnd,0,0,1.0]) # Each row is [node ID, numTests (not including stockouts), numSF, SFRate]
+            List_DynamicTestResults.append([rootNum+intermediateNum+indEnd,0,0,1.0,\
+                                           np.zeros(intermediateNum,np.int8).tolist()] ) # Each row is [node ID, numTests (not including stockouts), numSF, SFRate,[ImporterSourceCounts]]
         List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_DynamicTestResults,int_totalDays=NumSimDays, int_numDaysRemain=NumSimDays, int_totalBudget=samplingBudget, int_sampleBudgetRemain=BudgetRemaining, int_PolicyType=testPolicy, arr_PolicyParameter=testPolicyParam)
     
     # Initialize our testing results reporting table
@@ -120,7 +130,7 @@ for rep in range(numReplications):
     # Generate an importer SF scenario if the boolean is active
     intSFVec = []
     if intSFscenario_bool == True:
-        SFscenarios = [0,0.1,0.25,0.5,0.75,0.9]
+        SFscenarios = [0.00,0.10,0.25,0.50,0.75,0.90]
         for indInt in range(intermediateNum):
             intSFVec.append(np.random.choice(SFscenarios))
     else:
@@ -249,7 +259,13 @@ for rep in range(numReplications):
                             if DPRoot == 1:
                                 List_DynamicTestResults[currInd][2] += 1
                             List_DynamicTestResults[currInd][3] = List_DynamicTestResults[currInd][2] / List_DynamicTestResults[currInd][1]
-                    
+                            # Update the inventory levels observed from intermediate nodes
+                            for pile in invPileOriginList: # [intermediate node, amount]                            
+                                pileIntNode = pile[0]
+                                if not pileIntNode == 1: # Don't count falsified nodes purchases
+                                    pileLevel = pile[1]
+                                    List_DynamicTestResults[currInd][4][pileIntNode-rootNum] += pileLevel
+                            
                 if List_TestingSchedule == []: # Check if the testing schedule is now empty
                     break
         
@@ -264,7 +280,7 @@ for rep in range(numReplications):
             List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)              
         
         # Update dynamic testing if relevant
-        if testingIsDynamic == True and today != NumSimDays-1:
+        if testingIsDynamic == True and today != NumSimDays-1 and List_TestingSchedule == []:
             List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_DynamicTestResults,int_totalDays=NumSimDays, int_numDaysRemain=NumSimDays-(today+1), int_totalBudget=samplingBudget, int_sampleBudgetRemain=BudgetRemaining, int_PolicyType=testPolicy, arr_PolicyParameter=testPolicyParam)
         
         if np.mod(today+1,200) == 0: # For updating while running
@@ -440,10 +456,7 @@ for rep in range(numReplications):
     
     #MLE USING NONLINEAR OPTIMIZER
     try:
-        importerhat, outlethat = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), A, diagnosticSensitivity, diagnosticSpecificity, rglrWt = 0.5)
-        estIntFalsePercList_Plum = importerhat.tolist()
-        estEndFalsePercList_Plum = outlethat.tolist()
-       
+        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), A, diagnosticSensitivity, diagnosticSpecificity, rglrWt = 0.5)
     except:
         print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_Plum = []
@@ -451,24 +464,16 @@ for rep in range(numReplications):
         
     #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION, NUTS, 
     if lklhdBool == True:
+        startCalc = time.time()
         try:
-            def exampletargetfornuts(beta):
-                """
-                Example of a target distribution that could be sampled from using NUTS.
-                (Although of course you could sample from it more efficiently)
-                Doesn't include the normalizing constant.
-                """
-                return simModules.mylogpost(beta,ydata, numSamples, A, diagnosticSensitivity, diagnosticSpecificity), simModules.mylogpost_grad(beta,ydata, numSamples, A, diagnosticSensitivity, diagnosticSpecificity)
-            
-            beta0 = -2 * np.ones(intermediateNum + endNum)
-            samples, lnprob, epsilon = simModules.nuts6(exampletargetfornuts, lklhdEst_M, lklhdEst_Madapt, beta0, lklhdEst_delta)
-            
-            
-            estFalsePerc_LklhdSamples = samples 
-        
+            estFalsePerc_LklhdSamples = simModules.GenerateNUTSsamples(ydata,numSamples,A,diagnosticSensitivity,\
+                                                                       diagnosticSpecificity,lklhdEst_M,\
+                                                                       lklhdEst_Madapt,lklhdEst_delta)
+            print(time.time()-startCalc)        
         except:
             print("Couldn't generate the estimated node falsification percentages for LIKELIHOOD ESTIMATE")
             estFalsePerc_LklhdSamples = []
+            print(time.time()-startCalc)
             
     else:
         estFalsePerc_LklhdSamples = []
@@ -593,14 +598,25 @@ for rep in range(numReplications):
             ax.set_xlabel('Intermediate Node',fontsize=16)
             ax.set_ylabel('Est. model parameter distribution',fontsize=16)
             for i in range(intermediateNum):
-                plt.hist(simModules.invlogit(samples[:,i]))
+                plt.hist(simModules.invlogit(estFalsePerc_LklhdSamples[:,i]))
             
             fig = plt.figure()
             ax = fig.add_axes([0,0,2,1])
             ax.set_xlabel('End Node',fontsize=16)
             ax.set_ylabel('Est. model parameter distribution',fontsize=16)
             for i in range(endNum):
-                plt.hist(simModules.invlogit(samples[:,intermediateNum+i]))
+                plt.hist(simModules.invlogit(estFalsePerc_LklhdSamples[:,intermediateNum+i]))
+            
+            meanSampVec = []
+            for i in range(intermediateNum):
+                meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_LklhdSamples[:,i])))
+            meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
+            
+            print([round(estIntFalsePercList[i],3) for i in range(len(intSFVec))])
+            print([round(estIntFalsePercList_Bern[i],3) for i in range(len(intSFVec))])
+            print([round(estIntFalsePercList_Plum[i],3) for i in range(len(intSFVec))])
+            print(meanSampVec)
+            print(intSFVec)
                      
         
     ### END OF PRINT OUTPUT LOOP

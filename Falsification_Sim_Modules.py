@@ -7,6 +7,7 @@ Created on Thu Nov 14 17:04:36 2019
 Stores modules for use with 'SC Simulator.py'
 """
 import numpy as np
+import random
 import scipy.optimize as spo
 import scipy.special as sps
 import csv
@@ -256,7 +257,8 @@ def dynamicTestingGenerator(resultsList,
                              ):
     """
     Generates a dynamic testing schedule list for the following day, using the following:
-            0) resultsList: A list of testing results so far, with each entry formatted [Node ID, Num Samples, Num Positive, Positive Rate]
+            0) resultsList: A list of testing results so far, with each entry 
+                formatted [Node ID, Num Samples, Num Positive, Positive Rate, [IntNodeSourceCounts]]
             1) int_totalDays: Number of simulation days started with
             2) int_numDaysRemain: Number of simulation days remaining
             3) int_totalBudget: Budget amount, in number of samples
@@ -308,7 +310,7 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
-        ### END EPSILON-DECREASING STRATEGY    
+        ### END EPSILON-GREEDY STRATEGY    
     elif int_PolicyType==1:
         nextTestDay = int_totalDays - int_numDaysRemain # The day we are generating a schedule for
         eps = arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay] *arr_PolicyParameter[nextTestDay]  # Our exploit parameter
@@ -507,8 +509,130 @@ def dynamicTestingGenerator(resultsList,
                 NodeToTest = resultsList[testInd][0]
 
             sampleSchedule.append([nextTestDay,NodeToTest])
-
-
+    
+    elif int_PolicyType == 8: # TS w NUTS, version 1
+        # Grab intermediate and end node distros, then project onto end nodes
+        # for different samples from the distro. Pick the largest projected 
+        # SF estimate
+        # arr_PolicyParameter = [# days to plan for, sensitivity, specificity, M,
+        #                        Madapt, delta]
+        # How many days to plan for?
+        numDaysToSched = min(arr_PolicyParameter[0],int_numDaysRemain)
+        usedBudgetSoFar = 0
+        firstTestDay = int_totalDays - int_numDaysRemain
+        
+        if int_numDaysRemain == int_totalDays: # Our initial schedule should just be a distrubed exploration
+            currNode = resultsList[0][0]
+            for currDay in range(numDaysToSched):
+                numToTest = int(np.floor((int_sampleBudgetRemain-usedBudgetSoFar) / (int_numDaysRemain-currDay))) +\
+                            min((int_sampleBudgetRemain-usedBudgetSoFar) % (int_numDaysRemain-currDay),1) # How many samples to conduct in the next day
+                for testInd in range(numToTest): # Iterate through our end nodes
+                    if currNode > resultsList[len(resultsList)-1][0]:
+                        currNode = resultsList[0][0]
+                        sampleSchedule.append([firstTestDay+currDay,currNode])
+                        currNode += 1
+                    else:                        
+                        sampleSchedule.append([firstTestDay+currDay,currNode])
+                        currNode += 1
+                    usedBudgetSoFar += 1
+            
+        else: # Generate NUTS sample using current results and use it to generate a new schedule
+            ydata = []
+            nSamp = []
+            for rw in resultsList:
+                ydata.append(rw[2])
+                nSamp.append(rw[1])
+            A = GenerateTransitionMatrix(resultsList)      
+            sens, spec, M, Madapt, delta = arr_PolicyParameter[1:]
+            NUTSsamples = GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+            # Now pick from these samples to generate projections
+            for currDay in range(numDaysToSched):
+                numToTest = int(np.floor((int_sampleBudgetRemain-usedBudgetSoFar) / (int_numDaysRemain-currDay))) +\
+                            min((int_sampleBudgetRemain-usedBudgetSoFar) % (int_numDaysRemain-currDay),1) # How many samples to conduct in the next day
+                for testInd in range(numToTest):    
+                    currSample = []
+                    for i in range(A.shape[0]+A.shape[1]):
+                        j = random.randrange(len(NUTSsamples)) # Pick a random index
+                        currSample.append(NUTSsamples[j][i])
+                    currSample = invlogit(currSample)                    
+                    probs = currSample[A.shape[1]:] + np.matmul(A,currSample[:A.shape[1]])
+                    # Normalize? Or just pick largest value
+                    highInd = [i for i,j in enumerate(probs) if j == max(probs)]
+                    currNode = resultsList[highInd[0]][0]
+                    sampleSchedule.append([firstTestDay+currDay,currNode])
+                    usedBudgetSoFar += 1
+  
+        
+    elif int_PolicyType == 9: # Enhancing exploration w NUTS
+        # Grab intermediate and end node distros. Identify intermediate node
+        # sample variances. Pick an intermediate node according to a weighting.
+        # Pick an outlet from this int node's column in the transition matrix
+        # A, again by a weighting (where 0% nodes have a non-zero probability
+        # of being selected). log((p/1-p) + eps)?
+        # How many days to plan for?
+        numDaysToSched = min(arr_PolicyParameter[0],int_numDaysRemain)
+        usedBudgetSoFar = 0
+        firstTestDay = int_totalDays - int_numDaysRemain
+        
+        if int_numDaysRemain == int_totalDays: # Our initial schedule should just be a distrubed exploration
+            currNode = resultsList[0][0]
+            for currDay in range(numDaysToSched):
+                numToTest = int(np.floor((int_sampleBudgetRemain-usedBudgetSoFar) / (int_numDaysRemain-currDay))) +\
+                            min((int_sampleBudgetRemain-usedBudgetSoFar) % (int_numDaysRemain-currDay),1) # How many samples to conduct in the next day
+                for testInd in range(numToTest): # Iterate through our end nodes
+                    if currNode > resultsList[len(resultsList)-1][0]:
+                        currNode = resultsList[0][0]
+                        sampleSchedule.append([firstTestDay+currDay,currNode])
+                        currNode += 1
+                    else:                        
+                        sampleSchedule.append([firstTestDay+currDay,currNode])
+                        currNode += 1
+                    usedBudgetSoFar += 1
+            
+        else: # Generate NUTS sample using current results and use it to generate a new schedule
+            ydata = []
+            nSamp = []
+            for rw in resultsList:
+                ydata.append(rw[2])
+                nSamp.append(rw[1])
+            A = GenerateTransitionMatrix(resultsList)      
+            sens, spec, M, Madapt, delta = arr_PolicyParameter[1:]
+            NUTSsamples = GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+            # Store sample variances for intermediate nodes
+            NUTSintVars = []
+            for intNode in range(A.shape[1]):
+                currVar = np.var(invlogit(NUTSsamples[:,intNode]))
+                NUTSintVars.append(currVar)
+            # Normalize sum of all variances to 1
+            NUTSintVars = NUTSintVars/np.sum(NUTSintVars)
+            
+              
+            # Now pick from these samples to generate projections
+            for currDay in range(numDaysToSched):
+                numToTest = int(np.floor((int_sampleBudgetRemain-usedBudgetSoFar) / (int_numDaysRemain-currDay))) +\
+                            min((int_sampleBudgetRemain-usedBudgetSoFar) % (int_numDaysRemain-currDay),1) # How many samples to conduct in the next day
+                for testInd in range(numToTest):    
+                    # Pick an intermediate node to "target", with more emphasis on higher sample variances
+                    rUnif = random.uniform(0,1)
+                    for intInd in range(A.shape[1]):
+                        if rUnif < np.sum(NUTSintVars[0:(intInd+1)]):
+                            targIntInd = intInd
+                            break
+                    # Go through the same process with the column of A
+                    # pertaining to this target intermediate node
+                    AtargCol = [row[targIntInd] for row in A]
+                    # Add a small epsilon, for 0 values, and normalize
+                    AtargCol = np.add(AtargCol,1e-3)
+                    AtargCol = AtargCol/np.sum(AtargCol)
+                    rUnif = random.uniform(0,1)
+                    for intEnd in range(A.shape[0]):
+                        if rUnif < np.sum(AtargCol[0:(intEnd+1)]):
+                            currInd = intEnd
+                            break
+                    currNode = resultsList[currInd][0]
+                    sampleSchedule.append([firstTestDay+currDay,currNode])
+                    usedBudgetSoFar += 1                   
+    
     else:
         print('Error generating the sampling schedule.')
     
@@ -519,13 +643,35 @@ def dynamicTestingGenerator(resultsList,
 
  ### END "dynamicTestingGenerator" ###
 
+############################ 
+def GenerateTransitionMatrix(dynamicResultsList):
+    # Results list should be in form 
+    #   [Node ID, Num Samples, Num Positive, Positive Rate, [IntNodeSourceCounts]]
+    rowNum = len(dynamicResultsList)
+    colNum = len(dynamicResultsList[0][4])
+    A = np.zeros([rowNum,colNum])
+    indRow = 0
+    for rw in dynamicResultsList:        
+        currRowTotal = np.sum(rw[4])
+        if not currRowTotal == 0:
+            transRow = rw[4]/currRowTotal
+        else:
+            transRow = np.zeros([1,colNum],np.int8).tolist()[0]
+        
+        A[indRow] = transRow
+        indRow += 1
+    
+    return A
+
+############################
+
  ########################### SF RATE ESTIMATORS ###########################
 def Est_LinearProjection(A,X): # Linear Projection
     # Uses the (estimated) transition matrix, A, and the (estimated) percentage SF
     # at each end node, X
     intProj = np.dot(np.linalg.inv(np.dot(A.T,A)),np.dot(A.T,X))
     endProj = np.subtract(X,np.dot(A,intProj))
-    return np.ndarray.tolist(intProj.T), np.ndarray.tolist(endProj.T)
+    return np.ndarray.tolist(intProj.T)[0], np.ndarray.tolist(endProj.T)[0]
 
 def Est_BernMLEProjection(A,X): #MLE OF BERNOULLI VARIABLE
     # USING ITERATIVELY REWEIGHTED LEAST SQUARES, SEE WIKIPEDIA FOR NOTATION
@@ -567,6 +713,7 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
     ydata = np.array(ydata)
     numsamples = np.array(numsamples)
     beta0 = -6 * np.ones(A.shape[1]+A.shape[0])
+    beta0 = beta0 + np.random.uniform(-1,1,np.size(beta0))
     def invlogit_INTERIOR(beta):
         return np.exp(beta)/(np.exp(beta)+1)
     def mynegloglik_INTERIOR(beta, ydata, numsamples, A, sens, spec):
@@ -583,7 +730,22 @@ def PlumleeEstimates(ydata, numsamples, A, sens, spec, rglrWt = 0.1):
                          method='L-BFGS-B',
                          options={'disp': False},
                          bounds=bds)
-    return invlogit_INTERIOR(opval.x)[0:A.shape[1]].tolist(), invlogit_INTERIOR(opval.x)[A.shape[1]:]
+    return invlogit_INTERIOR(opval.x)[0:A.shape[1]].tolist(), invlogit_INTERIOR(opval.x)[A.shape[1]:].tolist()
+
+def GenerateNUTSsamples(posData,numSamples,A,sens,spec,M,Madapt,delta):
+    def exampletargetfornuts(beta):
+        """
+        Example of a target distribution that could be sampled from using NUTS.
+        (Although of course you could sample from it more efficiently)
+        Doesn't include the normalizing constant.
+        """
+        return mylogpost(beta,posData,numSamples,A,sens,spec), mylogpost_grad(beta,posData,numSamples,A,sens,spec)
+
+    beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
+    samples, lnprob, epsilon = nuts6(exampletargetfornuts,M,Madapt,beta0,delta)
+    
+    return samples
+
 
 ########################### END SF RATE ESTIMATORS ###########################
 
@@ -934,9 +1096,15 @@ def SimSFEstimateOutput(OPdicts):
     avgDevList_Lin = []
     avgDevList_Bern = []
     avgDevList_MLE = []
+    avgDevList_NUTS = []
+    absDevList_Lin = []
+    absDevList_Bern = []
+    absDevList_MLE = []
+    absDevList_NUTS = []
     stdDevList_Lin = []
     stdDevList_Bern = []
-    stdDevList_MLE = []    
+    stdDevList_MLE = [] 
+    stdDevList_NUTS = []
     
     # For each output dictionary, generate deviation estimates of varying types
     for currDict in OPdicts:
@@ -944,9 +1112,15 @@ def SimSFEstimateOutput(OPdicts):
         currDict_avgDevList_Lin = []
         currDict_avgDevList_Bern = []
         currDict_avgDevList_MLE = []
+        currDict_avgDevList_NUTS = []
+        currDict_absDevList_Lin = []
+        currDict_absDevList_Bern = []
+        currDict_absDevList_MLE = []
+        currDict_absDevList_NUTS = []
         currDict_stdDevList_Lin = []
         currDict_stdDevList_Bern = []
         currDict_stdDevList_MLE = []
+        currDict_stdDevList_NUTS = []
         
         for repNum in currDict.keys():
             currTrueSFVec = currDict[repNum]['intSFTrueValues']
@@ -957,23 +1131,48 @@ def SimSFEstimateOutput(OPdicts):
             currLinProj = currDict[repNum]['intFalseEstimates']
             currBernProj = currDict[repNum]['intFalseEstimates_Bern']
             currMLEProj = currDict[repNum]['intFalseEstimates_Plum']
+            currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
+            
             currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            
+            currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            currBernProjAbsdevs = [np.abs(currBernProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            currNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            
             
             currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
             currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
             currDict_avgDevList_MLE.append(np.mean(currMLEProjdevs))
+            currDict_avgDevList_NUTS.append(np.mean(currNUTSdevs))
+            
+            currDict_absDevList_Lin.append(currLinProjAbsdevs)
+            currDict_absDevList_Bern.append(currBernProjAbsdevs)
+            currDict_absDevList_MLE.append(currMLEProjAbsdevs)
+            currDict_absDevList_NUTS.append(currNUTSAbsdevs)
+            
             currDict_stdDevList_Lin.append(np.std(currLinProjdevs))
             currDict_stdDevList_Bern.append(np.std(currBernProjdevs))
             currDict_stdDevList_MLE.append(np.std(currMLEProjdevs))
+            currDict_stdDevList_NUTS.append(np.std(currNUTSdevs))
         
         avgDevList_Lin.append(currDict_avgDevList_Lin)
         avgDevList_Bern.append(currDict_avgDevList_Bern)
         avgDevList_MLE.append(currDict_avgDevList_MLE)
+        avgDevList_NUTS.append(currDict_avgDevList_NUTS)
+        
+        absDevList_Lin.append(currDict_absDevList_Lin) 
+        absDevList_Bern.append(currDict_absDevList_Bern)
+        absDevList_MLE.append(currDict_absDevList_MLE)
+        absDevList_NUTS.append(currDict_absDevList_NUTS)
+        
         stdDevList_Lin.append(currDict_stdDevList_Lin)
         stdDevList_Bern.append(currDict_stdDevList_Bern)
         stdDevList_MLE.append(currDict_stdDevList_MLE)
+        stdDevList_NUTS.append(currDict_stdDevList_NUTS) 
     
     # Scenario-dependent looks at performance
     scenDict = {}
@@ -1152,6 +1351,28 @@ def SimSFEstimateOutput(OPdicts):
     
     
     # Build plots
+    # Devaition averages (biases)
+    fig, axs = plt.subplots(3, 1,figsize=(9,13))
+    fig.suptitle('Estimate Deviation AVERAGES',fontsize=18)
+    for subP in range(3):
+        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
+        axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)        
+        axs[subP].set_ylim([-0.4,0.4])
+        #vals = axs[subP].get_yticks()
+        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+    # Linear projection
+    axs[0].set_title('Linear projection',fontweight='bold')        
+    axs[0].boxplot(avgDevList_Lin,ecolor='mediumpurple',capsize=5,color='indigo')
+    # Bernoulli MLE projection
+    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+    axs[1].boxplot(avgDevList_Bern,ecolor='seagreen',capsize=5,color='green')      
+    # MLE w Nonlinear optimizer        
+    axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
+    axs[2].boxplot(avgDevList_MLE,ecolor='orange',capsize=5,color='darkorange')   
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.94)
+    plt.show()
+    
     # Devaition averages (biases)
     fig, axs = plt.subplots(3, 1,figsize=(9,13))
     fig.suptitle('Estimate Deviation AVERAGES',fontsize=18)
@@ -1430,6 +1651,7 @@ def mylogpost(beta, ydata, nsamp, A, sens, spec):
 def mylogpost_grad(beta, ydata, nsamp, A, sens, spec):
     return mylogprior_grad(beta, ydata, nsamp, A, sens, spec)-mynegloglik_grad(beta, ydata, nsamp, A, sens, spec) #modified by EOW
 
+'''
 def exampletargetfornuts(beta):
     """
     Example of a target distribution that could be sampled from using NUTS.
@@ -1437,7 +1659,7 @@ def exampletargetfornuts(beta):
     Doesn't include the normalizing constant.
     """
     return mylogpost(beta,ydata, nsamp, A, sens, spec), mylogpost_grad(beta,ydata, nsamp, A, sens, spec) 
-
+'''
 
 #### Necessary NUTS module ####
 """
@@ -1541,7 +1763,7 @@ def leapfrog(theta, r, grad, epsilon, f):
 
 
 
-def find_reasonable_epsilon(theta0, grad0, logp0, f, epsilonLB = 0.05, epsilonUB = 0.5):
+def find_reasonable_epsilon(theta0, grad0, logp0, f, epsilonLB = 0.005, epsilonUB = 0.5):
     """ Heuristic for choosing an initial value of epsilon """
     epsilon = (1)
     r0 = np.random.normal(0., 1., len(theta0))
@@ -1760,7 +1982,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.25):
             n += nprime
             
             # Decide if it's time to stop.
-            s = sprime and stop_criterion(thetaminus, thetaplus, rminus, rplus) and (n < 50)
+            s = sprime and stop_criterion(thetaminus, thetaplus, rminus, rplus) and (n < 50) # (n<50) PlUMLEE EDIT
             # Increment depth.
             j += 1
 
@@ -1775,10 +1997,12 @@ def nuts6(f, M, Madapt, theta0, delta=0.25):
         else:
             epsilon = epsilonbar
         
+        '''
         ### EOW ADDITION
         if np.mod(m,10)==0:
             print('Round '+str(m)+' of nuts6 finished' )
         ### END EOW
+        '''
         
     samples = samples[Madapt:, :]
     lnprob = lnprob[Madapt:]
