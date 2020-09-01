@@ -550,11 +550,7 @@ def dynamicTestingGenerator(resultsList,
                 numToTest = int(np.floor((int_sampleBudgetRemain-usedBudgetSoFar) / (int_numDaysRemain-currDay))) +\
                             min((int_sampleBudgetRemain-usedBudgetSoFar) % (int_numDaysRemain-currDay),1) # How many samples to conduct in the next day
                 for testInd in range(numToTest):    
-                    currSample = []
-                    for i in range(A.shape[0]+A.shape[1]):
-                        j = random.randrange(len(NUTSsamples)) # Pick a random index
-                        currSample.append(NUTSsamples[j][i])
-                    currSample = invlogit(currSample)                    
+                    currSample = invlogit(NUTSsamples[random.randrange(len(NUTSsamples))])
                     probs = currSample[A.shape[1]:] + np.matmul(A,currSample[:A.shape[1]])
                     # Normalize? Or just pick largest value
                     highInd = [i for i,j in enumerate(probs) if j == max(probs)]
@@ -1084,13 +1080,15 @@ def SimReplicationOutput(OPdict):
     '''
  ### END "SimReplicationOutput" ###
 
-def SimSFEstimateOutput(OPdicts):
+def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
     '''
     Generates comparison tables and plots for a LIST of output dictionaries.
     Intended for comparison with the underlying "true" SF rates at the
     importer level.
     '''
     numDicts = len(OPdicts)
+    if dictNamesVec == [] or not len(dictNamesVec) == numDicts: # Empty names vector or mismatch; generate a numbered one
+        dictNamesVec = [num for num in range(numDicts)]
     scenarioList = [] # Initialize a list of possible 'true' underyling SF rates
     # Initialize deviation lists; contains lists of deviations for each replication
     avgDevList_Lin = []
@@ -1132,47 +1130,58 @@ def SimSFEstimateOutput(OPdicts):
             currBernProj = currDict[repNum]['intFalseEstimates_Bern']
             currMLEProj = currDict[repNum]['intFalseEstimates_Plum']
             currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
+            hasNUTS = True
+            if currNUTSsamples == []: # No NUTS samples included
+                hasNUTS = False
             
             currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
-            currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            if hasNUTS:
+                currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             
             currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currBernProjAbsdevs = [np.abs(currBernProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
-            currNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            if hasNUTS:
+                currNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             
             
             currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
             currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
             currDict_avgDevList_MLE.append(np.mean(currMLEProjdevs))
-            currDict_avgDevList_NUTS.append(np.mean(currNUTSdevs))
+            if hasNUTS:
+                currDict_avgDevList_NUTS.append(np.mean(currNUTSdevs))
             
-            currDict_absDevList_Lin.append(currLinProjAbsdevs)
-            currDict_absDevList_Bern.append(currBernProjAbsdevs)
-            currDict_absDevList_MLE.append(currMLEProjAbsdevs)
-            currDict_absDevList_NUTS.append(currNUTSAbsdevs)
+            currDict_absDevList_Lin.append(np.mean(currLinProjAbsdevs))
+            currDict_absDevList_Bern.append(np.mean(currBernProjAbsdevs))
+            currDict_absDevList_MLE.append(np.mean(currMLEProjAbsdevs))
+            if hasNUTS:
+                currDict_absDevList_NUTS.append(np.mean(currNUTSAbsdevs))
             
             currDict_stdDevList_Lin.append(np.std(currLinProjdevs))
             currDict_stdDevList_Bern.append(np.std(currBernProjdevs))
             currDict_stdDevList_MLE.append(np.std(currMLEProjdevs))
-            currDict_stdDevList_NUTS.append(np.std(currNUTSdevs))
+            if hasNUTS:
+                currDict_stdDevList_NUTS.append(np.std(currNUTSdevs))
         
         avgDevList_Lin.append(currDict_avgDevList_Lin)
         avgDevList_Bern.append(currDict_avgDevList_Bern)
         avgDevList_MLE.append(currDict_avgDevList_MLE)
-        avgDevList_NUTS.append(currDict_avgDevList_NUTS)
+        if hasNUTS:
+            avgDevList_NUTS.append(currDict_avgDevList_NUTS)
         
         absDevList_Lin.append(currDict_absDevList_Lin) 
         absDevList_Bern.append(currDict_absDevList_Bern)
         absDevList_MLE.append(currDict_absDevList_MLE)
-        absDevList_NUTS.append(currDict_absDevList_NUTS)
+        if hasNUTS:
+            absDevList_NUTS.append(currDict_absDevList_NUTS)
         
         stdDevList_Lin.append(currDict_stdDevList_Lin)
         stdDevList_Bern.append(currDict_stdDevList_Bern)
         stdDevList_MLE.append(currDict_stdDevList_MLE)
-        stdDevList_NUTS.append(currDict_stdDevList_NUTS) 
+        if hasNUTS:
+            stdDevList_NUTS.append(currDict_stdDevList_NUTS) 
     
     # Scenario-dependent looks at performance
     scenDict = {}
@@ -1181,17 +1190,34 @@ def SimSFEstimateOutput(OPdicts):
         SCENavgDevList_Lin = []
         SCENavgDevList_Bern = []
         SCENavgDevList_MLE = []
+        SCENavgDevList_NUTS = []
+        
+        SCENabsDevList_Lin = []
+        SCENabsDevList_Bern = []
+        SCENabsDevList_MLE = []
+        SCENabsDevList_NUTS = []
+        
         SCENstdDevList_Lin = []
         SCENstdDevList_Bern = []
         SCENstdDevList_MLE = []
+        SCENstdDevList_NUTS = []
+        
         for currDict in OPdicts:
         # Loop through each replication contained in the current output dictionary
             currScenDict_avgDevList_Lin = []
             currScenDict_avgDevList_Bern = []
             currScenDict_avgDevList_MLE = []
+            currScenDict_avgDevList_NUTS = []
+            
+            currScenDict_absDevList_Lin = []
+            currScenDict_absDevList_Bern = []
+            currScenDict_absDevList_MLE = []
+            currScenDict_absDevList_NUTS = []
+            
             currScenDict_stdDevList_Lin = []
             currScenDict_stdDevList_Bern = []
             currScenDict_stdDevList_MLE = []
+            currScenDict_stdDevList_NUTS = []
             
             for repNum in currDict.keys():
                 currTrueSFVec = currDict[repNum]['intSFTrueValues']
@@ -1201,329 +1227,254 @@ def SimSFEstimateOutput(OPdicts):
                     currScenLinProj = [currDict[repNum]['intFalseEstimates'][i] for i in currScenInds]
                     currScenBernProj = [currDict[repNum]['intFalseEstimates_Bern'][i] for i in currScenInds]
                     currScenMLEProj = [currDict[repNum]['intFalseEstimates_Plum'][i] for i in currScenInds]
+                    currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
+                    hasNUTS = True
+                    if currNUTSsamples == []: # No NUTS samples included
+                        hasNUTS = False
+                    
                     currScenLinProjdevs = [currScenLinProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
                     currScenBernProjdevs = [currScenBernProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
                     currScenMLEProjdevs = [currScenMLEProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    if hasNUTS:
+                        currScenNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    
+                    currScenLinProjAbsdevs = [np.abs(currScenLinProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
+                    currScenBernProjAbsdevs = [np.abs(currScenBernProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
+                    currScenMLEProjAbsdevs = [np.abs(currScenMLEProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]                    
+                    if hasNUTS:
+                        currScenNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
+                    
                     
                     currScenDict_avgDevList_Lin.append(np.mean(currScenLinProjdevs))
                     currScenDict_avgDevList_Bern.append(np.mean(currScenBernProjdevs))
                     currScenDict_avgDevList_MLE.append(np.mean(currScenMLEProjdevs))
+                    if hasNUTS:
+                        currScenDict_avgDevList_NUTS.append(np.mean(currScenNUTSdevs))
+                    
+                    currScenDict_absDevList_Lin.append(np.mean(currScenLinProjAbsdevs))
+                    currScenDict_absDevList_Bern.append(np.mean(currScenBernProjAbsdevs))
+                    currScenDict_absDevList_MLE.append(np.mean(currScenMLEProjAbsdevs))
+                    if hasNUTS:
+                        currScenDict_absDevList_NUTS.append(np.mean(currScenNUTSAbsdevs))
+                    
                     currScenDict_stdDevList_Lin.append(np.std(currScenLinProjdevs))
                     currScenDict_stdDevList_Bern.append(np.std(currScenBernProjdevs))
                     currScenDict_stdDevList_MLE.append(np.std(currScenMLEProjdevs))
+                    if hasNUTS:
+                        currScenDict_stdDevList_NUTS.append(np.std(currScenNUTSdevs))
             
             SCENavgDevList_Lin.append(currScenDict_avgDevList_Lin)
             SCENavgDevList_Bern.append(currScenDict_avgDevList_Bern)
             SCENavgDevList_MLE.append(currScenDict_avgDevList_MLE)
+            SCENavgDevList_NUTS.append(currScenDict_avgDevList_NUTS)
+            
+            SCENabsDevList_Lin.append(currScenDict_absDevList_Lin)
+            SCENabsDevList_Bern.append(currScenDict_absDevList_Bern)
+            SCENabsDevList_MLE.append(currScenDict_absDevList_MLE)
+            SCENabsDevList_NUTS.append(currScenDict_absDevList_NUTS)
+            
             SCENstdDevList_Lin.append(currScenDict_stdDevList_Lin)
             SCENstdDevList_Bern.append(currScenDict_stdDevList_Bern)
             SCENstdDevList_MLE.append(currScenDict_stdDevList_MLE)
+            SCENstdDevList_NUTS.append(currScenDict_stdDevList_NUTS)
         
         currOutputLine = {'scenario': currScen,
                           'SCENavgDevList_Lin':SCENavgDevList_Lin,
                           'SCENavgDevList_Bern':SCENavgDevList_Bern,
                           'SCENavgDevList_MLE':SCENavgDevList_MLE,
+                          'SCENavgDevList_NUTS':SCENavgDevList_NUTS,
+                          'SCENabsDevList_Lin':SCENabsDevList_Lin,
+                          'SCENabsDevList_Bern':SCENabsDevList_Bern,
+                          'SCENabsDevList_MLE':SCENabsDevList_MLE,
+                          'SCENabsDevList_NUTS':SCENabsDevList_NUTS,                        
                           'SCENstdDevList_Lin':SCENstdDevList_Lin,
                           'SCENstdDevList_Bern':SCENstdDevList_Bern,
-                          'SCENstdDevList_MLE':SCENstdDevList_MLE
+                          'SCENstdDevList_MLE':SCENstdDevList_MLE,
+                          'SCENstdDevList_NUTS':SCENstdDevList_NUTS
                           }
         scenDict[ind] = currOutputLine
         ind += 1
         
-    ### Plots of our results
-    #Some initial plotting needs
-    #Indices
-    lowErrIndVec = []
-    upErrIndVec = []
-    for dictNum in range(numDicts):
-        lowErrIndVec.append(int(np.floor(0.05*len(OPdicts[dictNum].keys()))))
-        upErrIndVec.append(int(np.ceil(0.95*len(OPdicts[dictNum].keys())))-1)
-    #x-axis title
-    Plot_XLabels = [str(i) for i in range(numDicts)]
     
-    # Linear projection - avgs
-    dictAvgDevs_Lin = []
-    dictAvgLows_Lin = []
-    dictAvgUps_Lin = []
-    for i in range(numDicts):
-        lowErrInd = lowErrIndVec[i]
-        upErrInd = upErrIndVec[i]
-        currAvgDevList = avgDevList_Lin[i]
-        currAvgDevList.sort()
-        meanDev = np.mean(currAvgDevList)
-        lowDev = currAvgDevList[lowErrInd]
-        upDev = currAvgDevList[upErrInd]
-        dictAvgDevs_Lin.append(meanDev)
-        dictAvgLows_Lin.append(lowDev)
-        dictAvgUps_Lin.append(upDev)
-    dictAvgErr_Lin = [[dictAvgDevs_Lin[i]-dictAvgLows_Lin[i] for i in range(numDicts)], 
-              [dictAvgUps_Lin[j]-dictAvgDevs_Lin[j] for j in range(numDicts)]]
-    
-    # Bernoulli - avgs
-    dictAvgDevs_Bern = []
-    dictAvgLows_Bern = []
-    dictAvgUps_Bern = []
-    for i in range(numDicts):
-        lowErrInd = lowErrIndVec[i]
-        upErrInd = upErrIndVec[i]
-        currAvgDevList = avgDevList_Bern[i]
-        currAvgDevList.sort()
-        meanDev = np.mean(currAvgDevList)
-        lowDev = currAvgDevList[lowErrInd]
-        upDev = currAvgDevList[upErrInd]
-        dictAvgDevs_Bern.append(meanDev)
-        dictAvgLows_Bern.append(lowDev)
-        dictAvgUps_Bern.append(upDev)
-    dictAvgErr_Bern = [[dictAvgDevs_Bern[i]-dictAvgLows_Bern[i] for i in range(numDicts)], 
-              [dictAvgUps_Bern[j]-dictAvgDevs_Bern[j] for j in range(numDicts)]]
-    
-    # MLE w Optimizer - avgs
-    dictAvgDevs_MLE = []
-    dictAvgLows_MLE = []
-    dictAvgUps_MLE = []
-    for i in range(numDicts):
-        lowErrInd = lowErrIndVec[i]
-        upErrInd = upErrIndVec[i]
-        currAvgDevList = avgDevList_MLE[i]
-        currAvgDevList.sort()
-        meanDev = np.mean(currAvgDevList)
-        lowDev = currAvgDevList[lowErrInd]
-        upDev = currAvgDevList[upErrInd]
-        dictAvgDevs_MLE.append(meanDev)
-        dictAvgLows_MLE.append(lowDev)
-        dictAvgUps_MLE.append(upDev)
-    dictAvgErr_MLE = [[dictAvgDevs_MLE[i]-dictAvgLows_MLE[i] for i in range(numDicts)], 
-              [dictAvgUps_MLE[j]-dictAvgDevs_MLE[j] for j in range(numDicts)]]
-    
-    # Linear projection - standard deviations
-    dictStdDevs_Lin = []
-    dictStdLows_Lin = []
-    dictStdUps_Lin = []
-    for i in range(numDicts):
-        lowErrInd = lowErrIndVec[i]
-        upErrInd = upErrIndVec[i]
-        currDevList = stdDevList_Lin[i]
-        currDevList.sort()
-        meanDev = np.mean(currDevList)
-        lowDev = currDevList[lowErrInd]
-        upDev = currDevList[upErrInd]
-        dictStdDevs_Lin.append(meanDev)
-        dictStdLows_Lin.append(lowDev)
-        dictStdUps_Lin.append(upDev)
-    dictStdErr_Lin = [[dictStdDevs_Lin[i]-dictStdLows_Lin[i] for i in range(numDicts)], 
-              [dictStdUps_Lin[j]-dictStdDevs_Lin[j] for j in range(numDicts)]]
-    
-    # Bernoulli - standard deviations
-    dictStdDevs_Bern = []
-    dictStdLows_Bern = []
-    dictStdUps_Bern = []
-    for i in range(numDicts):
-        lowErrInd = lowErrIndVec[i]
-        upErrInd = upErrIndVec[i]
-        currDevList = stdDevList_Bern[i]
-        currDevList.sort()
-        meanDev = np.mean(currDevList)
-        lowDev = currDevList[lowErrInd]
-        upDev = currDevList[upErrInd]
-        dictStdDevs_Bern.append(meanDev)
-        dictStdLows_Bern.append(lowDev)
-        dictStdUps_Bern.append(upDev)
-    dictStdErr_Bern = [[dictStdDevs_Bern[i]-dictStdLows_Bern[i] for i in range(numDicts)], 
-              [dictStdUps_Bern[j]-dictStdDevs_Bern[j] for j in range(numDicts)]]
-    
-    # MLE w Optimizer - standard deviations
-    dictStdDevs_MLE = []
-    dictStdLows_MLE = []
-    dictStdUps_MLE = []
-    for i in range(numDicts):
-        lowErrInd = lowErrIndVec[i]
-        upErrInd = upErrIndVec[i]
-        currDevList = stdDevList_MLE[i]
-        currDevList.sort()
-        meanDev = np.mean(currDevList)
-        lowDev = currDevList[lowErrInd]
-        upDev = currDevList[upErrInd]
-        dictStdDevs_MLE.append(meanDev)
-        dictStdLows_MLE.append(lowDev)
-        dictStdUps_MLE.append(upDev)
-    dictStdErr_MLE = [[dictStdDevs_MLE[i]-dictStdLows_MLE[i] for i in range(numDicts)], 
-              [dictStdUps_MLE[j]-dictStdDevs_MLE[j] for j in range(numDicts)]]
+    '''
+    avgDevList_Lin = []
+    avgDevList_Bern = []
+    avgDevList_MLE = []
+    avgDevList_NUTS = []
+    absDevList_Lin = []
+    absDevList_Bern = []
+    absDevList_MLE = []
+    absDevList_NUTS = []
+    stdDevList_Lin = []
+    stdDevList_Bern = []
+    stdDevList_MLE = [] 
+    stdDevList_NUTS = []
     
     
+    ecolor='mediumpurple',capsize=5,color='indigo'
+    ecolor='seagreen',capsize=5,color='green'
+    ecolor='orange',capsize=5,color='darkorange'
+    '''
+   
     # Build plots
-    # Devaition averages (biases)
-    fig, axs = plt.subplots(3, 1,figsize=(9,13))
-    fig.suptitle('Estimate Deviation AVERAGES',fontsize=18)
-    for subP in range(3):
-        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-        axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)        
-        axs[subP].set_ylim([-0.4,0.4])
-        #vals = axs[subP].get_yticks()
-        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    # Linear projection
-    axs[0].set_title('Linear projection',fontweight='bold')        
-    axs[0].boxplot(avgDevList_Lin,ecolor='mediumpurple',capsize=5,color='indigo')
-    # Bernoulli MLE projection
-    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-    axs[1].boxplot(avgDevList_Bern,ecolor='seagreen',capsize=5,color='green')      
-    # MLE w Nonlinear optimizer        
-    axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-    axs[2].boxplot(avgDevList_MLE,ecolor='orange',capsize=5,color='darkorange')   
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.94)
-    plt.show()
+    colors = ['gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate']
     
-    # Devaition averages (biases)
-    fig, axs = plt.subplots(3, 1,figsize=(9,13))
-    fig.suptitle('Estimate Deviation AVERAGES',fontsize=18)
-    for subP in range(3):
+    # Absolute deviations
+    fig, axs = plt.subplots(4, 1,figsize=(9,13))
+    fig.suptitle('Estimate Deviations - ABSOLUTE',fontsize=18)
+    for subP in range(4):
         axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-        axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)        
-        axs[subP].set_ylim([-0.4,0.4])
-        #vals = axs[subP].get_yticks()
-        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    # Linear projection
-    axs[0].set_title('Linear projection',fontweight='bold')        
-    axs[0].errorbar(Plot_XLabels,dictAvgDevs_Lin,yerr=dictAvgErr_Lin,
-                   ecolor='mediumpurple',capsize=5,color='indigo')
-    # Bernoulli MLE projection
-    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-    axs[1].errorbar(Plot_XLabels,dictAvgDevs_Bern,yerr=dictAvgErr_Bern,
-                   ecolor='seagreen',capsize=5,color='green')      
-    # MLE w Nonlinear optimizer        
-    axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-    axs[2].errorbar(Plot_XLabels,dictAvgDevs_MLE,yerr=dictAvgErr_MLE,
-                   ecolor='orange',capsize=5,color='darkorange')   
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.94)
-    plt.show()
-    
-    #Deviation variation
-    fig, axs = plt.subplots(3, 1,figsize=(9,13))
-    fig.suptitle('Estimate Deviation STANDARD DEVIATIONS',fontsize=18)
-    for subP in range(3):
-        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-        axs[subP].set_ylabel('Est. StDev of Deviation',fontsize=12)        
+        axs[subP].set_ylabel('Est. Abs. Deviation',fontsize=12)
         axs[subP].set_ylim([0,0.4])
         #vals = axs[subP].get_yticks()
         #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
     # Linear projection
     axs[0].set_title('Linear projection',fontweight='bold')        
-    axs[0].errorbar(Plot_XLabels,dictStdDevs_Lin,yerr=dictStdErr_Lin,
-                   ecolor='mediumpurple',capsize=5,color='indigo')
+    bp0 = axs[0].boxplot(absDevList_Lin,labels=dictNamesVec,patch_artist=True)
     # Bernoulli MLE projection
     axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-    axs[1].errorbar(Plot_XLabels,dictStdDevs_Bern,yerr=dictStdErr_Bern,
-                   ecolor='seagreen',capsize=5,color='green')      
+    bp1 = axs[1].boxplot(absDevList_Bern,labels=dictNamesVec,patch_artist=True)      
     # MLE w Nonlinear optimizer        
-    axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-    axs[2].errorbar(Plot_XLabels,dictStdDevs_MLE,yerr=dictStdErr_MLE,
-                   ecolor='orange',capsize=5,color='darkorange')   
+    axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
+    bp2 = axs[2].boxplot(absDevList_MLE,labels=dictNamesVec,patch_artist=True)
+    # Mean of NUTS samples
+    axs[3].set_title('NUTS sample means',fontweight='bold')
+    bp3 = axs[3].boxplot(absDevList_NUTS,labels=dictNamesVec,patch_artist=True)
+    for bp in (bp0,bp1,bp2,bp3):
+        for patch, color in zip(bp['boxes'],colors):
+            patch.set_facecolor(color)
     plt.tight_layout()
     plt.subplots_adjust(top=0.94)
     plt.show()
     
-    # For each scenario; only find average deviations
+    # Deviation averages (biases)
+    fig, axs = plt.subplots(4, 1,figsize=(9,13))
+    fig.suptitle('Estimate Deviations - MEANS',fontsize=18)
+    for subP in range(4):
+        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
+        axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)
+        axs[subP].set_ylim([-0.4,0.4])
+        #vals = axs[subP].get_yticks()
+        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+    # Linear projection
+    axs[0].set_title('Linear projection',fontweight='bold')        
+    bp0 = axs[0].boxplot(avgDevList_Lin,labels=dictNamesVec,patch_artist=True)
+    # Bernoulli MLE projection
+    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+    bp1 = axs[1].boxplot(avgDevList_Bern,labels=dictNamesVec,patch_artist=True)      
+    # MLE w Nonlinear optimizer        
+    axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
+    bp2 = axs[2].boxplot(avgDevList_MLE,labels=dictNamesVec,patch_artist=True)
+    # Mean of NUTS samples
+    axs[3].set_title('NUTS sample means',fontweight='bold')
+    bp3 = axs[3].boxplot(avgDevList_NUTS,labels=dictNamesVec,patch_artist=True)
+    for bp in (bp0,bp1,bp2,bp3):
+        for patch, color in zip(bp['boxes'],colors):
+            patch.set_facecolor(color)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.94)
+    plt.show()
+    
+    # Standard deviations    
+    fig, axs = plt.subplots(4, 1,figsize=(9,13))
+    fig.suptitle('Estimate Deviations - STANDARD DEVIATIONS',fontsize=18)
+    for subP in range(4):
+        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
+        axs[subP].set_ylabel('Est. Std. Deviation',fontsize=12)
+        axs[subP].set_ylim([0,0.4])
+        #vals = axs[subP].get_yticks()
+        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+    # Linear projection
+    axs[0].set_title('Linear projection',fontweight='bold')        
+    bp0 = axs[0].boxplot(stdDevList_Lin,labels=dictNamesVec,patch_artist=True)
+    # Bernoulli MLE projection
+    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+    bp1 = axs[1].boxplot(stdDevList_Bern,labels=dictNamesVec,patch_artist=True)      
+    # MLE w Nonlinear optimizer        
+    axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
+    bp2 = axs[2].boxplot(stdDevList_MLE,labels=dictNamesVec,patch_artist=True)
+    # Mean of NUTS samples
+    axs[3].set_title('NUTS sample means',fontweight='bold')
+    bp3 = axs[3].boxplot(stdDevList_NUTS,labels=dictNamesVec,patch_artist=True)
+    for bp in (bp0,bp1,bp2,bp3):
+        for patch, color in zip(bp['boxes'],colors):
+            patch.set_facecolor(color)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.94)
+    plt.show()
+    
+    # Generate plots for our different SF rate scenarios
     for scenInd in range(len(scenarioList)):
         currScenDict = scenDict[scenInd]
+        currScen = scenDict[scenInd]['scenario']
+        
         avgDevListLin_scen = currScenDict['SCENavgDevList_Lin']
         avgDevListBern_scen = currScenDict['SCENavgDevList_Bern']
         avgDevListMLE_scen = currScenDict['SCENavgDevList_MLE']
-        
-        lowErrIndVec = []
-        upErrIndVec = []
-        for dictNum in range(numDicts):
-            lowErrIndVec.append(int(np.floor(0.05*len(avgDevListLin_scen[dictNum]))))
-            upErrIndVec.append(int(np.ceil(0.95*len(avgDevListLin_scen[dictNum])))-1)
-        #x-axis title
-        Plot_XLabels = [str(i) for i in range(numDicts)]
-        
-        # Linear projection - avgs
-        dictAvgDevs_Lin = []
-        dictAvgLows_Lin = []
-        dictAvgUps_Lin = []
-        for i in range(numDicts):
-            lowErrInd = lowErrIndVec[i]
-            upErrInd = upErrIndVec[i]
-            currAvgDevList = avgDevListLin_scen[i]
-            currAvgDevList.sort()
-            meanDev = np.mean(currAvgDevList)
-            lowDev = currAvgDevList[lowErrInd]
-            upDev = currAvgDevList[upErrInd]
-            dictAvgDevs_Lin.append(meanDev)
-            dictAvgLows_Lin.append(lowDev)
-            dictAvgUps_Lin.append(upDev)
-        dictAvgErr_Lin = [[dictAvgDevs_Lin[i]-dictAvgLows_Lin[i] for i in range(numDicts)], 
-                  [dictAvgUps_Lin[j]-dictAvgDevs_Lin[j] for j in range(numDicts)]]
-        
-        # Bernoulli - avgs
-        dictAvgDevs_Bern = []
-        dictAvgLows_Bern = []
-        dictAvgUps_Bern = []
-        for i in range(numDicts):
-            lowErrInd = lowErrIndVec[i]
-            upErrInd = upErrIndVec[i]
-            currAvgDevList = avgDevListBern_scen[i]
-            currAvgDevList.sort()
-            meanDev = np.mean(currAvgDevList)
-            lowDev = currAvgDevList[lowErrInd]
-            upDev = currAvgDevList[upErrInd]
-            dictAvgDevs_Bern.append(meanDev)
-            dictAvgLows_Bern.append(lowDev)
-            dictAvgUps_Bern.append(upDev)
-        dictAvgErr_Bern = [[dictAvgDevs_Bern[i]-dictAvgLows_Bern[i] for i in range(numDicts)], 
-                  [dictAvgUps_Bern[j]-dictAvgDevs_Bern[j] for j in range(numDicts)]]
-        
-        # MLE w Optimizer - avgs
-        dictAvgDevs_MLE = []
-        dictAvgLows_MLE = []
-        dictAvgUps_MLE = []
-        for i in range(numDicts):
-            lowErrInd = lowErrIndVec[i]
-            upErrInd = upErrIndVec[i]
-            currAvgDevList = avgDevListMLE_scen[i]
-            currAvgDevList.sort()
-            meanDev = np.mean(currAvgDevList)
-            lowDev = currAvgDevList[lowErrInd]
-            upDev = currAvgDevList[upErrInd]
-            dictAvgDevs_MLE.append(meanDev)
-            dictAvgLows_MLE.append(lowDev)
-            dictAvgUps_MLE.append(upDev)
-        dictAvgErr_MLE = [[dictAvgDevs_MLE[i]-dictAvgLows_MLE[i] for i in range(numDicts)], 
-                  [dictAvgUps_MLE[j]-dictAvgDevs_MLE[j] for j in range(numDicts)]]
+        avgDevListNUTS_scen = currScenDict['SCENavgDevList_NUTS']
     
-        # Generate plots for each scenario
-        # Devaition averages (biases)
-        fig, axs = plt.subplots(3, 1,figsize=(9,13))
-        fig.suptitle('Estimate Deviation AVERAGES for SF RATE OF '+str(scenarioList[scenInd]),fontsize=18)
-        for subP in range(3):
+        absDevListLin_scen = currScenDict['SCENabsDevList_Lin']
+        absDevListBern_scen = currScenDict['SCENabsDevList_Bern']
+        absDevListMLE_scen = currScenDict['SCENabsDevList_MLE']
+        absDevListNUTS_scen = currScenDict['SCENabsDevList_NUTS']
+        
+        # Build plots
+        # Absolute deviations
+        fig, axs = plt.subplots(4, 1,figsize=(9,13))
+        fig.suptitle('Estimate Deviations - ABSOLUTE: '+str(currScen),fontsize=18)
+        for subP in range(4):
             axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-            axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)        
+            axs[subP].set_ylabel('Est. Abs. Deviation',fontsize=12)
+            axs[subP].set_ylim([0,0.4])
+            #vals = axs[subP].get_yticks()
+            #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+        # Linear projection
+        axs[0].set_title('Linear projection',fontweight='bold')        
+        bp0 = axs[0].boxplot(absDevListLin_scen,labels=dictNamesVec,patch_artist=True)
+        # Bernoulli MLE projection
+        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+        bp1 = axs[1].boxplot(absDevListBern_scen,labels=dictNamesVec,patch_artist=True)      
+        # MLE w Nonlinear optimizer        
+        axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
+        bp2 = axs[2].boxplot(absDevListMLE_scen,labels=dictNamesVec,patch_artist=True)
+        # Mean of NUTS samples
+        axs[3].set_title('NUTS sample means',fontweight='bold')
+        bp3 = axs[3].boxplot(absDevListNUTS_scen,labels=dictNamesVec,patch_artist=True)
+        for bp in (bp0,bp1,bp2,bp3):
+            for patch, color in zip(bp['boxes'],colors):
+                patch.set_facecolor(color)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.94)
+        plt.show()
+        
+        # Deviation averages (biases)
+        fig, axs = plt.subplots(4, 1,figsize=(9,13))
+        fig.suptitle('Estimate Deviations - MEANS: '+str(currScen),fontsize=18)
+        for subP in range(4):
+            axs[subP].set_xlabel('Output Dictionary',fontsize=12)
+            axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)
             axs[subP].set_ylim([-0.4,0.4])
             #vals = axs[subP].get_yticks()
             #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
         # Linear projection
         axs[0].set_title('Linear projection',fontweight='bold')        
-        axs[0].errorbar(Plot_XLabels,dictAvgDevs_Lin,yerr=dictAvgErr_Lin,
-                       ecolor='mediumpurple',capsize=5,color='indigo')
+        bp0 = axs[0].boxplot(avgDevListLin_scen,labels=dictNamesVec,patch_artist=True)
         # Bernoulli MLE projection
         axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-        axs[1].errorbar(Plot_XLabels,dictAvgDevs_Bern,yerr=dictAvgErr_Bern,
-                       ecolor='seagreen',capsize=5,color='green')      
+        bp1 = axs[1].boxplot(avgDevListBern_scen,labels=dictNamesVec,patch_artist=True)      
         # MLE w Nonlinear optimizer        
-        axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-        axs[2].errorbar(Plot_XLabels,dictAvgDevs_MLE,yerr=dictAvgErr_MLE,
-                       ecolor='orange',capsize=5,color='darkorange')   
+        axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
+        bp2 = axs[2].boxplot(avgDevListMLE_scen,labels=dictNamesVec,patch_artist=True)
+        # Mean of NUTS samples
+        axs[3].set_title('NUTS sample means',fontweight='bold')
+        bp3 = axs[3].boxplot(avgDevListNUTS_scen,labels=dictNamesVec,patch_artist=True)
+        for bp in (bp0,bp1,bp2,bp3):
+            for patch, color in zip(bp['boxes'],colors):
+                patch.set_facecolor(color)
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
-        
-        
-    # END OF SCENARIOS LOOP
-        
-        
-    
-    
+    ### END SCENARIOS LOOP
     
  ### END "SimSFEstimateOutput" ###   
     

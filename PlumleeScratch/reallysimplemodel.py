@@ -8,6 +8,10 @@ import numpy as np
 import scipy.optimize as spo
 import matplotlib.pyplot as plt
 import numpy.random as npr
+import os
+
+dirStr = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\PlumleeScratch'
+os.chdir(dirStr)
 
 def PlumleeEstimates(ydata, nsamp, A, sens, spec):
     beta0 = -5 * np.ones(A.shape[1]+A.shape[0])
@@ -42,11 +46,11 @@ A = np.matrix([[0.5, 0.25, 0.25],
     [0.001, 0.001, 0.998]])
 pI = np.array((0.001, 0.2, 0.001))
 pJ = np.array((0.001, 0.001, 0.2, 0.001, 0.001, 0.001))
-sens = 0.99
-spec = 0.99
+sens = 0.90
+spec = 0.90
 realproby = (1-pJ) * np.array((A @ pI)) + pJ #optimal testing
 realprobz = realproby * sens + (1-realproby) * (1-spec) #real testing
-nsamp = (100 * np.ones(A.shape[0])).astype('int')
+nsamp = (1000 * np.ones(A.shape[0])).astype('int')
 ydata =np.random.binomial(nsamp,realprobz)
 
 importerhat, outlethat = PlumleeEstimates(ydata, nsamp, A, sens, spec)
@@ -119,12 +123,12 @@ for k in range(0,beta0.shape[0]):
 
 def mylogprior(beta, ydata, nsamp, A, sens, spec):
     betaJ = beta[A.shape[1]:]
-    return -1*np.sum(np.abs(betaJ + 5))
+    return -0.25*np.sum(np.abs(beta + 3))
 
 def mylogprior_grad(beta, ydata, nsamp, A, sens, spec):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]
-    return -1*np.squeeze(np.concatenate([0*betaI,1*(betaJ >= -5) - 1*(betaJ <= -5)]))
+    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3))
 
 L0 = mylogprior(beta0,ydata, nsamp, A, sens, spec)
 dL0 = mylogprior_grad(beta0,ydata, nsamp, A, sens, spec)
@@ -200,8 +204,8 @@ from nuts import nuts6
 
 
 D = beta0.shape[0]
-M = 5000
-Madapt = 5000
+M = 1000
+Madapt = 1000
 delta = 0.2
 
 def exampletargetfornuts(beta):
@@ -214,5 +218,5 @@ def exampletargetfornuts(beta):
     return mylogpost(beta,ydata, nsamp, A, sens, spec), mylogpost_grad(beta,ydata, nsamp, A, sens, spec)
 
 samples, lnprob, epsilon = nuts6(exampletargetfornuts, M, Madapt, opval.x, delta)
-plt.hist(invlogit(samples[:,0]))
+plt.hist(invlogit(samples[:,1]))
 

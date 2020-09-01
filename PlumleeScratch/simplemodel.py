@@ -335,10 +335,10 @@ for b in betaVec:
             probs = (1-invlogit(betaJ)) * np.array(A @ invlogit(betaI)) + invlogit(betaJ)
             probsz = probs*sens + (1-probs) * (1-spec)
             return -np.sum(ydata * np.log(probsz) + (numsamples-ydata) * np.log(1-probsz)) \
-                + 10 * 1/2*np.sum(np.abs((betaJ - beta0[A.shape[1]:]))) #have to regularize to prevent problems
+                + 4 * 1/4*np.sum(np.abs((betaJ - beta[A.shape[1]:]))) #have to regularize to prevent problems
         
         bounds = spo.Bounds(beta0-2, beta0+8)
-        opval = spo.minimize(mynegloglik, beta0+b,
+        opval = spo.minimize(mynegloglik, beta0,
                              args=(ydata, numsamples, A, sens, spec),
                              method='L-BFGS-B',
                              options={'disp': False},
@@ -373,12 +373,36 @@ line6.set_label('beta add term: ' + str(betaVec[5]))
 line7.set_label('beta add term: ' + str(betaVec[6]))
 ax.legend()
 
+
+
+
+
+
+
+#test case
+A = np.matrix([[0.5, 0.25, 0.25], 
+    [0.001, 0.499, 0.5],
+   [0.75, 0.001, 0.249],
+    [0.499, 0.001, 0.5],
+    [0.001, 0.249, 0.75],
+    [0.001, 0.001, 0.998]])
+pI = np.array((0.001, 0.2, 0.001))
+pJ = np.array((0.001, 0.001, 0.2, 0.001, 0.001, 0.001))
+sens = 0.99
+spec = 0.99
+realproby = (1-pJ) * np.array((A @ pI)) + pJ #optimal testing
+realprobz = realproby * sens + (1-realproby) * (1-spec) #real testing
+numsamples = (100 * np.ones(A.shape[0])).astype('int')
+ydata =np.random.binomial(numsamples,realprobz)
+
+
 # METROPOLIS-HASTINGS
-p = 0.05 # initialize w presumed SF rate
+p = 0.10 # initialize w presumed SF rate
 lapScale = 1 # initialize w 1; LOOK TO MODIFY
-jumpDistStDev = 0.01 # standard deviation for the jumping distribution; LOOK TO MODIFY
+jumpDistStDev = 0.1 # standard deviation for the jumping distribution; LOOK TO MODIFY
 x0 = npr.laplace(logit(p),lapScale,A.shape[0]+A.shape[1]) 
-xinv = np.exp(x0)/(1+np.exp(x0))
+xinv = invlogit(x0)
+tol = 0.02
 
 ptArr = []
 ptArr.append(x0)
@@ -387,9 +411,9 @@ numRej = 0 # counter for rejections
 for i in range(numGens):
     xCurr = ptArr[-1] #Last submitted point
     xProp = xCurr + npr.normal(loc=0.0,scale=jumpDistStDev,size=len(xCurr)) #Proposed point
-    aRatio = mynegloglik(xProp, yd, nsamp, A, sens, spec) \
-         - mynegloglik(xCurr, yd, nsamp, A, sens, spec)
-    if npr.uniform(size=1) < np.exp(aRatio):
+    aRatio = mynegloglik(xProp, ydata, numsamples, A, sens, spec) \
+         - mynegloglik(xCurr, ydata, numsamples, A, sens, spec)
+    if npr.uniform(size=1) < np.exp(aRatio)-tol:
         ptArr.append(xProp)
         xCurr = np.copy(xProp)
     else:
@@ -397,8 +421,13 @@ for i in range(numGens):
         numRej += 1
   
 #plot of resulting distribution
-plt.hist(ptArr)
 
+testVec = []
+for rw in ptArr:
+    testVec.append(rw[4])
+plt.plot(invlogit(testVec))
+plt.hist(invlogit(testVec))
+ptArr[99999]
 
 
 
