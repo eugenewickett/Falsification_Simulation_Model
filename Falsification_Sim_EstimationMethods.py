@@ -25,17 +25,23 @@ import Falsification_Sim_Modules as simModules
 
 ########################### SF RATE ESTIMATORS ###########################
 def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
-                         Madapt=5000,delta=0.4): # Linear Projection
-    # Uses the (estimated) transition matrix, A, and the (estimated) percentage SF
-    # at each end node, X
+                         Madapt=5000,delta=0.4): 
+    '''
+    Linear Projection Estimate: Uses the (estimated) transition matrix, A, 
+    and the (estimated) percentage SF at each end node, X, calculaed as PosData
+    / NumSamples
+    '''
     X = np.array([PosData[i]/NumSamples[i] for i in range(len(NumSamples))])
     intProj = np.dot(np.linalg.inv(np.dot(A.T,A)),np.dot(A.T,X))
     endProj = np.subtract(X,np.dot(A,intProj))
     return np.ndarray.tolist(intProj.T), np.ndarray.tolist(endProj.T)
 
 def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
-                            Madapt=5000,delta=0.4): #MLE OF BERNOULLI VARIABLE
-    # USING ITERATIVELY REWEIGHTED LEAST SQUARES, SEE WIKIPEDIA FOR NOTATION
+                            Madapt=5000,delta=0.4):
+    '''
+    MLE of a Bernoulli variable, using iteratively reweighted least squares;
+    see Wikipedia page for notation
+    '''
     A = np.array(A)
     X = np.array([PosData[i]/NumSamples[i] for i in range(len(NumSamples))])
     currGap = 10
@@ -72,6 +78,11 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
 
 def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
                       Madapt=5000,delta=0.4):
+    '''
+    Uses the L-BFGS-B method of the SciPy Optimizer to maximize the
+    log-likelihood of different SF rates for a given set of testing data and 
+    diagnostic capabilities
+    '''
     PosData = np.array(PosData)
     NumSamples= np.array(NumSamples)
     n = A.shape[0]
@@ -96,6 +107,10 @@ def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     return simModules.invlogit(opval.x)[0:A.shape[1]].tolist(), simModules.invlogit(opval.x)[A.shape[1]:].tolist()
 
 def Est_NUTS(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
+    '''
+    Returns the mean estimate of M NUTS samples, using the Madapt and delta
+    parameters and given testing data
+    '''
     def postForNUTS(beta):
         """
         Example of a target distribution that could be sampled from using NUTS.
