@@ -8,6 +8,9 @@ Stores modules for use with 'SC Simulator.py'
 """
 import numpy as np
 import random
+import pandas as pd
+import itertools
+import seaborn as sns
 import scipy.optimize as spo
 import scipy.special as sps
 import csv
@@ -1296,112 +1299,129 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
         ind += 1
         
     
+    '''    
+    
+
+sns.boxplot(y='lifeExp', x='continent', 
+                 data=df1, 
+                 palette="bright",
+                 hue='year')
+
     '''
-    avgDevList_Lin = []
-    avgDevList_Bern = []
-    avgDevList_MLE = []
-    avgDevList_NUTS = []
-    absDevList_Lin = []
-    absDevList_Bern = []
-    absDevList_MLE = []
-    absDevList_NUTS = []
-    stdDevList_Lin = []
-    stdDevList_Bern = []
-    stdDevList_MLE = [] 
-    stdDevList_NUTS = []
-    
-    
-    ecolor='mediumpurple',capsize=5,color='indigo'
-    ecolor='seagreen',capsize=5,color='green'
-    ecolor='orange',capsize=5,color='darkorange'
-    '''
-   
-    # Build plots
-    colors = ['gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate','gold','mediumblue','indianred','forestgreen','plum','chocolate']
-    
+    # Build pandas dataframes for seaborn plots
+    headCol = ['dict','calcMethod','devVal']
     # Absolute deviations
-    fig, axs = plt.subplots(4, 1,figsize=(9,13))
-    fig.suptitle('Estimate Deviations - ABSOLUTE',fontsize=18)
-    for subP in range(4):
-        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-        axs[subP].set_ylabel('Est. Abs. Deviation',fontsize=12)
-        axs[subP].set_ylim([0,0.4])
-        #vals = axs[subP].get_yticks()
-        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    # Linear projection
-    axs[0].set_title('Linear projection',fontweight='bold')        
-    bp0 = axs[0].boxplot(absDevList_Lin,labels=dictNamesVec,patch_artist=True)
-    # Bernoulli MLE projection
-    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-    bp1 = axs[1].boxplot(absDevList_Bern,labels=dictNamesVec,patch_artist=True)      
-    # MLE w Nonlinear optimizer        
-    axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
-    bp2 = axs[2].boxplot(absDevList_MLE,labels=dictNamesVec,patch_artist=True)
-    # Mean of NUTS samples
-    axs[3].set_title('NUTS sample means',fontweight='bold')
-    bp3 = axs[3].boxplot(absDevList_NUTS,labels=dictNamesVec,patch_artist=True)
-    for bp in (bp0,bp1,bp2,bp3):
-        for patch, color in zip(bp['boxes'],colors):
-            patch.set_facecolor(color)
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.94)
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          absDevList_Lin[dictInd]))
+        block2 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Bernoulli Projection']),\
+                          absDevList_Bern[dictInd]))
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                          absDevList_MLE[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['NUTS sample means']),\
+                          absDevList_NUTS[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        for tup in block2:
+            DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)    
+        
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('Estimate Deviations - ABSOLUTE',fontsize=18)
+    plt.ylim(0,0.3)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('Absolute Deviation',fontsize=16)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
     
-    # Deviation averages (biases)
-    fig, axs = plt.subplots(4, 1,figsize=(9,13))
-    fig.suptitle('Estimate Deviations - MEANS',fontsize=18)
-    for subP in range(4):
-        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-        axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)
-        axs[subP].set_ylim([-0.4,0.4])
-        #vals = axs[subP].get_yticks()
-        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    # Linear projection
-    axs[0].set_title('Linear projection',fontweight='bold')        
-    bp0 = axs[0].boxplot(avgDevList_Lin,labels=dictNamesVec,patch_artist=True)
-    # Bernoulli MLE projection
-    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-    bp1 = axs[1].boxplot(avgDevList_Bern,labels=dictNamesVec,patch_artist=True)      
-    # MLE w Nonlinear optimizer        
-    axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
-    bp2 = axs[2].boxplot(avgDevList_MLE,labels=dictNamesVec,patch_artist=True)
-    # Mean of NUTS samples
-    axs[3].set_title('NUTS sample means',fontweight='bold')
-    bp3 = axs[3].boxplot(avgDevList_NUTS,labels=dictNamesVec,patch_artist=True)
-    for bp in (bp0,bp1,bp2,bp3):
-        for patch, color in zip(bp['boxes'],colors):
-            patch.set_facecolor(color)
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.94)
+    # Average deviations
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          avgDevList_Lin[dictInd]))
+        block2 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Bernoulli Projection']),\
+                          avgDevList_Bern[dictInd]))
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                          avgDevList_MLE[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['NUTS sample means']),\
+                          avgDevList_NUTS[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        for tup in block2:
+            DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)    
+        
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('Estimate Deviations - MEANS',fontsize=18)
+    plt.ylim(-0.3,0.3)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('Average Deviation',fontsize=16)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
     
-    # Standard deviations    
-    fig, axs = plt.subplots(4, 1,figsize=(9,13))
-    fig.suptitle('Estimate Deviations - STANDARD DEVIATIONS',fontsize=18)
-    for subP in range(4):
-        axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-        axs[subP].set_ylabel('Est. Std. Deviation',fontsize=12)
-        axs[subP].set_ylim([0,0.4])
-        #vals = axs[subP].get_yticks()
-        #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-    # Linear projection
-    axs[0].set_title('Linear projection',fontweight='bold')        
-    bp0 = axs[0].boxplot(stdDevList_Lin,labels=dictNamesVec,patch_artist=True)
-    # Bernoulli MLE projection
-    axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-    bp1 = axs[1].boxplot(stdDevList_Bern,labels=dictNamesVec,patch_artist=True)      
-    # MLE w Nonlinear optimizer        
-    axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
-    bp2 = axs[2].boxplot(stdDevList_MLE,labels=dictNamesVec,patch_artist=True)
-    # Mean of NUTS samples
-    axs[3].set_title('NUTS sample means',fontweight='bold')
-    bp3 = axs[3].boxplot(stdDevList_NUTS,labels=dictNamesVec,patch_artist=True)
-    for bp in (bp0,bp1,bp2,bp3):
-        for patch, color in zip(bp['boxes'],colors):
-            patch.set_facecolor(color)
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.94)
+    '''
+    # Standard deviations
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          stdDevList_Lin[dictInd]))
+        block2 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Bernoulli Projection']),\
+                          stdDevList_Bern[dictInd]))
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                          stdDevList_MLE[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['NUTS sample means']),\
+                          stdDevList_NUTS[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        for tup in block2:
+            DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)    
+        
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('Estimate Deviations - STDEVS',fontsize=18)
+    plt.ylim(0,0.3)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('Std. Deviation',fontsize=16)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
+    '''
     
     # Generate plots for our different SF rate scenarios
     for scenInd in range(len(scenarioList)):
@@ -1419,61 +1439,80 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
         absDevListNUTS_scen = currScenDict['SCENabsDevList_NUTS']
         
         # Build plots
-        # Absolute deviations
-        fig, axs = plt.subplots(4, 1,figsize=(9,13))
-        fig.suptitle('Estimate Deviations - ABSOLUTE: '+str(currScen),fontsize=18)
-        for subP in range(4):
-            axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-            axs[subP].set_ylabel('Est. Abs. Deviation',fontsize=12)
-            axs[subP].set_ylim([0,0.4])
-            #vals = axs[subP].get_yticks()
-            #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-        # Linear projection
-        axs[0].set_title('Linear projection',fontweight='bold')        
-        bp0 = axs[0].boxplot(absDevListLin_scen,labels=dictNamesVec,patch_artist=True)
-        # Bernoulli MLE projection
-        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-        bp1 = axs[1].boxplot(absDevListBern_scen,labels=dictNamesVec,patch_artist=True)      
-        # MLE w Nonlinear optimizer        
-        axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
-        bp2 = axs[2].boxplot(absDevListMLE_scen,labels=dictNamesVec,patch_artist=True)
-        # Mean of NUTS samples
-        axs[3].set_title('NUTS sample means',fontweight='bold')
-        bp3 = axs[3].boxplot(absDevListNUTS_scen,labels=dictNamesVec,patch_artist=True)
-        for bp in (bp0,bp1,bp2,bp3):
-            for patch, color in zip(bp['boxes'],colors):
-                patch.set_facecolor(color)
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.94)
+        # Average deviations
+        DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+        for dictInd,currDict in enumerate(dictNamesVec):
+            block1 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Linear Projection']),\
+                              absDevListLin_scen[dictInd]))
+            block2 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Bernoulli Projection']),\
+                              absDevListBern_scen[dictInd]))
+            block3 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                              absDevListMLE_scen[dictInd]))
+            block4 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['NUTS sample means']),\
+                              absDevListNUTS_scen[dictInd]))
+            for tup in block1:
+                DFdata.append(tup)
+            for tup in block2:
+                DFdata.append(tup)
+            for tup in block3:
+                DFdata.append(tup)
+            for tup in block4:
+                DFdata.append(tup)    
+            
+        AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+        # Build boxplot
+        plt.figure(figsize=(13,7))
+        plt.suptitle('Estimate Deviations - ABSOLUTE; SF Rate: '+r"$\bf{" + str(currScen) + "}$",fontsize=18)
+        plt.ylim(0,0.3)
+        ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                          hue='calcMethod')
+        ax.set_xlabel('Output Dictionary',fontsize=16)
+        ax.set_ylabel('Absolute Deviation',fontsize=16)
+        plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+        plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
         plt.show()
         
-        # Deviation averages (biases)
-        fig, axs = plt.subplots(4, 1,figsize=(9,13))
-        fig.suptitle('Estimate Deviations - MEANS: '+str(currScen),fontsize=18)
-        for subP in range(4):
-            axs[subP].set_xlabel('Output Dictionary',fontsize=12)
-            axs[subP].set_ylabel('Est. Avg. Deviation',fontsize=12)
-            axs[subP].set_ylim([-0.4,0.4])
-            #vals = axs[subP].get_yticks()
-            #axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
-        # Linear projection
-        axs[0].set_title('Linear projection',fontweight='bold')        
-        bp0 = axs[0].boxplot(avgDevListLin_scen,labels=dictNamesVec,patch_artist=True)
-        # Bernoulli MLE projection
-        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-        bp1 = axs[1].boxplot(avgDevListBern_scen,labels=dictNamesVec,patch_artist=True)      
-        # MLE w Nonlinear optimizer        
-        axs[2].set_title('MLE w/ nonlinear optimizer',fontweight='bold')
-        bp2 = axs[2].boxplot(avgDevListMLE_scen,labels=dictNamesVec,patch_artist=True)
-        # Mean of NUTS samples
-        axs[3].set_title('NUTS sample means',fontweight='bold')
-        bp3 = axs[3].boxplot(avgDevListNUTS_scen,labels=dictNamesVec,patch_artist=True)
-        for bp in (bp0,bp1,bp2,bp3):
-            for patch, color in zip(bp['boxes'],colors):
-                patch.set_facecolor(color)
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.94)
+        # Average deviations
+        DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+        for dictInd,currDict in enumerate(dictNamesVec):
+            block1 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Linear Projection']),\
+                              avgDevListLin_scen[dictInd]))
+            block2 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Bernoulli Projection']),\
+                              avgDevListBern_scen[dictInd]))
+            block3 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                              avgDevListMLE_scen[dictInd]))
+            block4 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['NUTS sample means']),\
+                              avgDevListNUTS_scen[dictInd]))
+            for tup in block1:
+                DFdata.append(tup)
+            for tup in block2:
+                DFdata.append(tup)
+            for tup in block3:
+                DFdata.append(tup)
+            for tup in block4:
+                DFdata.append(tup)    
+            
+        AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+        # Build boxplot
+        plt.figure(figsize=(13,7))
+        plt.suptitle('Estimate Deviations - MEANS; SF Rate: '+r"$\bf{" + str(currScen) + "}$",fontsize=18)
+        plt.ylim(-0.3,0.3)
+        ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                          hue='calcMethod')
+        ax.set_xlabel('Output Dictionary',fontsize=16)
+        ax.set_ylabel('Average Deviation',fontsize=16)
+        plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+        plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
         plt.show()
+        
     ### END SCENARIOS LOOP
     
  ### END "SimSFEstimateOutput" ###   
