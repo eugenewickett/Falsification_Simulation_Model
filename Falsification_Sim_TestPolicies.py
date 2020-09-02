@@ -36,11 +36,12 @@ def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
     '''
     polStr = ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',\
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',\
-              'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS']
+              'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS',\
+              'Dyn_ExploreWithNUTS_2']
     if polType not in polStr:
         raise ValueError("Invalid policy type. Expected one of: %s" % polStr)
     
-    if polType == 'Static_Random':
+    if polType == 'Static_Deterministic':
         sampleSchedule = Pol_Stat_Deterministic(resultsList,totalSimDays,numDaysRemain,\
                                                 totalBudget,numBudgetRemain,policyParamList)
     elif polType == 'Static_Random':
@@ -69,6 +70,9 @@ def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
                                             totalBudget,numBudgetRemain,policyParamList)
     elif polType == 'Dyn_ExploreWithNUTS':
         sampleSchedule = Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays,numDaysRemain,\
+                                            totalBudget,numBudgetRemain,policyParamList)
+    elif polType == 'Dyn_ExploreWithNUTS_2':
+        sampleSchedule = Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays,numDaysRemain,\
                                             totalBudget,numBudgetRemain,policyParamList)
     
     
@@ -237,10 +241,10 @@ def Pol_Dyn_EpsFirst(resultsList,totalSimDays=1000,numDaysRemain=1000,\
             maxIndsList.append(currInd)
     for testNum in range(numToTest):
         # Explore or exploit?
-        if nextTestDay > (1-eps)*totalBudget: # Exploit
-            exploitBool = True
-        else:
+        if numBudgetRemain > (1-eps)*totalBudget: # Explore
             exploitBool = False
+        else:
+            exploitBool = True
         # Based on the previous dice roll, generate a sampling point
         if exploitBool:
             testInd = np.random.choice(maxIndsList)
@@ -372,6 +376,8 @@ def Pol_Dyn_TSwithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     the largest projected SF estimate
     policyParamList = [number days to plan for, sensitivity, specificity, M,
                             Madapt, delta]
+    (Only enter the number of days to plan for in the main simulation code,
+    as the other parameters will be pulled from the respective input areas)
     """
     #Initialize our output, a list with the above mentioned outputs
     sampleSchedule = []
@@ -432,6 +438,8 @@ def Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     have a non-zero probability of being selected). [log((p/1-p) + eps)?]
     policyParamList = [number days to plan for, sensitivity, specificity, M,
                        Madapt, delta]
+    (Only enter the number of days to plan for in the main simulation code,
+    as the other parameters will be pulled from the respective input areas)
     """
     #Initialize our output, a list with the above mentioned outputs
     sampleSchedule = []
@@ -504,4 +512,94 @@ def Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     sampleSchedule.sort(key=lambda x: x[0])
     return sampleSchedule
 
-
+def Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays=1000,numDaysRemain=1000,\
+                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+    """
+    Grab intermediate and end node distribtuions via NUTS. Identify intermediate node
+    sample variances. Pick an intermediate node, weighed towards picking those 
+    with higher sample variances. Pick an outlet from this intermediate node's
+    column in the transition matrix A, again by a weighting (where 0% nodes 
+    have a non-zero probability of being selected). [log((p/1-p) + eps)?]
+    policyParamList = [[schedule of re-calculate days], sensitivity, specificity, M,
+                       Madapt, delta]
+    (Only enter the schedule of days to plan for in the main simulation code,
+    as the other parameters will be pulled from the respective input areas)
+    """
+    #Initialize our output, a list with the above mentioned outputs
+    sampleSchedule = []
+    
+    # How many days to plan for?
+    usedBudgetSoFar = 0
+    firstTestDay = totalSimDays - numDaysRemain
+    sched = policyParamList[0]
+    #numDaysToSched = min(policyParamList[0],numDaysRemain)
+    
+    if numDaysRemain == totalSimDays: # Our initial schedule should just be a distrubed exploration
+        numDaysToSched = sched[0] #Initialize deterministic testing until the first scheduled day
+        currNode = resultsList[0][0]
+        for currDay in range(numDaysToSched):
+            numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
+                        min((numBudgetRemain-usedBudgetSoFar) % (numDaysRemain-currDay),1) # How many samples to conduct in the next day
+            for testInd in range(numToTest): # Iterate through our end nodes
+                if currNode > resultsList[len(resultsList)-1][0]:
+                    currNode = resultsList[0][0]
+                    sampleSchedule.append([firstTestDay+currDay,currNode])
+                    currNode += 1
+                else:                        
+                    sampleSchedule.append([firstTestDay+currDay,currNode])
+                    currNode += 1
+                usedBudgetSoFar += 1
+        
+    else: # Generate NUTS sample using current results and use it to generate a new schedule
+        # How many days?
+        schedInd = sched.index(firstTestDay)
+        if schedInd+1==len(sched):
+            numDaysToSched = numDaysRemain
+        else:
+            numDaysToSched = sched[schedInd+1]-sched[schedInd]            
+        ydata = []
+        nSamp = []
+        for rw in resultsList:
+            ydata.append(rw[2])
+            nSamp.append(rw[1])
+        A = simModules.GenerateTransitionMatrix(resultsList)      
+        sens, spec, M, Madapt, delta = policyParamList[1:]
+        NUTSsamples = simModules.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+        # Store sample variances for intermediate nodes
+        NUTSintVars = []
+        for intNode in range(A.shape[1]):
+            currVar = np.var(simModules.invlogit(NUTSsamples[:,intNode]))
+            NUTSintVars.append(currVar)
+        # Normalize sum of all variances to 1
+        NUTSintVars = NUTSintVars/np.sum(NUTSintVars)
+        
+          
+        # Now pick from these samples to generate projections
+        for currDay in range(numDaysToSched):
+            numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
+                        min((numBudgetRemain-usedBudgetSoFar) % (numDaysRemain-currDay),1) # How many samples to conduct in the next day
+            for testInd in range(numToTest):    
+                # Pick an intermediate node to "target", with more emphasis on higher sample variances
+                rUnif = random.uniform(0,1)
+                for intInd in range(A.shape[1]):
+                    if rUnif < np.sum(NUTSintVars[0:(intInd+1)]):
+                        targIntInd = intInd
+                        break
+                # Go through the same process with the column of A
+                # pertaining to this target intermediate node
+                AtargCol = [row[targIntInd] for row in A]
+                # Add a small epsilon, for 0 values, and normalize
+                AtargCol = np.add(AtargCol,1e-3)
+                AtargCol = AtargCol/np.sum(AtargCol)
+                rUnif = random.uniform(0,1)
+                for intEnd in range(A.shape[0]):
+                    if rUnif < np.sum(AtargCol[0:(intEnd+1)]):
+                        currInd = intEnd
+                        break
+                currNode = resultsList[currInd][0]
+                sampleSchedule.append([firstTestDay+currDay,currNode])
+                usedBudgetSoFar += 1
+        
+    # Need to sort this list before passing it through
+    sampleSchedule.sort(key=lambda x: x[0])
+    return sampleSchedule
