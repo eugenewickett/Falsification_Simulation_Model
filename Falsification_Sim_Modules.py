@@ -551,6 +551,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
     
     # For each output dictionary, generate deviation estimates of varying types
     for currDict in OPdicts:
+        
         # Loop through each replication contained in the current output dictionary
         currDict_avgDevList_Lin = []
         currDict_avgDevList_Bern = []
@@ -744,12 +745,15 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
     '''    
     
 
-sns.boxplot(y='lifeExp', x='continent', 
-                 data=df1, 
-                 palette="bright",
-                 hue='year')
-
     '''
+    xTickLabels = [] # For plot x ticks
+    # How many replications?
+    for dictNum in range(len(dictNamesVec)):
+        nCurr = len(absDevList_Lin[dictNum])
+        xTickLabels.append(dictNamesVec[dictNum]+' \n n=%i' % nCurr)
+    # For plot x ticks
+    
+    
     # Build pandas dataframes for seaborn plots
     headCol = ['dict','calcMethod','devVal']
     # Absolute deviations
@@ -774,9 +778,10 @@ sns.boxplot(y='lifeExp', x='continent',
         for tup in block3:
             DFdata.append(tup)
         for tup in block4:
-            DFdata.append(tup)    
-        
+            DFdata.append(tup)       
+    
     AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    
     # Build boxplot
     plt.figure(figsize=(13,7))
     plt.suptitle('Estimate Deviations - ABSOLUTE',fontsize=18)
@@ -785,6 +790,7 @@ sns.boxplot(y='lifeExp', x='continent',
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('Absolute Deviation',fontsize=16)
+    ax.set_xticklabels(xTickLabels)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
@@ -822,6 +828,7 @@ sns.boxplot(y='lifeExp', x='continent',
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('Average Deviation',fontsize=16)
+    ax.set_xticklabels(xTickLabels)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
@@ -914,6 +921,7 @@ sns.boxplot(y='lifeExp', x='continent',
                           hue='calcMethod')
         ax.set_xlabel('Output Dictionary',fontsize=16)
         ax.set_ylabel('Absolute Deviation',fontsize=16)
+        ax.set_xticklabels(xTickLabels)
         plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
         plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
         plt.show()
@@ -951,6 +959,7 @@ sns.boxplot(y='lifeExp', x='continent',
                           hue='calcMethod')
         ax.set_xlabel('Output Dictionary',fontsize=16)
         ax.set_ylabel('Average Deviation',fontsize=16)
+        ax.set_xticklabels(xTickLabels)
         plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
         plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
         plt.show()

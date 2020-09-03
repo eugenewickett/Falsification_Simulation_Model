@@ -37,12 +37,12 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 40
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
-printOutput = True # Whether individual replication output should be displayed
-storeOutput = False # Do we store the output in an output dictionary file?
+printOutput = False # Whether individual replication output should be displayed
+storeOutput = True # Do we store the output in an output dictionary file?
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
 '''
@@ -51,12 +51,12 @@ testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGre
               'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS',
               'Dyn_ExploreWithNUTS_2']
 '''
-testPolicy = 'Static_Random'
-testPolicyParam = [200,250,300,350,400] # Set testing policy parameter list here
-testingIsDynamic = False # Is our testing policy dynamic or static?
+testPolicy = 'Dyn_ExploreWithNUTS_2'
+testPolicyParam = [100,150,200,250,300,350,400] # Set testing policy parameter list here
+testingIsDynamic = True # Is our testing policy dynamic or static?
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 if testPolicy in ['Dyn_TSwithNUTS','Dyn_ExploreWithNUTS']:
