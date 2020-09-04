@@ -15,7 +15,7 @@ os.chdir(dirStr2) # Set directory
 import Falsification_Sim_Modules as simModules
 os.chdir(dirStr) # Set directory   
 
-strVec = ['OP_DYNPOL_9_100','OP_DYNPOL_9_200','OP_STATPOL_1']
+strVec = ['OP_STATPOL_1','OP_DYNPOL_9_100','OP_DYNPOL_9_200','EXPLNUTS2_100','EXPLNUTS2_200']
 
 outputDicts = []
 for strEnd in strVec:

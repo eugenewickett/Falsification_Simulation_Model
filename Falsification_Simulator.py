@@ -20,6 +20,7 @@ import pickle # for saving/loading objects in Python
 #import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules # module for the simulation
 import Falsification_Sim_EstimationMethods as simEstMethods # estimation methods
+import Falsification_Sim_TestPolicies as simTestPolicies # testing policies
 
 # Run supporting files
 currDirectory = os.path.dirname(os.path.realpath(__file__)) #Run this command to get the current working directory string
@@ -36,23 +37,29 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 40
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
-alertIter = 20 # How frequently we're alerted of a set of replications being completed
-printOutput = True # Whether individual replication output should be displayed
-storeOutput = False # Do we store the output in an output dictionary file?
+alertIter = 10 # How frequently we're alerted of a set of replications being completed
+printOutput = False # Whether individual replication output should be displayed
+storeOutput = True # Do we store the output in an output dictionary file?
+intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
-testPolicy = 9
-testPolicyParam = [400] # Set testing policy parameter list here
+'''
+testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
+              'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',
+              'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS',
+              'Dyn_ExploreWithNUTS_2']
+'''
+testPolicy = 'Dyn_ExploreWithNUTS_2'
+testPolicyParam = [100,150,200,250,300,350,400] # Set testing policy parameter list here
 testingIsDynamic = True # Is our testing policy dynamic or static?
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
 lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
-intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
-if testingIsDynamic == True and testPolicy in [8,9]:
+if testPolicy in ['Dyn_TSwithNUTS','Dyn_ExploreWithNUTS']:
     # Sanity checks on the entered parameters for these particular testing policies
     if testPolicyParam[0] > NumSimDays:
         testPolicyParam[0] = NumSimDays # Testing interval can't be more than the total number of days
@@ -60,12 +67,20 @@ if testingIsDynamic == True and testPolicy in [8,9]:
         testPolicyParam[0] = 1 # Minimum planning interval is 1 day
     lklhdBool = True
     testPolicyParam.extend((diagnosticSensitivity,diagnosticSpecificity,lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta))
+if testPolicy in ['Dyn_ExploreWithNUTS_2']:
+    # Sanity checks for Dyn_ExploreWithNUTS_2
+    for elem in testPolicyParam:
+        if elem > NumSimDays:
+            print('Check the recalculation schedule.')
+            break
+    lklhdBool = True
+    testPolicyParam = [testPolicyParam] + [diagnosticSensitivity,diagnosticSpecificity,lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta]
 
 
 inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBudget,
                             'testPolicy':testPolicy,'testPolicyParam':testPolicyParam,
-                            'testingIsDynamic':testingIsDynamic,'diagnosticSensitivity':diagnosticSensitivity,
-                            'diagnosticSpecificity':diagnosticSpecificity,
+                            'diagnosticSensitivity':diagnosticSensitivity,
+                            'diagnosticSpecificity':diagnosticSpecificity,'RglrWt':optRegularizationWeight,
                             'lklhdBool':lklhdBool,'lklhdEst_M':lklhdEst_M, 
                             'lklhdEst_Madapt':lklhdEst_Madapt, 'lklhdEst_delta':lklhdEst_delta}
 
@@ -110,21 +125,15 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         List_TestResults.append([rootNum+intermediateNum+indEnd,0,0,1.0,\
                                        np.zeros(intermediateNum,np.int8).tolist()])
-    if testingIsDynamic == False:
-        List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList,\
-                                                                   int_numDays=NumSimDays,\
-                                                                   int_sampleBudget=samplingBudget,\
-                                                                   int_PolicyType=testPolicy,\
-                                                                   arr_PolicyParameter=[0])
-    else:
-        List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_TestResults,\
-                                                                  int_totalDays=NumSimDays,\
-                                                                  int_numDaysRemain=NumSimDays,\
-                                                                  int_totalBudget=samplingBudget,\
-                                                                  int_sampleBudgetRemain=BudgetRemaining,\
-                                                                  int_PolicyType=testPolicy,\
-                                                                  arr_PolicyParameter=testPolicyParam)
-    
+        
+    List_TestingSchedule = simTestPolicies.testPolicyHandler(polType=testPolicy,\
+                                                             resultsList=List_TestResults,\
+                                                             totalSimDays=NumSimDays,\
+                                                             numDaysRemain=NumSimDays,\
+                                                             totalBudget=samplingBudget,\
+                                                             numBudgetRemain=BudgetRemaining,\
+                                                             policyParamList=testPolicyParam)
+
     # Initialize our testing results reporting table
     TestReportTbl = []
     
@@ -140,8 +149,7 @@ for rep in range(numReplications):
         currEnd = List_EndNode[indEnd]
         currEnd.demandSched[0:(maxLT+5)] = 0
     # Also freeze testing for this number of days plus the max number of LT days for end nodes
-    if testingIsDynamic == False:
-        List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > (maxLT*7)]
+    List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > (maxLT+10)]
         
     ######### MODIFICATION LOOPS ######### ######### #########
     
@@ -248,9 +256,8 @@ for rep in range(numReplications):
                                     DPRoot = indDP.nodeIDList[0] # Source of this DP
                             currNode.InventoryLevel[invPile] -= 1 # "Buy" the sample
                             currNode.demandResults[0] += 1 # "Satisifed" demand
-                            # Update dynamic budget list if using a dynamic testing policy
-                            if testingIsDynamic == True:
-                                BudgetRemaining -= 1 # Reduce our budget balance by 1
+                            # Update available budget
+                            BudgetRemaining -= 1 # Reduce our budget balance by 1
                                 
                         # END IF
                     # END IF
@@ -272,7 +279,7 @@ for rep in range(numReplications):
                 newTestRow = [today,currTestNodeID,DPRoot,invPileOriginList]
                 TestReportTbl.append(newTestRow) 
                 
-                if testingIsDynamic == True and madeTest == True: # Recalculate the dynamic results list
+                if madeTest == True: # Recalculate the dynamic results list
                     for currInd in range(len(List_TestResults)):
                         if List_TestResults[currInd][0] == currTestNodeID: # Found matching node ID
                             List_TestResults[currInd][1] += 1 # Add 1 to the number of samples
@@ -300,15 +307,15 @@ for rep in range(numReplications):
             List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)              
         
         # Update dynamic testing if relevant
-        if testingIsDynamic == True and today != NumSimDays-1 and List_TestingSchedule == []:
-            List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_TestResults,\
-                                                                      int_totalDays=NumSimDays,\
-                                                                      int_numDaysRemain=NumSimDays-(today+1),\
-                                                                      int_totalBudget=samplingBudget,\
-                                                                      int_sampleBudgetRemain=BudgetRemaining,\
-                                                                      int_PolicyType=testPolicy,\
-                                                                      arr_PolicyParameter=testPolicyParam)
-        
+        if today != NumSimDays-1 and List_TestingSchedule == []:
+            List_TestingSchedule = simTestPolicies.testPolicyHandler(polType=testPolicy,\
+                                                                 resultsList=List_TestResults,\
+                                                                 totalSimDays=NumSimDays,\
+                                                                 numDaysRemain=NumSimDays-(today+1),\
+                                                                 totalBudget=samplingBudget,\
+                                                                 numBudgetRemain=BudgetRemaining,\
+                                                                 policyParamList=testPolicyParam)
+            
         if np.mod(today+1,200) == 0: # For updating while running
             print('Rep ' + str(rep+1) + ', Day ' + str(today+1) + ' finished.')
 
