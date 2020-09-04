@@ -18,7 +18,8 @@ from tabulate import tabulate # for making outputs
 import pickle # for saving/loading objects in Python
 
 #import Falsification_Sim_Classes as simClasses # our class objects and methods
-import Falsification_Sim_Modules as simModules # modules for the simulation
+import Falsification_Sim_Modules as simModules # module for the simulation
+import Falsification_Sim_EstimationMethods as simEstMethods # estimation methods
 
 # Run supporting files
 currDirectory = os.path.dirname(os.path.realpath(__file__)) #Run this command to get the current working directory string
@@ -36,19 +37,18 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 NumSimDays = 400
 samplingBudget = NumSimDays*5
 numReplications = 1
-testPolicy = 9
-testPolicyParam = [100] # Set testing policy parameter list here
-testingIsDynamic = True # Is our testing policy dynamic or static?
-printOutput = True # Whether individual replication output should be displayed
-storeOutput = False # Do we store the output in an output dictionary file?
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
-useWarmUpFile = False # True if we're going to pull a warm-up file for replications
-warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
-warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
-# If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
 alertIter = 20 # How frequently we're alerted of a set of replications being completed
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+printOutput = True # Whether individual replication output should be displayed
+storeOutput = False # Do we store the output in an output dictionary file?
+
+testPolicy = 9
+testPolicyParam = [400] # Set testing policy parameter list here
+testingIsDynamic = True # Is our testing policy dynamic or static?
+
+optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
@@ -61,6 +61,7 @@ if testingIsDynamic == True and testPolicy in [8,9]:
     lklhdBool = True
     testPolicyParam.extend((diagnosticSensitivity,diagnosticSpecificity,lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta))
 
+
 inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBudget,
                             'testPolicy':testPolicy,'testPolicyParam':testPolicyParam,
                             'testingIsDynamic':testingIsDynamic,'diagnosticSensitivity':diagnosticSensitivity,
@@ -68,9 +69,15 @@ inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBud
                             'lklhdBool':lklhdBool,'lklhdEst_M':lklhdEst_M, 
                             'lklhdEst_Madapt':lklhdEst_Madapt, 'lklhdEst_delta':lklhdEst_delta}
 
-
+useWarmUpFile = False # True if we're going to pull a warm-up file for replications
+warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
+warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
+# If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
 # Establish any warm-up settings 
-numReplications, warmUpRun, useWarmUpFile, warmUpDirectory, warmUpFileName, warmUpDict = simModules.setWarmUp(useWarmUpFileBool = useWarmUpFile, warmUpRunBool = warmUpRun, numReps = numReplications, currDirect = currDirectory)
+numReplications, warmUpRun, useWarmUpFile, warmUpDirectory, warmUpFileName, warmUpDict =\
+                        simModules.setWarmUp(useWarmUpFileBool = useWarmUpFile,\
+                                             warmUpRunBool=warmUpRun, numReps=numReplications,\
+                                             currDirect = currDirectory)
 
 ##### MAIN SIMULATION CODE #####
 # Initialize output collection dictionary
@@ -80,7 +87,8 @@ outputDict = {}
 for rep in range(numReplications):
 
     # Generate the lists of root, intermediate, and end nodes; also keep the list of node headers
-    List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix = simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
+    List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix =\
+                                        simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
     rootNum = len(List_RootNode)
     intermediateNum = len(List_IntermediateNode)
     endNum = len(List_EndNode)
@@ -96,16 +104,26 @@ for rep in range(numReplications):
     ### TESTING POLICIES GENERATED HERE ###
     # Generate sampling schedule for current graph, as well as a report table shell
     # Depends on whether the sampling plan is static or dynamic
+    # Initialize a results list for testing from each end node
+    BudgetRemaining = samplingBudget
+    List_TestResults = []
+    for indEnd in range(endNum):
+        List_TestResults.append([rootNum+intermediateNum+indEnd,0,0,1.0,\
+                                       np.zeros(intermediateNum,np.int8).tolist()])
     if testingIsDynamic == False:
-        List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList, int_numDays=NumSimDays, int_sampleBudget = samplingBudget, int_PolicyType = testPolicy, arr_PolicyParameter = [0])
+        List_TestingSchedule = simModules.testingScheduleGenerator(nodes=nodeList,\
+                                                                   int_numDays=NumSimDays,\
+                                                                   int_sampleBudget=samplingBudget,\
+                                                                   int_PolicyType=testPolicy,\
+                                                                   arr_PolicyParameter=[0])
     else:
-        #Initialize our results list for conducting dynamic decisions
-        BudgetRemaining = samplingBudget
-        List_DynamicTestResults = []
-        for indEnd in range(endNum):
-            List_DynamicTestResults.append([rootNum+intermediateNum+indEnd,0,0,1.0,\
-                                           np.zeros(intermediateNum,np.int8).tolist()] ) # Each row is [node ID, numTests (not including stockouts), numSF, SFRate,[ImporterSourceCounts]]
-        List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_DynamicTestResults,int_totalDays=NumSimDays, int_numDaysRemain=NumSimDays, int_totalBudget=samplingBudget, int_sampleBudgetRemain=BudgetRemaining, int_PolicyType=testPolicy, arr_PolicyParameter=testPolicyParam)
+        List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_TestResults,\
+                                                                  int_totalDays=NumSimDays,\
+                                                                  int_numDaysRemain=NumSimDays,\
+                                                                  int_totalBudget=samplingBudget,\
+                                                                  int_sampleBudgetRemain=BudgetRemaining,\
+                                                                  int_PolicyType=testPolicy,\
+                                                                  arr_PolicyParameter=testPolicyParam)
     
     # Initialize our testing results reporting table
     TestReportTbl = []
@@ -180,7 +198,9 @@ for rep in range(numReplications):
         for indEnd in range(endNum):
             currEnd = List_EndNode[indEnd]
             currStockoutDays = currEnd.demandResults[1] # For tracking if today is a stockout day
-            List_DP, List_RootNode, List_RootConsumption = currEnd.ProcessScheduleDemand(simDay=today,DPList=List_DP, RootList=List_RootNode, rootConsumptionVec=List_RootConsumption)
+            List_DP, List_RootNode, List_RootConsumption = currEnd.ProcessScheduleDemand(simDay=today,DPList=List_DP,\
+                                                                                         RootList=List_RootNode,\
+                                                                                         rootConsumptionVec=List_RootConsumption)
             if currEnd.demandResults[1] > currStockoutDays: # We have a stockout day
                 currEnd.DaysStockedOut += 1
             
@@ -253,18 +273,18 @@ for rep in range(numReplications):
                 TestReportTbl.append(newTestRow) 
                 
                 if testingIsDynamic == True and madeTest == True: # Recalculate the dynamic results list
-                    for currInd in range(len(List_DynamicTestResults)):
-                        if List_DynamicTestResults[currInd][0] == currTestNodeID: # Found matching node ID
-                            List_DynamicTestResults[currInd][1] += 1 # Add 1 to the number of samples
+                    for currInd in range(len(List_TestResults)):
+                        if List_TestResults[currInd][0] == currTestNodeID: # Found matching node ID
+                            List_TestResults[currInd][1] += 1 # Add 1 to the number of samples
                             if DPRoot == 1:
-                                List_DynamicTestResults[currInd][2] += 1
-                            List_DynamicTestResults[currInd][3] = List_DynamicTestResults[currInd][2] / List_DynamicTestResults[currInd][1]
+                                List_TestResults[currInd][2] += 1
+                            List_TestResults[currInd][3] = List_TestResults[currInd][2] / List_TestResults[currInd][1]
                             # Update the inventory levels observed from intermediate nodes
                             for pile in invPileOriginList: # [intermediate node, amount]                            
                                 pileIntNode = pile[0]
                                 if not pileIntNode == 1: # Don't count falsified nodes purchases
                                     pileLevel = pile[1]
-                                    List_DynamicTestResults[currInd][4][pileIntNode-rootNum] += pileLevel
+                                    List_TestResults[currInd][4][pileIntNode-rootNum] += pileLevel
                             
                 if List_TestingSchedule == []: # Check if the testing schedule is now empty
                     break
@@ -281,7 +301,13 @@ for rep in range(numReplications):
         
         # Update dynamic testing if relevant
         if testingIsDynamic == True and today != NumSimDays-1 and List_TestingSchedule == []:
-            List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_DynamicTestResults,int_totalDays=NumSimDays, int_numDaysRemain=NumSimDays-(today+1), int_totalBudget=samplingBudget, int_sampleBudgetRemain=BudgetRemaining, int_PolicyType=testPolicy, arr_PolicyParameter=testPolicyParam)
+            List_TestingSchedule = simModules.dynamicTestingGenerator(resultsList=List_TestResults,\
+                                                                      int_totalDays=NumSimDays,\
+                                                                      int_numDaysRemain=NumSimDays-(today+1),\
+                                                                      int_totalBudget=samplingBudget,\
+                                                                      int_sampleBudgetRemain=BudgetRemaining,\
+                                                                      int_PolicyType=testPolicy,\
+                                                                      arr_PolicyParameter=testPolicyParam)
         
         if np.mod(today+1,200) == 0: # For updating while running
             print('Rep ' + str(rep+1) + ', Day ' + str(today+1) + ' finished.')
@@ -440,7 +466,10 @@ for rep in range(numReplications):
     
     #LINEAR PROJECTION
     try:
-        estIntFalsePercList, estEndFalsePercList = simModules.Est_LinearProjection(A,X)
+        estIntFalsePercList, estEndFalsePercList = simEstMethods.Est_LinearProjection(\
+                                                   A,PosData=ydata,NumSamples=numSamples,\
+                                                   Sens=diagnosticSensitivity,\
+                                                   Spec=diagnosticSpecificity)
     except:
         print("Couldn't generate the LINEAR PROJECTION estimates")
         estIntFalsePercList = []
@@ -448,7 +477,10 @@ for rep in range(numReplications):
     
     #BERNOULLI MLE
     try:
-        estIntFalsePercList_Bern, estEndFalsePercList_Bern, covarMat_Bern, wald_stats = simModules.Est_BernMLEProjection(A,X)        
+        estIntFalsePercList_Bern, estEndFalsePercList_Bern = simEstMethods.Est_BernoulliProjection(\
+                                                   A,PosData=ydata,NumSamples=numSamples,\
+                                                   Sens=diagnosticSensitivity,\
+                                                   Spec=diagnosticSpecificity)
     except:
         print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
@@ -456,24 +488,38 @@ for rep in range(numReplications):
     
     #MLE USING NONLINEAR OPTIMIZER
     try:
-        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simModules.PlumleeEstimates(np.array(ydata), np.array(numSamples), A, diagnosticSensitivity, diagnosticSpecificity, rglrWt = 0.5)
+        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simEstMethods.Est_MLE_Optimizer(\
+                                                   A,PosData=ydata,NumSamples=numSamples,\
+                                                   Sens=diagnosticSensitivity,\
+                                                   Spec=diagnosticSpecificity,\
+                                                   RglrWt=optRegularizationWeight)
     except:
         print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_Plum = []
         estEndFalsePercList_Plum = []
         
-    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION, NUTS, 
+    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION, NUTS 
     if lklhdBool == True:
         startCalc = time.time()
         try:
             estFalsePerc_LklhdSamples = simModules.GenerateNUTSsamples(ydata,numSamples,A,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,lklhdEst_M,\
                                                                        lklhdEst_Madapt,lklhdEst_delta)
-            print(time.time()-startCalc)        
+            '''
+            Commented out, as we want to store the actual samples, but don't want to run the NUTS
+            algorithm twice (getting samples one time, mean estimates another time).
+            estIntFalsePercList_NUTS, estEndFalsePercList_NUTS = simEstMethods.Est_NUTS(\
+                                                   A,PosData=ydata,NumSamples=numSamples,\
+                                                   Sens=diagnosticSensitivity,\
+                                                   Spec=diagnosticSpecificity,\
+                                                   M=lklhdEst_M,Madapt=lklhdEst_Madapt,\
+                                                   delta=lklhdEst_delta)
+            '''
+            #print(time.time()-startCalc)        
         except:
             print("Couldn't generate the estimated node falsification percentages for LIKELIHOOD ESTIMATE")
             estFalsePerc_LklhdSamples = []
-            print(time.time()-startCalc)
+            #print(time.time()-startCalc)
             
     else:
         estFalsePerc_LklhdSamples = []
