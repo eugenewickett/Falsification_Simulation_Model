@@ -37,22 +37,22 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
 samplingBudget = NumSimDays*5
-numReplications = 40
+numReplications = 1
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
-printOutput = False # Whether individual replication output should be displayed
-storeOutput = True # Do we store the output in an output dictionary file?
+printOutput = True # Whether individual replication output should be displayed
+storeOutput = False # Do we store the output in an output dictionary file?
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
 '''
 testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',
               'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS',
-              'Dyn_ExploreWithNUTS_2']
+              'Dyn_ExploreWithNUTS_2','Dyn_ThresholdWithNUTS']
 '''
-testPolicy = 'Dyn_ExploreWithNUTS_2'
-testPolicyParam = [100,150,200,250,300,350,400] # Set testing policy parameter list here
+testPolicy = 'Dyn_ThresholdWithNUTS'
+testPolicyParam = [[200,300,400],0.15] # Set testing policy parameter list here
 testingIsDynamic = True # Is our testing policy dynamic or static?
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
@@ -75,6 +75,16 @@ if testPolicy in ['Dyn_ExploreWithNUTS_2']:
             break
     lklhdBool = True
     testPolicyParam = [testPolicyParam] + [diagnosticSensitivity,diagnosticSpecificity,lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta]
+if testPolicy in ['Dyn_ThresholdWithNUTS']:
+    # Sanity checks for Dyn_ThresholdWithNUTS
+    for elem in testPolicyParam[0]:
+        if elem > NumSimDays:
+            print('Check the recalculation schedule.')
+            break
+    lklhdBool = True
+    testPolicyParam = [testPolicyParam[0]] + [testPolicyParam[1]] + [diagnosticSensitivity,diagnosticSpecificity,lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta]
+
+
 
 
 inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBudget,
@@ -162,6 +172,7 @@ for rep in range(numReplications):
     else:
         for indInt in range(intermediateNum):
             intSFVec.append(0)
+    print(intSFVec)
     
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]

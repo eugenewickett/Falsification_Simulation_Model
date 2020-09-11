@@ -26,6 +26,7 @@ And outputs a single list, sampleSchedule, with the following elements in each e
 
 import numpy as np
 import random
+from scipy.stats import beta
 import Falsification_Sim_Modules as simModules
 
 def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
@@ -37,7 +38,7 @@ def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
     polStr = ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',\
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',\
               'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS',\
-              'Dyn_ExploreWithNUTS_2']
+              'Dyn_ExploreWithNUTS_2','Dyn_ThresholdWithNUTS']
     if polType not in polStr:
         raise ValueError("Invalid policy type. Expected one of: %s" % polStr)
     
@@ -74,8 +75,9 @@ def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
     elif polType == 'Dyn_ExploreWithNUTS_2':
         sampleSchedule = Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays,numDaysRemain,\
                                             totalBudget,numBudgetRemain,policyParamList)
-    
-    
+    elif polType == 'Dyn_ThresholdWithNUTS':
+        sampleSchedule = Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays,numDaysRemain,\
+                                            totalBudget,numBudgetRemain,policyParamList)
     return sampleSchedule
     
     
@@ -572,13 +574,16 @@ def Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays=1000,numDaysRemain=1000,\
             NUTSintVars.append(currVar)
         # Normalize sum of all variances to 1
         NUTSintVars = NUTSintVars/np.sum(NUTSintVars)
-        
+        # Multiply by transition matrix to get end node weights
+        NUTSendWts = np.matmul(A,np.array(NUTSintVars))
+        NUTSendWts = NUTSendWts/np.sum(NUTSendWts)
           
         # Now pick from these samples to generate projections
         for currDay in range(numDaysToSched):
             numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
                         min((numBudgetRemain-usedBudgetSoFar) % (numDaysRemain-currDay),1) # How many samples to conduct in the next day
             for testInd in range(numToTest):    
+                '''
                 # Pick an intermediate node to "target", with more emphasis on higher sample variances
                 rUnif = random.uniform(0,1)
                 for intInd in range(A.shape[1]):
@@ -594,6 +599,124 @@ def Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays=1000,numDaysRemain=1000,\
                 rUnif = random.uniform(0,1)
                 for intEnd in range(A.shape[0]):
                     if rUnif < np.sum(AtargCol[0:(intEnd+1)]):
+                        currInd = intEnd
+                        break
+                '''
+                rUnif = random.uniform(0,1)
+                for intEnd in range(A.shape[0]):
+                    if rUnif < np.sum(NUTSendWts[0:(intEnd+1)]):
+                        currInd = intEnd
+                        break
+                
+                currNode = resultsList[currInd][0]
+                sampleSchedule.append([firstTestDay+currDay,currNode])
+                usedBudgetSoFar += 1
+        
+    # Need to sort this list before passing it through
+    sampleSchedule.sort(key=lambda x: x[0])
+    return sampleSchedule
+
+def Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
+                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+    """
+    Grab intermediate and end node distribtuions via NUTS. Identify intermediate node
+    distributions spread over a designated threshold value, by calculating 1/|F(t)-0.5|,
+    where F() is a fitted beta distribution .
+    Pick an intermediate node, weighed towards picking those whose median is closer
+    to the threshold. Pick an outlet from this intermediate node's
+    column in the transition matrix A, again by a weighting (where 0% nodes 
+    have a non-zero probability of being selected).
+    policyParamList = [[schedule of re-calculate days], threshold, sensitivity,
+                       specificity, M, Madapt, delta]
+    (Only enter the schedule of days to plan for and the threshold in the main simulation code,
+    as the other parameters will be pulled from the respective input areas)
+    """
+    #Initialize our output, a list with the above mentioned outputs
+    sampleSchedule = []
+    
+    # How many days to plan for?
+    usedBudgetSoFar = 0
+    firstTestDay = totalSimDays - numDaysRemain
+    sched = policyParamList[0]
+    t = policyParamList[1] # Our designated threshold
+    #numDaysToSched = min(policyParamList[0],numDaysRemain)
+    
+    if numDaysRemain == totalSimDays: # Our initial schedule should just be a distrubed exploration
+        numDaysToSched = sched[0] #Initialize deterministic testing until the first scheduled day
+        currNode = resultsList[0][0]
+        for currDay in range(numDaysToSched):
+            numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
+                        min((numBudgetRemain-usedBudgetSoFar) % (numDaysRemain-currDay),1) # How many samples to conduct in the next day
+            for testInd in range(numToTest): # Iterate through our end nodes
+                if currNode > resultsList[len(resultsList)-1][0]:
+                    currNode = resultsList[0][0]
+                    sampleSchedule.append([firstTestDay+currDay,currNode])
+                    currNode += 1
+                else:                        
+                    sampleSchedule.append([firstTestDay+currDay,currNode])
+                    currNode += 1
+                usedBudgetSoFar += 1       
+                
+    else: # Generate NUTS sample using current results and use it to generate a new schedule
+        # How many days?
+        schedInd = sched.index(firstTestDay)
+        if schedInd+1==len(sched):
+            numDaysToSched = numDaysRemain
+        else:
+            numDaysToSched = sched[schedInd+1]-sched[schedInd]            
+        ydata = []
+        nSamp = []
+        for rw in resultsList:
+            ydata.append(rw[2])
+            nSamp.append(rw[1])
+        A = simModules.GenerateTransitionMatrix(resultsList)      
+        sens, spec, M, Madapt, delta = policyParamList[2:]
+        NUTSsamples = simModules.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+        
+        # Store inverse of median distance from the threshold for intermediate nodes
+        NUTSintWts = []
+        for intNode in range(A.shape[1]):
+            # Use scipy.stats to fit beta distributions for the NUTS samples
+            currData = simModules.invlogit(NUTSsamples[:,intNode])
+            # Need to remove 1/0 values for beta fit
+            currData = [max(min(dat,1-(1e-5)),1e-5) for dat in currData]
+            a1, b1, loc1, scale1 = beta.fit(currData, floc=0, fscale=1) # (CHANGE TO CAUCHY?)
+            currThreshCDF = beta.cdf(t,a=a1,b=b1)
+            currWt = 1/max(abs(currThreshCDF - 0.5)**4,1e-3) # To avoid really large values
+            NUTSintWts.append(currWt+0.1) # Add a small epsilon in case every weight is very small
+        # Normalize sum of all weights to 1
+        NUTSintWts = NUTSintWts/np.sum(NUTSintWts)
+        #Multiply weights by estimated transition matrix to get end-node weights
+        NUTSendWts = np.matmul(A,np.array(NUTSintWts))
+        NUTSendWts = NUTSendWts/np.sum(NUTSendWts)
+        print(NUTSendWts)
+        # Now pick from these samples to generate projections
+        for currDay in range(numDaysToSched):
+            numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
+                        min((numBudgetRemain-usedBudgetSoFar) % (numDaysRemain-currDay),1) # How many samples to conduct in the next day
+            for testInd in range(numToTest):    
+                '''
+                # Pick an intermediate node to "target", with more emphasis on higher weights
+                rUnif = random.uniform(0,1)                
+                for intInd in range(A.shape[1]):
+                    if rUnif < np.sum(NUTSintWts[0:(intInd+1)]):
+                        targIntInd = intInd
+                        break
+                # Go through the same process with the column of A
+                # pertaining to this target intermediate node
+                AtargCol = [row[targIntInd] for row in A]
+                # Add a small epsilon, for 0 values, and normalize
+                AtargCol = np.add(AtargCol,1e-3)
+                AtargCol = AtargCol/np.sum(AtargCol)
+                rUnif = random.uniform(0,1)
+                for intEnd in range(A.shape[0]):
+                    if rUnif < np.sum(AtargCol[0:(intEnd+1)]):
+                        currInd = intEnd
+                        break
+                '''
+                rUnif = random.uniform(0,1)
+                for intEnd in range(A.shape[0]):
+                    if rUnif < np.sum(NUTSendWts[0:(intEnd+1)]):
                         currInd = intEnd
                         break
                 currNode = resultsList[currInd][0]
