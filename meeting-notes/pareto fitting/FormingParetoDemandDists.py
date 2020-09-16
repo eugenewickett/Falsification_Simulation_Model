@@ -15,8 +15,9 @@ demand is generated WRT importers
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import csv
 
-paretoConstant = 3. # larger values cause larger density towards a few importers
+paretoConstant = 1.1 # larger values cause larger density towards a few importers
 prefDensity = 0.5 # density of preference lists relative to number of importers
 endNum = 106
 impNum = 10
@@ -109,9 +110,19 @@ plt.bar(np.arange(0,impNum),consumpImpVec)
 
 
 # Print to a csv file
+csvTbl = []
+for l in newPrefLists:
+    newRow = []
+    for imp in range(1,12):
+        if imp in l:
+            newRow.append(l.index(imp)+1)
+        else:
+            newRow.append(0)
+    csvTbl.append(newRow)
 
-
-
+with open('paretoOutput.csv','w',newline='') as f:
+    writer = csv.writer(f)
+    writer.writerows(csvTbl)
 
     
 

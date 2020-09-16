@@ -36,7 +36,7 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 2000
+NumSimDays = 400
 samplingBudget = NumSimDays*5
 numReplications = 1
 diagnosticSensitivity = 0.95 # Tool sensitivity
@@ -64,6 +64,9 @@ importerLTvar = 2. # Values other than 0. are interpreted as the variance of a l
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
 lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
+
+burnInDays_End = 20 # Statistics are updated after this day
+burnInDays_Int = 10 # Statistics are updated after this day
 
 if testPolicy in ['Dyn_TSwithNUTS','Dyn_ExploreWithNUTS']:
     # Sanity checks on the entered parameters for these particular testing policies
@@ -163,9 +166,9 @@ for rep in range(numReplications):
             maxLT = max(currIntermediate.PreferenceLTsList)
     for indEnd in range(endNum): # Change demand at the end nodes to zero for these first few days
         currEnd = List_EndNode[indEnd]
-        currEnd.demandSched[0:(maxLT+10)] = 0
+        currEnd.demandSched[0:burnInDays_End+1] = 0
     # Also freeze testing for this number of days plus the max number of LT days for end nodes
-    List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > (maxLT+10)]
+    List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > burnInDays_End]
         
     ######### MODIFICATION LOOPS ######### ######### #########
     
@@ -187,19 +190,7 @@ for rep in range(numReplications):
     
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
-        currEnd.PreferenceList = newPrefLists[indEnd]
-        if len(currEnd.PreferenceList) > len(currEnd.PreferenceLTsList):
-            numToAdd = len(currEnd.PreferenceList) - len(currEnd.PreferenceLTsList) 
-            LTamnt = currEnd.PreferenceLTsList[0]
-            Ramnt = currEnd.PreferenceRsList[0]
-            for j in range(numToAdd):
-                currEnd.PreferenceLTsList.insert(0,LTamnt)
-                currEnd.PreferenceRsList.insert(0,Ramnt)
-        elif len(currEnd.PreferenceList) < len(currEnd.PreferenceLTsList):
-            numToSubtract = len(currEnd.PreferenceLTsList) - len(currEnd.PreferenceList)  
-            for j in range(numToSubtract):
-                currEnd.PreferenceLTsList.pop(0)
-                currEnd.PreferenceRsList.pop(0)
+        
     # Intermediate nodes - put something inside this loop
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
@@ -247,7 +238,7 @@ for rep in range(numReplications):
             currEnd = List_EndNode[indEnd]
             currEnd.ProcessIncomingOrder()
         
-        # End nodes process incoming demand and update consumption records    
+        # End nodes process incoming demand and update consumption records, once burn-in day reached   
         for indEnd in range(endNum):
             currEnd = List_EndNode[indEnd]
             currStockoutDays = currEnd.demandResults[1] # For tracking if today is a stockout day
@@ -343,9 +334,10 @@ for rep in range(numReplications):
         
         # End nodes make orders if total inventory is leq the reorder point
         for indEnd in range(endNum):
-            currEnd = List_EndNode[indEnd]
-            List_IntermediateNode, List_DP = currEnd.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)
-        
+            if today > burnInDays_Int:
+                currEnd = List_EndNode[indEnd]
+                List_IntermediateNode, List_DP = currEnd.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)
+            
         # Intermediate nodes make orders if total inventory is leq the reorder point
         for indInt in range(intermediateNum):
             currIntermediate = List_IntermediateNode[indInt]
