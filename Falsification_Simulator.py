@@ -8,6 +8,7 @@ This code is for building and running simulations of a supply chain susceptible
 to falsification and substandardization.
 """
 
+from scipy.stats import norm
 import numpy as np
 import matplotlib.pyplot as plt
 import random #for seeds
@@ -35,7 +36,7 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 400
+NumSimDays = 2000
 samplingBudget = NumSimDays*5
 numReplications = 1
 diagnosticSensitivity = 0.95 # Tool sensitivity
@@ -51,12 +52,17 @@ testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGre
               'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS',
               'Dyn_ExploreWithNUTS_2','Dyn_ThresholdWithNUTS']
 '''
-testPolicy = 'Dyn_ThresholdWithNUTS'
+testPolicy = 'Static_Deterministic'
 testPolicyParam = [[200,300,400],0.15] # Set testing policy parameter list here
 testingIsDynamic = True # Is our testing policy dynamic or static?
 
+
+# Diffusion level is set by modifying importer lead times from their suppliers,
+# affecting importer stockouts
+importerLTvar = 2. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
+
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 if testPolicy in ['Dyn_TSwithNUTS','Dyn_ExploreWithNUTS']:
@@ -157,7 +163,7 @@ for rep in range(numReplications):
             maxLT = max(currIntermediate.PreferenceLTsList)
     for indEnd in range(endNum): # Change demand at the end nodes to zero for these first few days
         currEnd = List_EndNode[indEnd]
-        currEnd.demandSched[0:(maxLT+5)] = 0
+        currEnd.demandSched[0:(maxLT+10)] = 0
     # Also freeze testing for this number of days plus the max number of LT days for end nodes
     List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > (maxLT+10)]
         
@@ -178,13 +184,41 @@ for rep in range(numReplications):
         currIntermediate = List_IntermediateNode[indInt]
         currIntermediate.FalsifierProbability = intSFVec[indInt]
         
+    
+    for indEnd in range(endNum):
+        currEnd = List_EndNode[indEnd]
+        currEnd.PreferenceList = newPrefLists[indEnd]
+        if len(currEnd.PreferenceList) > len(currEnd.PreferenceLTsList):
+            numToAdd = len(currEnd.PreferenceList) - len(currEnd.PreferenceLTsList) 
+            LTamnt = currEnd.PreferenceLTsList[0]
+            Ramnt = currEnd.PreferenceRsList[0]
+            for j in range(numToAdd):
+                currEnd.PreferenceLTsList.insert(0,LTamnt)
+                currEnd.PreferenceRsList.insert(0,Ramnt)
+        elif len(currEnd.PreferenceList) < len(currEnd.PreferenceLTsList):
+            numToSubtract = len(currEnd.PreferenceLTsList) - len(currEnd.PreferenceList)  
+            for j in range(numToSubtract):
+                currEnd.PreferenceLTsList.pop(0)
+                currEnd.PreferenceRsList.pop(0)
     # Intermediate nodes - put something inside this loop
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
+        currImpDemand = 0
+        for indEnd in range(endNum):
+            currEnd = List_EndNode[indEnd]
+            if currEnd.PreferenceList[0] ==currIntermediate.id:
+                currImpDemand += currEnd.R
+            if currEnd.PreferenceList[1] ==currIntermediate.id:
+                currImpDemand += currEnd.R*0.4
+            if len(currEnd.PreferenceList)>2:
+                if currEnd.PreferenceList[2] ==currIntermediate.id:
+                    currImpDemand += currEnd.R*0.1
+        currImpDemand = currImpDemand*0.1
+        new_reorder_pt = norm.ppf(0.6,loc=currImpDemand,scale=np.sqrt(currImpDemand))
+        currIntermediate.r = int(new_reorder_pt)
+        currIntermediate.R = 6*currIntermediate.r
+    # End nodes - put something inside this loop   
         
-    # End nodes - put something inside this loop
-    for indEnd in range(endNum):
-        currEnd = List_EndNode[indEnd]
     
     ######### END MODIFICATION LOOPS ######### ######### #########
     
@@ -372,7 +406,7 @@ for rep in range(numReplications):
         currRootConsumption = List_RootConsumption[indRoot]
         currPercConsumption = currRootConsumption / rootTotalConsumed
         currPercString = "{0:.1%}".format(currPercConsumption)
-        currRootRow = [currRoot] + [currPercConsumption] + [currPercString]
+        currRootRow = [currRoot] + [currRootConsumption] + [currPercString]
         RootReportTbl = RootReportTbl + [currRootRow]
         Root_Plot_x.append(str(currRoot))
         Root_Plot_y.append(currPercConsumption)
@@ -715,7 +749,6 @@ for rep in range(numReplications):
                           }
                           
         outputDict[rep] = currOutputLine # Save to the output dictionary
-        
         
 ########## END OF REPLICATION LOOP ##########
 

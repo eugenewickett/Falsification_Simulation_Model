@@ -15,7 +15,7 @@ for i in range(10):
     fitted_data = beta.pdf(x, a=a1,b=b1)
     plt.hist(data, density=True)
     plt.plot(x,fitted_data,'r-')
-    currThreshCDF = beta.cdf(0.175,a=a1,b=b1)
+    currThreshCDF = beta.cdf(0.15,a=a1,b=b1)
     print(1/(max(abs(currThreshCDF - 0.5)**4,1e-3)))
 print(intSFVec)
 

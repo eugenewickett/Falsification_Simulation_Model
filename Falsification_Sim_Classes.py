@@ -22,7 +22,7 @@ class Node:
         self.r = reorderPoint
         self.R = reorderAmount
         self.PreferenceList = preferredSupplierVec # A list of node numbers, in order of preference
-        self.PreferenceLTsList = preferredSupplierLTsVec # A list of lead times
+        self.PreferenceLTsList = preferredSupplierLTsVec # A list of lead time means
         self.PreferenceRsList = preferredSupplierRsVec
         self.FalsifierProbability = falseProb
         self.InventoryLevel = [] # List of levels corresponding to each DPID

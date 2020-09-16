@@ -680,7 +680,7 @@ def Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
             currData = simModules.invlogit(NUTSsamples[:,intNode])
             # Need to remove 1/0 values for beta fit
             currData = [max(min(dat,1-(1e-5)),1e-5) for dat in currData]
-            a1, b1, loc1, scale1 = beta.fit(currData, floc=0, fscale=1) # (CHANGE TO CAUCHY?)
+            a1, b1, loc1, scale1 = beta.fit(currData, floc=0, fscale=1) # (CHANGE TO LAPLACE?)
             currThreshCDF = beta.cdf(t,a=a1,b=b1)
             currWt = 1/max(abs(currThreshCDF - 0.5)**4,1e-3) # To avoid really large values
             NUTSintWts.append(currWt+0.1) # Add a small epsilon in case every weight is very small
@@ -689,7 +689,6 @@ def Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         #Multiply weights by estimated transition matrix to get end-node weights
         NUTSendWts = np.matmul(A,np.array(NUTSintWts))
         NUTSendWts = NUTSendWts/np.sum(NUTSendWts)
-        print(NUTSendWts)
         # Now pick from these samples to generate projections
         for currDay in range(numDaysToSched):
             numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
