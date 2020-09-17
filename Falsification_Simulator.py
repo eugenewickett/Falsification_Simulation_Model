@@ -8,7 +8,6 @@ This code is for building and running simulations of a supply chain susceptible
 to falsification and substandardization.
 """
 
-from scipy.stats import norm
 import numpy as np
 import matplotlib.pyplot as plt
 import random #for seeds
@@ -36,7 +35,7 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 400
+NumSimDays = 500
 samplingBudget = NumSimDays*5
 numReplications = 1
 diagnosticSensitivity = 0.95 # Tool sensitivity
@@ -59,14 +58,15 @@ testingIsDynamic = True # Is our testing policy dynamic or static?
 
 # Diffusion level is set by modifying importer lead times from their suppliers,
 # affecting importer stockouts
-importerLTvar = 2. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
+intLTvar = 2. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
+endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
 lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
-burnInDays_End = 20 # Statistics are updated after this day
-burnInDays_Int = 10 # Statistics are updated after this day
+burnInDays_End = 25 # No end-node demand or testing until after this day
+burnInDays_Int = 10 # No intermediate demand until after this day
 
 if testPolicy in ['Dyn_TSwithNUTS','Dyn_ExploreWithNUTS']:
     # Sanity checks on the entered parameters for these particular testing policies
@@ -186,29 +186,14 @@ for rep in range(numReplications):
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
         currIntermediate.FalsifierProbability = intSFVec[indInt]
-        
     
+    
+    # End nodes - put something inside this loop
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
-        
     # Intermediate nodes - put something inside this loop
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
-        currImpDemand = 0
-        for indEnd in range(endNum):
-            currEnd = List_EndNode[indEnd]
-            if currEnd.PreferenceList[0] ==currIntermediate.id:
-                currImpDemand += currEnd.R
-            if currEnd.PreferenceList[1] ==currIntermediate.id:
-                currImpDemand += currEnd.R*0.4
-            if len(currEnd.PreferenceList)>2:
-                if currEnd.PreferenceList[2] ==currIntermediate.id:
-                    currImpDemand += currEnd.R*0.1
-        currImpDemand = currImpDemand*0.1
-        new_reorder_pt = norm.ppf(0.6,loc=currImpDemand,scale=np.sqrt(currImpDemand))
-        currIntermediate.r = int(new_reorder_pt)
-        currIntermediate.R = 6*currIntermediate.r
-    # End nodes - put something inside this loop   
         
     
     ######### END MODIFICATION LOOPS ######### ######### #########
@@ -336,12 +321,12 @@ for rep in range(numReplications):
         for indEnd in range(endNum):
             if today > burnInDays_Int:
                 currEnd = List_EndNode[indEnd]
-                List_IntermediateNode, List_DP = currEnd.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)
+                List_IntermediateNode, List_DP = currEnd.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP,LeadTimeVariance=endLTvar)
             
         # Intermediate nodes make orders if total inventory is leq the reorder point
         for indInt in range(intermediateNum):
             currIntermediate = List_IntermediateNode[indInt]
-            List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP)              
+            List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP,LeadTimeVariance=intLTvar)              
         
         # Update dynamic testing if relevant
         if today != NumSimDays-1 and List_TestingSchedule == []:

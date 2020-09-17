@@ -69,13 +69,15 @@ class Node:
         ### END WHILE LOOP FOR INVENTORY
         return DPList, RootList, rootConsumptionVec
         
-    def MakeOrder(self, rootList, intermediateList, DPList): # Check if current inventory levels are leq the reorder point, and make orders according to the preferred supplier list
+    def MakeOrder(self, rootList, intermediateList, DPList, LeadTimeVariance=0): # Check if current inventory levels are leq the reorder point, and make orders according to the preferred supplier list
         if np.sum(self.InventoryLevel) <= self.r: # We place an order
             # Iterate through the prefered suppliers list until we hit a root node
             Rremaining = self.R # Initialize the desired reorder amount
             suppInd = 0 # Supplier number is distinct from where the supplier's LT is in the list
             for currSupplier in self.PreferenceList:
-                currLT = self.PreferenceLTsList[suppInd] # LT from this supplier
+                logNormSig = np.sqrt(np.log(((LeadTimeVariance)/(self.PreferenceLTsList[suppInd]**2)) + 1)) # For deriving log-normal LT variable
+                logNormMu = np.log(self.PreferenceLTsList[suppInd])-(logNormSig**2)/2
+                currLT = int(np.round(np.random.lognormal(mean=logNormMu,sigma=logNormSig))) # LT from this supplier
                 suppInd += 1
                 # Check if it is a root node
                 isRoot = False
@@ -83,18 +85,17 @@ class Node:
                     if root==currSupplier: # We have a root
                         isRoot = True
                 # Place order if supplier is a root; otherwise need to check if inventory is available
-                if isRoot == True:
+                if isRoot == True and not (self.EndNode==True and (np.sum(self.InventoryLevel) > self.r)):
                     # If this node has a positive falsifier procurement probability,
                     # generate a random uniform and set the current supplier to 
                     # the falsifier node (node 1) if the uniform is below the threshold
                     if self.FalsifierProbability > random.uniform(0,1):
                         currSupplier = 1
                     
-                    
                     newDP = DrugPacket(size=Rremaining, nodeIDList=[currSupplier,self.id])
                     self.InventoryLevel.append(newDP.size)
                     self.InventoryDPID.append(newDP.id)
-                    self.InventoryPeriodsRemaining.append(currLT)
+                    self.InventoryPeriodsRemaining.append(currLT)                  
                     DPList.append(newDP)
                 else: # Need to order as much as possible from this intermediate node
                     for intermediate in intermediateList:
@@ -132,21 +133,3 @@ class Node:
                                                    
         return intermediateList, DPList # We may have made changes to these lists
                             
-                            
-                            
-                            
-                            
-                            
-                            
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
