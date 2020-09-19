@@ -96,7 +96,7 @@ class Node:
                     self.InventoryLevel.append(newDP.size)
                     self.InventoryDPID.append(newDP.id)
                     self.InventoryPeriodsRemaining.append(currLT)                  
-                    DPList.append(newDP)
+                    DPList.append(newDP)                    
                 else: # Need to order as much as possible from this intermediate node
                     for intermediate in intermediateList:
                         if intermediate.id == currSupplier: # We have located our intermediate node

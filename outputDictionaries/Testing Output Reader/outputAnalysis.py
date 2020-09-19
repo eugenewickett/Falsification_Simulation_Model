@@ -9,13 +9,13 @@ import pickle # for saving/loading objects in Python
 
 # Run supporting files
 #os.getcwd() Run this command to get the current working directory string
-dirStr = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\outputDictionaries\\Testing Output Reader'
+dirStr = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model\\outputDictionaries\\Testing Output Reader 2'
 dirStr2 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model'
 os.chdir(dirStr2) # Set directory   
 import Falsification_Sim_Modules as simModules
 os.chdir(dirStr) # Set directory   
 
-strVec = ['OP_STATPOL_1','OP_DYNPOL_9_100','OP_DYNPOL_9_200','EXPLNUTS2_100','EXPLNUTS2_200']
+strVec = ['OP_Static','OP_NUTSthresh_100_0.3','OP_NUTSthresh_200_0.3']
 
 outputDicts = []
 for strEnd in strVec:
@@ -23,7 +23,7 @@ for strEnd in strVec:
     currDict = pickle.load(open(fileName, 'rb'))
     outputDicts.append(currDict)
 
-simModules.SimSFEstimateOutput(outputDicts,strVec)
+simModules.SimSFEstimateOutput(outputDicts,strVec,0.30)
 
 
 

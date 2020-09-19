@@ -525,11 +525,14 @@ def SimReplicationOutput(OPdict):
     '''
  ### END "SimReplicationOutput" ###
 
-def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
+def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     '''
     Generates comparison tables and plots for a LIST of output dictionaries.
     Intended for comparison with the underlying "true" SF rates at the
     importer level.
+    'dictNamesVec' signifies the vector of names that should be used in plots.
+    'threshold' signifies the limit below which estimated SFP rates are
+    designated as "OK" and above which they are designated as "Bad"
     '''
     numDicts = len(OPdicts)
     if dictNamesVec == [] or not len(dictNamesVec) == numDicts: # Empty names vector or mismatch; generate a numbered one
@@ -549,6 +552,28 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
     stdDevList_MLE = [] 
     stdDevList_NUTS = []
     
+    # For binary classification of different methods, using the entered threshold
+    truePos_Lin = []
+    truePos_Bern = []
+    truePos_MLE = []
+    truePos_NUTS = []
+    trueNeg_Lin = []
+    trueNeg_Bern = []
+    trueNeg_MLE = []
+    trueNeg_NUTS = []
+    falsePos_Lin = []
+    falsePos_Bern = []
+    falsePos_MLE = []
+    falsePos_NUTS = []
+    falseNeg_Lin = []
+    falseNeg_Bern = []
+    falseNeg_MLE = []
+    falseNeg_NUTS = []
+    accuracy_Lin = []
+    accuracy_Bern = []
+    accuracy_MLE = []
+    accuracy_NUTS = []
+    
     # For each output dictionary, generate deviation estimates of varying types
     for currDict in OPdicts:
         
@@ -565,6 +590,27 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
         currDict_stdDevList_Bern = []
         currDict_stdDevList_MLE = []
         currDict_stdDevList_NUTS = []
+        
+        currDict_truePos_Lin = []
+        currDict_truePos_Bern = []
+        currDict_truePos_MLE = []
+        currDict_truePos_NUTS = []
+        currDict_trueNeg_Lin = []
+        currDict_trueNeg_Bern = []
+        currDict_trueNeg_MLE = []
+        currDict_trueNeg_NUTS = []
+        currDict_falsePos_Lin = []
+        currDict_falsePos_Bern = []
+        currDict_falsePos_MLE = []
+        currDict_falsePos_NUTS = []
+        currDict_falseNeg_Lin = []
+        currDict_falseNeg_Bern = []
+        currDict_falseNeg_MLE = []
+        currDict_falseNeg_NUTS = []
+        currDict_accuracy_Lin = []
+        currDict_accuracy_Bern = []
+        currDict_accuracy_MLE = []
+        currDict_accuracy_NUTS = []
         
         for repNum in currDict.keys():
             currTrueSFVec = currDict[repNum]['intSFTrueValues']
@@ -610,6 +656,79 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
             currDict_stdDevList_MLE.append(np.std(currMLEProjdevs))
             if hasNUTS:
                 currDict_stdDevList_NUTS.append(np.std(currNUTSdevs))
+            
+            # Generate binary classifications using 'threshold'
+            currTrueSFVec_Bin = [1 if currTrueSFVec[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currLinProj_Bin = [1 if currLinProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currBernProj_Bin = [1 if currBernProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currMLEProj_Bin = [1 if currMLEProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currNUTSProj_Bin = [1 if np.mean(invlogit(currNUTSsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            # Generate true/false positives/negatives rates, plus accuracy
+            if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_Lin.append(None)
+                print("None entered")
+            if len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Bern.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]))
+            else:
+                 currDict_truePos_Bern.append(None)
+                 print("None entered")
+            if len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_MLE.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_MLE.append(None)
+                print("None entered")
+            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_NUTS.append(None)
+                print("None entered")
+            if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_Lin.append(None)
+            if len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Bern.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_Bern.append(None)
+            if len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_MLE.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_MLE.append(None)
+            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_NUTS.append(None)
+             
+            currDict_falsePos_Lin.append(1 - currDict_truePos_Lin[-1] if currDict_truePos_Lin[-1] is not None else None)
+            currDict_falsePos_Bern.append(1 - currDict_truePos_Bern[-1] if currDict_truePos_Bern[-1] is not None else None)
+            currDict_falsePos_MLE.append(1 - currDict_truePos_MLE[-1] if currDict_truePos_MLE[-1] is not None else None)
+            currDict_falsePos_NUTS.append(1 - currDict_truePos_NUTS[-1] if currDict_truePos_NUTS[-1] is not None else None)
+            currDict_trueNeg_Lin.append(1 - currDict_falseNeg_Lin[-1] if currDict_falseNeg_Lin[-1] is not None else None)
+            currDict_trueNeg_Bern.append(1 - currDict_falseNeg_Bern[-1] if currDict_falseNeg_Bern[-1] is not None else None)
+            currDict_trueNeg_MLE.append(1 - currDict_falseNeg_MLE[-1] if currDict_falseNeg_MLE[-1] is not None else None)
+            currDict_trueNeg_NUTS.append(1 - currDict_falseNeg_NUTS[-1] if currDict_falseNeg_NUTS[-1] is not None else None)
+            currDict_accuracy_Lin.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])) \
+                                          /len(currLinProj_Bin))
+            currDict_accuracy_Bern.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0) ])) \
+                                          /len(currBernProj_Bin))
+            currDict_accuracy_MLE.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0) ])) \
+                                          /len(currMLEProj_Bin))
+            currDict_accuracy_NUTS.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])) \
+                                          /len(currNUTSProj_Bin))
         
         avgDevList_Lin.append(currDict_avgDevList_Lin)
         avgDevList_Bern.append(currDict_avgDevList_Bern)
@@ -627,7 +746,28 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
         stdDevList_Bern.append(currDict_stdDevList_Bern)
         stdDevList_MLE.append(currDict_stdDevList_MLE)
         if hasNUTS:
-            stdDevList_NUTS.append(currDict_stdDevList_NUTS) 
+            stdDevList_NUTS.append(currDict_stdDevList_NUTS)
+            
+        truePos_Lin.append(currDict_truePos_Lin)
+        truePos_Bern.append(currDict_truePos_Bern)
+        truePos_MLE.append(currDict_truePos_MLE)
+        truePos_NUTS.append(currDict_truePos_NUTS)
+        trueNeg_Lin.append(currDict_trueNeg_Lin)
+        trueNeg_Bern.append(currDict_trueNeg_Bern)
+        trueNeg_MLE.append(currDict_trueNeg_MLE)
+        trueNeg_NUTS.append(currDict_trueNeg_NUTS)
+        falsePos_Lin.append(currDict_falsePos_Lin)
+        falsePos_Bern.append(currDict_falsePos_Bern)
+        falsePos_MLE.append(currDict_falsePos_MLE)
+        falsePos_NUTS.append(currDict_falsePos_NUTS)
+        falseNeg_Lin.append(currDict_falseNeg_Lin)
+        falseNeg_Bern.append(currDict_falseNeg_Bern)
+        falseNeg_MLE.append(currDict_falseNeg_MLE)
+        falseNeg_NUTS.append(currDict_falseNeg_NUTS)
+        accuracy_Lin.append(currDict_accuracy_Lin)
+        accuracy_Bern.append(currDict_accuracy_Bern)
+        accuracy_MLE.append(currDict_accuracy_MLE)
+        accuracy_NUTS.append(currDict_accuracy_NUTS)
     
     # Scenario-dependent looks at performance
     scenDict = {}
@@ -741,11 +881,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
         scenDict[ind] = currOutputLine
         ind += 1
         
-    
-    '''    
-    
-
-    '''
+    ############# PLOTTING #############
     xTickLabels = [] # For plot x ticks
     # How many replications?
     for dictNum in range(len(dictNamesVec)):
@@ -965,7 +1101,134 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[]):
         plt.show()
         
     ### END SCENARIOS LOOP
+    '''
+   
+    trueNeg_Lin = []
+    trueNeg_Bern = []
+    trueNeg_MLE = []
+    trueNeg_NUTS = []
+    falsePos_Lin = []
+    falsePos_Bern = []
+    falsePos_MLE = []
+    falsePos_NUTS = []
+    falseNeg_Lin = []
+    falseNeg_Bern = []
+    falseNeg_MLE = []
+    falseNeg_NUTS = []
+    '''
+    # Accuracy rates
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          accuracy_Lin[dictInd]))
+        block2 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Bernoulli Projection']),\
+                          accuracy_Bern[dictInd]))
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                          accuracy_MLE[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['NUTS sample means']),\
+                          accuracy_NUTS[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        for tup in block2:
+            DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)    
+        
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('Accuracy Rates: Threshold: '+r"$\bf{" + str(threshold) + "}$",fontsize=18)
+    plt.ylim(0.,1)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('Accuracy Rate',fontsize=16)
+    ax.set_xticklabels(xTickLabels)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+    plt.show()
     
+    # True positive rates
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          truePos_Lin[dictInd]))
+        block2 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Bernoulli Projection']),\
+                          truePos_Bern[dictInd]))
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                          truePos_MLE[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['NUTS sample means']),\
+                          truePos_NUTS[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        for tup in block2:
+            DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)    
+        
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('True Positive Rates: Threshold: '+r"$\bf{" + str(threshold) + "}$",fontsize=18)
+    plt.ylim(0.,1)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('True Positive Rate',fontsize=16)
+    ax.set_xticklabels(xTickLabels)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+    plt.show()
+    
+    # True negative rates
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          trueNeg_Lin[dictInd]))
+        block2 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Bernoulli Projection']),\
+                          trueNeg_Bern[dictInd]))
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                          trueNeg_MLE[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['NUTS sample means']),\
+                          trueNeg_NUTS[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        for tup in block2:
+            DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)    
+        
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('True Negative Rates: Threshold: '+r"$\bf{" + str(threshold) + "}$",fontsize=18)
+    plt.ylim(0.,1)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('True Negative Rate',fontsize=16)
+    ax.set_xticklabels(xTickLabels)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+    plt.show()
  ### END "SimSFEstimateOutput" ###   
     
 def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,

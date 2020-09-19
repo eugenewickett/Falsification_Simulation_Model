@@ -11,7 +11,7 @@ to falsification and substandardization.
 import numpy as np
 import matplotlib.pyplot as plt
 import random #for seeds
-import sys
+#import sys
 import time # for time tracking
 import os # for directories
 from tabulate import tabulate # for making outputs
@@ -37,12 +37,13 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 500
 samplingBudget = NumSimDays*5
-numReplications = 1
+numReplications = 50
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
-printOutput = True # Whether individual replication output should be displayed
-storeOutput = False # Do we store the output in an output dictionary file?
+printOutput = False # Whether individual replication output should be displayed
+storeOutput = True # Do we store the output in an output dictionary file?
+OPfilename = "OP_Static"
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
 '''
@@ -52,17 +53,17 @@ testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGre
               'Dyn_ExploreWithNUTS_2','Dyn_ThresholdWithNUTS']
 '''
 testPolicy = 'Static_Deterministic'
-testPolicyParam = [[200,300,400],0.15] # Set testing policy parameter list here
+testPolicyParam = [[100,200,300,400],0.30] # Set testing policy parameter list here
 testingIsDynamic = True # Is our testing policy dynamic or static?
 
 
 # Diffusion level is set by modifying importer lead times from their suppliers,
 # affecting importer stockouts
-intLTvar = 2. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
+intLTvar = 10. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
 endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -327,7 +328,6 @@ for rep in range(numReplications):
         for indInt in range(intermediateNum):
             currIntermediate = List_IntermediateNode[indInt]
             List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP,LeadTimeVariance=intLTvar)              
-        
         # Update dynamic testing if relevant
         if today != NumSimDays-1 and List_TestingSchedule == []:
             List_TestingSchedule = simTestPolicies.testPolicyHandler(polType=testPolicy,\
@@ -486,6 +486,7 @@ for rep in range(numReplications):
     # Form regression estimates of suspected bad intermediate nodes
     X = estFalseVector
     A = estTransitionMatrix
+    
     # Get required arguments from the testing summary table
     ydata = []
     numSamples = []
@@ -734,8 +735,8 @@ if warmUpRun == False and storeOutput == True:
     outputFilePath  = os.getcwd() + '\\outputDictionaries'
     if not os.path.exists(outputFilePath): # Generate this folder if one does not already exist
             os.makedirs(outputFilePath)
-    outputFileName = os.path.basename(sys.argv[0])[:-3] + '_OUTPUT' # Current file name
-    outputFileName = os.path.join(outputFilePath, outputFileName)
+    #outputFileName = os.path.basename(sys.argv[0])[:-3] + '_OUTPUT' # Current file name
+    outputFileName = os.path.join(outputFilePath, OPfilename)
     pickle.dump(outputDict, open(outputFileName,'wb'))
 
 
