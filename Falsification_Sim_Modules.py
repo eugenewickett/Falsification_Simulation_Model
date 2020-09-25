@@ -31,7 +31,7 @@ def generateNodeListsFromFile(nodeInputFileString='',
                               arcLTsFileString='',
                               arcRsFileString='',
                               NumSimDays=0,     
-                              ):
+                              globalDem=0.):
     """
     Processes node and arc files and returns node lists 
     """
@@ -67,8 +67,12 @@ def generateNodeListsFromFile(nodeInputFileString='',
             currDemandDistribution = int(nodeList[currNode][4])
             currDemandParamList = []
             if not nodeList[currNode][5] == '':
-                currDemandParam1 = float(nodeList[currNode][5])
-                currDemandParamList.append(currDemandParam1)
+                if currDemandDistribution == 3: # Poisson dist; add global demand amount
+                    currDemandParam1 = float(nodeList[currNode][5]) + globalDem
+                    currDemandParamList.append(currDemandParam1)
+                else:
+                    currDemandParam1 = float(nodeList[currNode][5])
+                    currDemandParamList.append(currDemandParam1)
             if not nodeList[currNode][6] == '':
                 currDemandParam2 = float(nodeList[currNode][6])
                 currDemandParamList.append(currDemandParam2)
@@ -1216,12 +1220,12 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for tup in block4:
             DFdata.append(tup)    
         
-    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    TrueNegDF = pd.DataFrame(DFdata,columns=headCol)
     # Build boxplot
     plt.figure(figsize=(13,7))
     plt.suptitle('True Negative Rates: Threshold: '+r"$\bf{" + str(threshold) + "}$",fontsize=18)
     plt.ylim(0.,1)
-    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+    ax = sns.boxplot(y='devVal',x='dict',data=TrueNegDF,palette='bright',\
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('True Negative Rate',fontsize=16)

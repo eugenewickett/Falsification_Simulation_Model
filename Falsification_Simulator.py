@@ -37,12 +37,12 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 500
 samplingBudget = NumSimDays*5
-numReplications = 50
+numReplications = 15
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
 alertIter = 10 # How frequently we're alerted of a set of replications being completed
 printOutput = False # Whether individual replication output should be displayed
-storeOutput = True # Do we store the output in an output dictionary file?
+storeOutput = False # Do we store the output in an output dictionary file?
 OPfilename = "OP_Static"
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 
@@ -54,16 +54,18 @@ testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGre
 '''
 testPolicy = 'Static_Deterministic'
 testPolicyParam = [[100,200,300,400],0.30] # Set testing policy parameter list here
-testingIsDynamic = True # Is our testing policy dynamic or static?
-
 
 # Diffusion level is set by modifying importer lead times from their suppliers,
 # affecting importer stockouts
-intLTvar = 10. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
+intLTvar = 0. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
 endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
+globalDemand = 100. #Level of global demand increase across all outlets, in mean demand/simulation day
+## REMOVE LATER
+currTrVec = []
+currStVec = []
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -123,7 +125,7 @@ for rep in range(numReplications):
 
     # Generate the lists of root, intermediate, and end nodes; also keep the list of node headers
     List_RootNode, List_IntermediateNode, List_EndNode, nodeListHeader, nodeList, nodeNum, arcPreferencesMatrix, arcLTsMatrix, arcRsMatrix =\
-                                        simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays)
+                                        simModules.generateNodeListsFromFile(nodeInputFileString,arcPreferencesFileString,arcLTsFileString,arcRsFileString, NumSimDays, globalDemand)
     rootNum = len(List_RootNode)
     intermediateNum = len(List_IntermediateNode)
     endNum = len(List_EndNode)
@@ -182,7 +184,7 @@ for rep in range(numReplications):
     else:
         for indInt in range(intermediateNum):
             intSFVec.append(0)
-    print(intSFVec)
+    #print(intSFVec)
     
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
@@ -192,6 +194,7 @@ for rep in range(numReplications):
     # End nodes - put something inside this loop
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
+        
     # Intermediate nodes - put something inside this loop
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
@@ -453,7 +456,10 @@ for rep in range(numReplications):
                 InvCheckSummaryTbl[indNodeList][pile[0]-1] += pile[1]
     j=0            
     for testedNode in testNodeList: # For storing the number of falsifieds found at each end node
-        percFalse = TestSummaryTbl[j][2] / TestSummaryTbl[j][1]
+        if TestSummaryTbl[j][1] > 0:
+            percFalse = TestSummaryTbl[j][2] / TestSummaryTbl[j][1]
+        else:
+            percFalse = 0.
         estFalseVector[j] = percFalse
         j += 1
     
@@ -697,7 +703,10 @@ for rep in range(numReplications):
         
     ### END OF PRINT OUTPUT LOOP
     
-   
+    # REMOVE LATER
+    currTrVec.append(np.trace(A.T @ A))
+    currStVec.append(np.mean(Intermediate_Plot_y))
+    
     if warmUpRun == False:
         # Update our output dictionary
         List_demandResultsInt = [] # For intermediate node demand results
@@ -729,7 +738,10 @@ for rep in range(numReplications):
         outputDict[rep] = currOutputLine # Save to the output dictionary
         
 ########## END OF REPLICATION LOOP ##########
-
+# REMOVE LATER
+trVec.append(np.mean(currTrVec))
+meanStockoutVec.append(np.mean(currStVec))
+  
 # Store the outputDict
 if warmUpRun == False and storeOutput == True:
     outputFilePath  = os.getcwd() + '\\outputDictionaries'
