@@ -47,6 +47,13 @@ A4 = np.array([[0.33,0.33,0.34],
                [0.34,0.35,0.31],
                [0.35,0.31,0.34]])
 
+A5 = np.array([[0.49,0.51,0],
+               [0.51,0.49,0],
+               [0.49,0.51,0],
+               [0.51,0.49,0],
+               [0,0,1],
+               [0,0,1]])
+
     
 np.trace(A0.T @ A0)
 np.trace(A0 @ A0.T)
@@ -73,12 +80,22 @@ np.trace(A4 @ A4.T)
 np.linalg.det(A4.T @ A4)
 np.linalg.det(A4 @ A4.T)
 
-x = [np.trace(A0.T @ A0),np.trace(A1.T @ A1),np.trace(A2.T @ A2),\
-     np.trace(A3.T @ A3),np.trace(A4.T @ A4)]
+np.trace(A5.T @ A5)
+1/np.linalg.det(A5.T @ A5)
+
+x = [np.trace((A0.T @ A0)),np.trace(A1.T @ A1),np.trace(A2.T @ A2),\
+     np.trace(A3.T @ A3),np.trace(A4.T @ A4),np.trace(A5.T @ A5)]
+
+x = [np.trace(np.linalg.inv(A0.T @ A0)),np.trace(np.linalg.inv(A1.T @ A1)),\
+     np.trace(np.linalg.inv(A2.T @ A2)),np.trace(np.linalg.inv(A3.T @ A3)),\
+     np.trace(np.linalg.inv(A4.T @ A4))]
+
 
 y = [np.linalg.det(A0.T @ A0),np.linalg.det(A1.T @ A1),\
      np.linalg.det(A2.T @ A2),np.linalg.det(A3.T @ A3),\
-     np.linalg.det(A4.T @ A4)]
+     np.linalg.det(A4.T @ A4),np.linalg.det(A5.T @ A5)]
+
+y=np.log([1/y[i] for i in range(5)])
 
 plt.plot(x,y)
 plt.plot(x,np.log(y))

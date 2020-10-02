@@ -35,16 +35,20 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 500
+NumSimDays = 700
 samplingBudget = NumSimDays*5
-numReplications = 15
-diagnosticSensitivity = 0.95 # Tool sensitivity
-diagnosticSpecificity = 0.98 # Tool specificity
-alertIter = 10 # How frequently we're alerted of a set of replications being completed
+diagnosticSensitivity = 0.99 # Tool sensitivity
+diagnosticSpecificity = 0.99 # Tool specificity
+globalDemand = 35. #Level of global demand increase across all outlets, in mean demand/simulation day
+
+numReplications = 50
+alertIter = 5 # How frequently we're alerted of a set of replications being completed
 printOutput = False # Whether individual replication output should be displayed
-storeOutput = False # Do we store the output in an output dictionary file?
-OPfilename = "OP_Static"
+storeOutput = True # Do we store the output in an output dictionary file?
+OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(int(samplingBudget/NumSimDays))+'_'+\
+            str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' + str(globalDemand)
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
+endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
 
 '''
 testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
@@ -59,13 +63,12 @@ testPolicyParam = [[100,200,300,400],0.30] # Set testing policy parameter list h
 # affecting importer stockouts
 intLTvar = 0. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
 endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
-globalDemand = 100. #Level of global demand increase across all outlets, in mean demand/simulation day
 ## REMOVE LATER
 currTrVec = []
 currStVec = []
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -101,6 +104,7 @@ if testPolicy in ['Dyn_ThresholdWithNUTS']:
 
 inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBudget,
                             'testPolicy':testPolicy,'testPolicyParam':testPolicyParam,
+                            'intLTvar':intLTvar,'endLTvar':endLTvar,'globalDemandLevel':globalDemand,
                             'diagnosticSensitivity':diagnosticSensitivity,
                             'diagnosticSpecificity':diagnosticSpecificity,'RglrWt':optRegularizationWeight,
                             'lklhdBool':lklhdBool,'lklhdEst_M':lklhdEst_M, 
@@ -189,6 +193,28 @@ for rep in range(numReplications):
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
         currIntermediate.FalsifierProbability = intSFVec[indInt]
+    
+    # Do similarly for end node SF scenarios if the boolean is active
+    endSFVec = []
+    if endSFscenario_bool == True:
+        for indEnd in range(76):
+            endSFVec.append(0.01)
+        for indEnd in range(10):
+            endSFVec.append(0.1)
+        for indEnd in range(10):
+            endSFVec.append(0.25)
+        for indEnd in range(5):
+            endSFVec.append(0.5)
+        for indEnd in range(5):
+            endSFVec.append(0.75)
+    else:
+        for indEnd in range(endNum):
+            endSFVec.append(0)
+    #print(endSFVec)
+    random.shuffle(endSFVec)
+    for indEnd in range(endNum):
+        currEnd = List_EndNode[indEnd]
+        currEnd.FalsifierProbability = endSFVec[indEnd]
     
     
     # End nodes - put something inside this loop
@@ -718,6 +744,16 @@ for rep in range(numReplications):
             currEnd = List_EndNode[indEnd]
             List_demandResultsEnd.append(currEnd.demandResults)
         
+        # Update the "true" underlying vector for end nodes to be the underlying rate + the proportion of orders due to stockouts
+        endSFVecCombo = []
+        for indEnd in range(endNum):
+            currEnd = List_EndNode[indEnd]
+            if currEnd.AmountProcured > 0:
+                currStockoutOrderRate = currEnd.AmountProcuredDueToStockouts / currEnd.AmountProcured
+            else:
+                currStockoutOrderRate = 0
+            endSFVecCombo.append(endSFVec[indEnd] + currStockoutOrderRate)
+        
         currOutputLine = {'inputParameterDictionary':inputParameterDictionary,
                           'rootConsumption':List_RootConsumption,
                           'intDemandResults':List_demandResultsInt,
@@ -730,7 +766,7 @@ for rep in range(numReplications):
                           'intFalseEstimates_Plum':estIntFalsePercList_Plum,
                           'endFalseEstimates_Plum':estEndFalsePercList_Plum,
                           'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples,
-                          'intSFTrueValues':intSFVec,
+                          'intSFTrueValues':intSFVec,'endSFTrueValues':endSFVecCombo,
                           'simStartTime':startTime,
                           'simRunTime':totalRunTime
                           }
@@ -738,9 +774,6 @@ for rep in range(numReplications):
         outputDict[rep] = currOutputLine # Save to the output dictionary
         
 ########## END OF REPLICATION LOOP ##########
-# REMOVE LATER
-trVec.append(np.mean(currTrVec))
-meanStockoutVec.append(np.mean(currStVec))
   
 # Store the outputDict
 if warmUpRun == False and storeOutput == True:

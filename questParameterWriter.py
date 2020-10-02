@@ -22,3 +22,5 @@ with open('parameterFile.txt', 'w') as f:
                         l.extend([se,sp,mult,days,dem])
                         l = [str(l[i]) for i in range(len(l))]
                         f.write('\t'.join(l) + '\n')
+                        
+
