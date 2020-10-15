@@ -23,6 +23,28 @@ import scipy.optimize as spo
 #import scipy.special as sps
 import Falsification_Sim_Modules as simModules
 
+def GetUsableSampleVectors(A,PosData,NumSamples):
+    '''
+    Takes in vectors of sample amounts, sample positives, and a transition
+    matrix A, and returns the same items but suitable for manipulation. Also
+    returns a list of two lists containing the [rows],[cols] of removed indices.    
+    '''
+    n = len(NumSamples)
+    m = len(A[0])
+    # Grab the zeros lists first
+    zeroInds = [[],[]]
+    zeroInds[0] = [i for i in range(n) if (NumSamples[i]==0)]
+    zeroInds[1] = [i for i in range(m) if (np.sum(A[:,i])==0)]
+    
+    #Adjust the vectors, doing NumSamples last
+    idx = np.argwhere(np.all(A[..., :] == 0, axis=0))
+    adjA = np.delete(A, idx, axis=1)
+    adjA = np.delete(adjA,zeroInds[0],0)
+    adjPosData = [PosData[i] for i in range(n) if (NumSamples[i] > 0)]
+    adjNumSamples = [NumSamples[i] for i in range(n) if (NumSamples[i] > 0)]
+    
+    return adjA, adjPosData, adjNumSamples, zeroInds
+    
 ########################### SF RATE ESTIMATORS ###########################
 def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
                          Madapt=5000,delta=0.4): 
@@ -31,9 +53,18 @@ def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     and the (estimated) percentage SF at each end node, X, calculaed as PosData
     / NumSamples
     '''
-    X = np.array([PosData[i]/NumSamples[i] for i in range(len(NumSamples))])
-    intProj = np.dot(np.linalg.inv(np.dot(A.T,A)),np.dot(A.T,X))
-    endProj = np.subtract(X,np.dot(A,intProj))
+    # Grab 'usable' data
+    adjA, adjPosData, adjNumSamples, zeroInds = GetUsableSampleVectors(A,PosData\
+                                                                       ,NumSamples)
+    
+    X = np.array([adjPosData[i]/adjNumSamples[i] for i in range(len(adjNumSamples))])
+    intProj = np.dot(np.linalg.inv(np.dot(adjA.T,adjA)),np.dot(adjA.T,X))
+    endProj = np.subtract(X,np.dot(adjA,intProj))
+    #Insert 'nan' where we didn't have any samples
+    for i in range(len(zeroInds[0])):
+        endProj = np.insert(endProj,zeroInds[0][i],np.nan)
+    for i in range(len(zeroInds[1])):
+        intProj = np.insert(intProj,zeroInds[1][i],np.nan)
     return np.ndarray.tolist(intProj.T), np.ndarray.tolist(endProj.T)
 
 def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
@@ -42,9 +73,14 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     MLE of a Bernoulli variable, using iteratively reweighted least squares;
     see Wikipedia page for notation
     '''
-    A = np.array(A)
-    X = np.array([PosData[i]/NumSamples[i] for i in range(len(NumSamples))])
-    currGap = 10
+    # Grab 'usable' data
+    big_m = A.shape[1]
+    adjA, adjPosData, adjNumSamples, zeroInds = GetUsableSampleVectors(A,PosData\
+                                                                       ,NumSamples)
+    
+    A = np.array(adjA)
+    X = np.array([adjPosData[i]/adjNumSamples[i] for i in range(len(adjNumSamples))])
+    currGap = 10000
     tol = 1e-2
     n = A.shape[0] # Number of end nodes
     m = A.shape[1] # Number of intermediate nodes
@@ -60,7 +96,13 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
         mu_k = np.reshape(mu_k,(n,1))
         S_k = np.diag(Sdiag)
         w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
-        currGap = np.linalg.norm(w_k-w_k1)
+        if np.linalg.norm(w_k-w_k1) > currGap+tol:
+            print('BERNOULLI ALGORITHM COULD NOT CONVERGE')
+            intProj = np.zeros([big_m,1])
+            endProj = np.zeros([len(NumSamples),1])
+            return np.ndarray.tolist(np.squeeze(intProj.T)), np.ndarray.tolist(np.squeeze(endProj.T))
+        else:
+            currGap = np.linalg.norm(w_k-w_k1)
         w_k = np.copy(w_k1)
     # Now our importer SF rates are calculated; figure out variance + Wald statistics
     covarMat_Bern = np.linalg.inv(np.dot(A.T,np.dot(S_k,A)))
@@ -73,6 +115,11 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     intProj = np.ndarray.tolist(simModules.invlogit(w_k.T.tolist()[0]))
     errs_Bern = np.subtract(X,mu_k)
     endProj = errs_Bern.T.tolist()[0]
+    #Insert 'nan' where we didn't have any samples
+    for i in range(len(zeroInds[0])):
+        endProj = np.insert(endProj,zeroInds[0][i],np.nan)
+    for i in range(len(zeroInds[1])):
+        intProj = np.insert(intProj,zeroInds[1][i],np.nan)
     # Could also return the covariance matrix and Wald statistics if needed
     return intProj, endProj
 

@@ -24,7 +24,7 @@ import Falsification_Sim_TestPolicies as simTestPolicies # testing policies
 
 # Run supporting files
 currDirectory = os.path.dirname(os.path.realpath(__file__)) #Run this command to get the current working directory string
-os.chdir(currDirectory) # Set directory    
+os.chdir(currDirectory) # Set directory
 
 ##### GRAPH INPUT FILES
 # Read input lists: node list, arc preferences, and arc lead times
@@ -35,21 +35,21 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 700
-samplingBudget = NumSimDays*5
-diagnosticSensitivity = 0.99 # Tool sensitivity
+NumSimDays = 100
+samplingBudget = NumSimDays*1
+diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.99 # Tool specificity
-globalDemand = 35. #Level of global demand increase across all outlets, in mean demand/simulation day
+globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
 
-numReplications = 50
-alertIter = 5 # How frequently we're alerted of a set of replications being completed
-printOutput = False # Whether individual replication output should be displayed
-storeOutput = True # Do we store the output in an output dictionary file?
+numReplications = 1
+alertIter = 7 # How frequently we're alerted of a set of replications being completed
+printOutput = True # Whether individual replication output should be displayed
+storeOutput = False # Do we store the output in an output dictionary file?
 OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(int(samplingBudget/NumSimDays))+'_'+\
             str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' + str(globalDemand)
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
-
+saveTestResults = False # Store the testing results to the output dictionary? (Greatly increases file size if True)
 '''
 testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',
@@ -68,7 +68,7 @@ currTrVec = []
 currStVec = []
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -107,14 +107,14 @@ inputParameterDictionary = {'NumSimDays':NumSimDays,'samplingBudget':samplingBud
                             'intLTvar':intLTvar,'endLTvar':endLTvar,'globalDemandLevel':globalDemand,
                             'diagnosticSensitivity':diagnosticSensitivity,
                             'diagnosticSpecificity':diagnosticSpecificity,'RglrWt':optRegularizationWeight,
-                            'lklhdBool':lklhdBool,'lklhdEst_M':lklhdEst_M, 
+                            'lklhdBool':lklhdBool,'lklhdEst_M':lklhdEst_M,
                             'lklhdEst_Madapt':lklhdEst_Madapt, 'lklhdEst_delta':lklhdEst_delta}
 
 useWarmUpFile = False # True if we're going to pull a warm-up file for replications
 warmUpRun = False # True if this is a warm-up run to generate bootstrap samples
 warmUpIterationGap = 1000 # How often, in sim days, to store the current object lists
 # If true, the file name needs to be given here, and its location needs to be in a 'warm up dictionaries' file
-# Establish any warm-up settings 
+# Establish any warm-up settings
 numReplications, warmUpRun, useWarmUpFile, warmUpDirectory, warmUpFileName, warmUpDict =\
                         simModules.setWarmUp(useWarmUpFileBool = useWarmUpFile,\
                                              warmUpRunBool=warmUpRun, numReps=numReplications,\
@@ -133,15 +133,15 @@ for rep in range(numReplications):
     rootNum = len(List_RootNode)
     intermediateNum = len(List_IntermediateNode)
     endNum = len(List_EndNode)
-    
+
     # Simulation statistic lists
     List_RootConsumption = []
     for rootInd in range(len(List_RootNode)):
         List_RootConsumption.append(0)
-    
+
     # Initialize the drug packet object list
     List_DP = []
-    
+
     ### TESTING POLICIES GENERATED HERE ###
     # Generate sampling schedule for current graph, as well as a report table shell
     # Depends on whether the sampling plan is static or dynamic
@@ -151,7 +151,7 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         List_TestResults.append([rootNum+intermediateNum+indEnd,0,0,1.0,\
                                        np.zeros(intermediateNum,np.int8).tolist()])
-        
+
     List_TestingSchedule = simTestPolicies.testPolicyHandler(polType=testPolicy,\
                                                              resultsList=List_TestResults,\
                                                              totalSimDays=NumSimDays,\
@@ -162,7 +162,7 @@ for rep in range(numReplications):
 
     # Initialize our testing results reporting table
     TestReportTbl = []
-    
+
     ### THINGS TO CHANGE AND PLAY WITH ONCE THE LISTS ARE GENERATED ###
     # Freeze end node demand to give intermediate nodes a chance to order and stock their shelves
     # We do this by setting the first (maxLT) days at each node equal to 0
@@ -176,9 +176,9 @@ for rep in range(numReplications):
         currEnd.demandSched[0:burnInDays_End+1] = 0
     # Also freeze testing for this number of days plus the max number of LT days for end nodes
     List_TestingSchedule = [testRow for testRow in List_TestingSchedule if testRow[0] > burnInDays_End]
-        
+
     ######### MODIFICATION LOOPS ######### ######### #########
-    
+
     # Generate an importer SF scenario if the boolean is active
     intSFVec = []
     if intSFscenario_bool == True:
@@ -189,11 +189,11 @@ for rep in range(numReplications):
         for indInt in range(intermediateNum):
             intSFVec.append(0)
     #print(intSFVec)
-    
+
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
         currIntermediate.FalsifierProbability = intSFVec[indInt]
-    
+
     # Do similarly for end node SF scenarios if the boolean is active
     endSFVec = []
     if endSFscenario_bool == True:
@@ -215,19 +215,19 @@ for rep in range(numReplications):
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
         currEnd.FalsifierProbability = endSFVec[indEnd]
-    
-    
+
+
     # End nodes - put something inside this loop
     for indEnd in range(endNum):
         currEnd = List_EndNode[indEnd]
-        
+
     # Intermediate nodes - put something inside this loop
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
-        
-    
+
+
     ######### END MODIFICATION LOOPS ######### ######### #########
-    
+
     if useWarmUpFile == True: # Randomly select a path from the dictionary
         numScenarios = len(warmUpDict.keys())
         currScenario = int(np.floor(np.random.uniform(0,numScenarios)))
@@ -238,10 +238,10 @@ for rep in range(numReplications):
         nodeListHeader, nodeList, nodeNum = currObjDict['nodeHeader'], currObjDict['nodeList'], currObjDict['nodeNumber']
         List_RootConsumption = currObjDict['rootConsumption']
         List_DP = currObjDict['DPList']
-        
+
     # Initialize simulation time
     startTime = time.time()
-    
+
     # Main simulation code; iterate over each day
     for today in range(NumSimDays):
         # Intermediate nodes process arriving orders, moving incoming orders remaining days up by one day
@@ -252,8 +252,8 @@ for rep in range(numReplications):
         for indEnd in range(endNum):
             currEnd = List_EndNode[indEnd]
             currEnd.ProcessIncomingOrder()
-        
-        # End nodes process incoming demand and update consumption records, once burn-in day reached   
+
+        # End nodes process incoming demand and update consumption records, once burn-in day reached
         for indEnd in range(endNum):
             currEnd = List_EndNode[indEnd]
             currStockoutDays = currEnd.demandResults[1] # For tracking if today is a stockout day
@@ -262,7 +262,7 @@ for rep in range(numReplications):
                                                                                          rootConsumptionVec=List_RootConsumption)
             if currEnd.demandResults[1] > currStockoutDays: # We have a stockout day
                 currEnd.DaysStockedOut += 1
-            
+
         # Run sampling according to sorted schedule
         if List_TestingSchedule != []:
             while List_TestingSchedule[0][0] == today:
@@ -277,7 +277,7 @@ for rep in range(numReplications):
                     for indInt in List_IntermediateNode:
                         if indInt.id == currTestNodeID:
                             currNode = indInt
-                else: 
+                else:
                     # Find the node in the end list
                     for indEnd in List_EndNode:
                         if indEnd.id == currTestNodeID:
@@ -297,7 +297,7 @@ for rep in range(numReplications):
                             if currPileDPID == indDP.id:
                                 currPilePriorNode = indDP.nodeIDList[-2]
                         invPileOriginList.append([currPilePriorNode,currPileLevel])
-                        
+
                         # If we haven't procured a sample yet, do that here
                         if madeTest == False:
                             madeTest = True
@@ -309,13 +309,13 @@ for rep in range(numReplications):
                             currNode.demandResults[0] += 1 # "Satisifed" demand
                             # Update available budget
                             BudgetRemaining -= 1 # Reduce our budget balance by 1
-                                
+
                         # END IF
                     # END IF
                 if madeTest == False: # Report -1 if no sample procured due to stockout
                     DPRoot = -1
                 # END IF
-                
+
                 # Conduct sensitivity and specificity filters
                 randUnif = random.uniform(0,1) # Generate a random uniform value
                 if DPRoot == 0: # Originally from a non-falsifier
@@ -324,12 +324,12 @@ for rep in range(numReplications):
                 elif DPRoot == 1: # Originally from a falsifier
                     if randUnif > diagnosticSensitivity:
                         DPRoot = 0 # Generate a false negative
-                        
-                
+
+
                 # Save the result to the reporting table
                 newTestRow = [today,currTestNodeID,DPRoot,invPileOriginList]
-                TestReportTbl.append(newTestRow) 
-                
+                TestReportTbl.append(newTestRow)
+
                 if madeTest == True: # Recalculate the dynamic results list
                     for currInd in range(len(List_TestResults)):
                         if List_TestResults[currInd][0] == currTestNodeID: # Found matching node ID
@@ -338,25 +338,25 @@ for rep in range(numReplications):
                                 List_TestResults[currInd][2] += 1
                             List_TestResults[currInd][3] = List_TestResults[currInd][2] / List_TestResults[currInd][1]
                             # Update the inventory levels observed from intermediate nodes
-                            for pile in invPileOriginList: # [intermediate node, amount]                            
+                            for pile in invPileOriginList: # [intermediate node, amount]
                                 pileIntNode = pile[0]
                                 if not pileIntNode == 1: # Don't count falsified nodes purchases
                                     pileLevel = pile[1]
                                     List_TestResults[currInd][4][pileIntNode-rootNum] += pileLevel
-                            
+
                 if List_TestingSchedule == []: # Check if the testing schedule is now empty
                     break
-        
+
         # End nodes make orders if total inventory is leq the reorder point
         for indEnd in range(endNum):
             if today > burnInDays_Int:
                 currEnd = List_EndNode[indEnd]
                 List_IntermediateNode, List_DP = currEnd.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP,LeadTimeVariance=endLTvar)
-            
+
         # Intermediate nodes make orders if total inventory is leq the reorder point
         for indInt in range(intermediateNum):
             currIntermediate = List_IntermediateNode[indInt]
-            List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP,LeadTimeVariance=intLTvar)              
+            List_IntermediateNode, List_DP = currIntermediate.MakeOrder(rootList=List_RootNode,intermediateList=List_IntermediateNode,DPList=List_DP,LeadTimeVariance=intLTvar)
         # Update dynamic testing if relevant
         if today != NumSimDays-1 and List_TestingSchedule == []:
             List_TestingSchedule = simTestPolicies.testPolicyHandler(polType=testPolicy,\
@@ -366,15 +366,15 @@ for rep in range(numReplications):
                                                                  totalBudget=samplingBudget,\
                                                                  numBudgetRemain=BudgetRemaining,\
                                                                  policyParamList=testPolicyParam)
-            
+
         if np.mod(today+1,200) == 0: # For updating while running
             print('Rep ' + str(rep+1) + ', Day ' + str(today+1) + ' finished.')
 
         if today == NumSimDays-1 and np.mod(rep,alertIter)==0: # For updating while running
-            simModules.CEOTTKbeep()          
-        
+            simModules.CEOTTKbeep()
+
         if warmUpRun == True and np.mod(today,warmUpIterationGap) == 0: # For storing dictionaries during long run
-            warmUpFile = open(warmUpFileName,'rb') # Read the file 
+            warmUpFile = open(warmUpFileName,'rb') # Read the file
             warmUpDict = pickle.load(warmUpFile)
             warmUpFile.close()
             lastKey = len(warmUpDict.keys())-1
@@ -391,15 +391,15 @@ for rep in range(numReplications):
             warmUpDict[lastKey][today] = currObjDict
             # Write the dictionary file back
             warmUpFile = open(warmUpFileName,'wb')
-            pickle.dump(warmUpDict,warmUpFile)         
+            pickle.dump(warmUpDict,warmUpFile)
             warmUpFile.close()
-        
-        
-        
+
+
+
     # END OF SIMULATIONS DAYS LOOP
     # Simulation end time
     totalRunTime = [time.time() - startTime]
-    
+
     # OUTPUT FUNCTIONS
     # Report consumption levels from each node
     # Loop through each root node
@@ -416,7 +416,7 @@ for rep in range(numReplications):
         RootReportTbl = RootReportTbl + [currRootRow]
         Root_Plot_x.append(str(currRoot))
         Root_Plot_y.append(currPercConsumption)
-    
+
     IntermediateReportTbl = []
     Intermediate_Plot_x = []
     Intermediate_Plot_y = []
@@ -429,7 +429,7 @@ for rep in range(numReplications):
         IntermediateReportTbl = IntermediateReportTbl + [currIntRow]
         Intermediate_Plot_x.append(str(currInt.id))
         Intermediate_Plot_y.append(currInt.demandResults[1]/currTotalDemand)
-        
+
     EndReportTbl = []
     End_Plot_x = []
     End_Plot_y = []
@@ -443,26 +443,26 @@ for rep in range(numReplications):
         EndReportTbl = EndReportTbl + [currEndRow]
         End_Plot_x.append(str(currEnd.id))
         End_Plot_y.append(currEnd.demandResults[1]/currTotalDemand)
-    
+
     # Summarize sampling report
     testNodeList = []
     Test_Plot_x = []
     Test_Plot_y1 = []
     Test_Plot_y2 = []
     Test_Plot_y3 = []
-    for sample in TestReportTbl:
-        if not sample[1] in testNodeList:
-            testNodeList.append(sample[1])
-    testNodeList.sort()
-    TestSummaryTbl = []
+    # Initialize all end nodes in testNodeList
+    for indEnd in range(endNum):
+        currEnd = List_EndNode[indEnd]
+        testNodeList.append(currEnd.id)
     
+    TestSummaryTbl = []
     InvCheckSummaryTbl = [] # For counting inventory checks during sampling
     tempInvCheckVec = []
     InvCheckHeadersVec = []
-    estTransitionMatrix = np.zeros([endNum,intermediateNum]) # For storing transition data 
-    estFalseVector = np.zeros([endNum,1]) # For storing falsifieds found at each 
-    
-    for indInt in range(intermediateNum):
+    estTransitionMatrix = np.zeros([endNum,intermediateNum]) # For storing transition data
+    estFalseVector = np.zeros([endNum,1]) # For storing falsifieds found at each
+
+    for indInt in range(intermediateNum): # Generate headers for printing
         InvCheckHeadersVec.append('N'+str(List_IntermediateNode[indInt].id))
         tempInvCheckVec.append(0)
     for testedNode in testNodeList:
@@ -480,7 +480,7 @@ for rep in range(numReplications):
         for pile in currInvCheckList:
             if not pile[0] == 1: # Can't be from the falsifier node
                 InvCheckSummaryTbl[indNodeList][pile[0]-1] += pile[1]
-    j=0            
+    j=0
     for testedNode in testNodeList: # For storing the number of falsifieds found at each end node
         if TestSummaryTbl[j][1] > 0:
             percFalse = TestSummaryTbl[j][2] / TestSummaryTbl[j][1]
@@ -488,7 +488,7 @@ for rep in range(numReplications):
             percFalse = 0.
         estFalseVector[j] = percFalse
         j += 1
-    
+
     i=0
     for row in InvCheckSummaryTbl:
         currSum = np.sum(row[1:])
@@ -504,7 +504,7 @@ for rep in range(numReplications):
         TestOverallSummary[0] += testedNodeRow[1] # Total tests
         TestOverallSummary[1] += testedNodeRow[2] # Total falsifieds
         TestOverallSummary[2] += testedNodeRow[3] # Total stock-outs
-    
+
     counter = 0
     for testedNode in testNodeList: # for plots
         Test_Plot_x.append(testedNode)
@@ -512,20 +512,20 @@ for rep in range(numReplications):
         Test_Plot_y2.append(TestSummaryTbl[counter][2]) # Times found falsified
         Test_Plot_y3.append(TestSummaryTbl[counter][3]) # Times found stocked out
         counter += 1
-               
+
         # END OF RX REPORTING LOOP
-    
+
     # Form regression estimates of suspected bad intermediate nodes
     X = estFalseVector
     A = estTransitionMatrix
-    
+
     # Get required arguments from the testing summary table
     ydata = []
     numSamples = []
     for endNodeTestRow in TestSummaryTbl:
         ydata.append(endNodeTestRow[2])
         numSamples.append(endNodeTestRow[1])
-    
+
     #LINEAR PROJECTION
     try:
         estIntFalsePercList, estEndFalsePercList = simEstMethods.Est_LinearProjection(\
@@ -536,7 +536,7 @@ for rep in range(numReplications):
         print("Couldn't generate the LINEAR PROJECTION estimates")
         estIntFalsePercList = []
         estEndFalsePercList = []
-    
+
     #BERNOULLI MLE
     try:
         estIntFalsePercList_Bern, estEndFalsePercList_Bern = simEstMethods.Est_BernoulliProjection(\
@@ -547,7 +547,7 @@ for rep in range(numReplications):
         print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
-    
+
     #MLE USING NONLINEAR OPTIMIZER
     try:
         estIntFalsePercList_Plum , estEndFalsePercList_Plum = simEstMethods.Est_MLE_Optimizer(\
@@ -559,8 +559,8 @@ for rep in range(numReplications):
         print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_Plum = []
         estEndFalsePercList_Plum = []
-        
-    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION, NUTS 
+
+    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION, NUTS
     if lklhdBool == True:
         startCalc = time.time()
         try:
@@ -577,16 +577,16 @@ for rep in range(numReplications):
                                                    M=lklhdEst_M,Madapt=lklhdEst_Madapt,\
                                                    delta=lklhdEst_delta)
             '''
-            #print(time.time()-startCalc)        
+            #print(time.time()-startCalc)
         except:
             print("Couldn't generate the estimated node falsification percentages for LIKELIHOOD ESTIMATE")
             estFalsePerc_LklhdSamples = []
             #print(time.time()-startCalc)
-            
+
     else:
         estFalsePerc_LklhdSamples = []
     ### END LIKELIHOOD ESTIMATOR ###
-    
+
     if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES
         print('*'*100)
@@ -604,12 +604,12 @@ for rep in range(numReplications):
         print('*'*100)
         print('TESTING SUMMARY STATISTICS')
         print('*'*100)
-        print(tabulate(TestSummaryTbl, headers=['Node ID', '# of Samples', '# Falsified', '# Stocked Out']+InvCheckHeadersVec))
+        print(tabulate(TestSummaryTbl, headers=['Node ID', '# of Samples', '# SFP', '# Stocked Out']+InvCheckHeadersVec))
         print('*'*100)
         print('OVERALL SUMMARY STATISTICS')
         print('*'*100)
-        print(tabulate([totalRunTime+TestOverallSummary],headers=['Simulation Run Time','Total Tests','Falsifieds Found','Stocked Out Found']))
-        
+        print(tabulate([totalRunTime+TestOverallSummary],headers=['Simulation Run Time','Total Tests','SFPs Found','Stocked Out Found']))
+
         # GENERATE PLOTS
         # Root consumption %'s
         fig = plt.figure()
@@ -620,7 +620,7 @@ for rep in range(numReplications):
         vals = ax.get_yticks()
         ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
         plt.show()
-        
+
         # Intermediate stockout %'s
         fig = plt.figure()
         ax = fig.add_axes([0,0,1,0.5])
@@ -630,7 +630,7 @@ for rep in range(numReplications):
         #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
         ax.bar(Intermediate_Plot_x,Intermediate_Plot_y)
         plt.show()
-        
+
         # End stockout %'s
         fig = plt.figure()
         ax = fig.add_axes([0,0,3,0.5])
@@ -640,7 +640,7 @@ for rep in range(numReplications):
         #ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
         ax.bar(End_Plot_x,End_Plot_y)
         plt.show()
-        
+
         # Testing results
         Test_Plot_x = np.array(Test_Plot_x)
         fig = plt.figure()
@@ -653,29 +653,29 @@ for rep in range(numReplications):
         plt.legend(('Times tested','Times falsified','Times stocked out'))
         plt.xticks(rotation=90)
         plt.show()
-        
+
         # Intermediate nodes
         fig, axs = plt.subplots(3, 1,figsize=(9,13))
         fig.suptitle('Intermediate Node SF % Estimates',fontsize=18)
         for subP in range(3):
             axs[subP].set_xlabel('Intermediate Node',fontsize=12)
-            axs[subP].set_ylabel('Est. SF %',fontsize=12)        
+            axs[subP].set_ylabel('Est. SF %',fontsize=12)
             axs[subP].set_ylim([0.0,1.0])
             vals = axs[subP].get_yticks()
             axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
         # Linear projection
-        axs[0].set_title('Linear projection',fontweight='bold')        
+        axs[0].set_title('Linear projection',fontweight='bold')
         axs[0].bar(Intermediate_Plot_x,estIntFalsePercList,color='thistle',edgecolor='indigo')
         # Bernoulli MLE projection
         axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-        axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='mediumspringgreen',edgecolor='green')      
-        # MLE w Nonlinear optimizer        
+        axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='mediumspringgreen',edgecolor='green')
+        # MLE w Nonlinear optimizer
         axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-        axs[2].bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')   
+        axs[2].bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
-        
+
         # End nodes
         fig, axs = plt.subplots(3, 1,figsize=(17,13))
         fig.suptitle('End Node SF % Estimates',fontsize=18)
@@ -687,18 +687,18 @@ for rep in range(numReplications):
             vals = axs[subP].get_yticks()
             axs[subP].set_yticklabels(['{:,.0%}'.format(x) for x in vals])
         # Linear projection
-        axs[0].set_title('Linear projection',fontweight='bold')        
+        axs[0].set_title('Linear projection',fontweight='bold')
         axs[0].bar(End_Plot_x,estEndFalsePercList,color='peachpuff',edgecolor='red')
         # Bernoulli MLE projection
         axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-        axs[1].bar(End_Plot_x,estEndFalsePercList_Bern,color='khaki',edgecolor='goldenrod')      
-        # MLE w Nonlinear optimizer        
+        axs[1].bar(End_Plot_x,estEndFalsePercList_Bern,color='khaki',edgecolor='goldenrod')
+        # MLE w Nonlinear optimizer
         axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-        axs[2].bar(End_Plot_x,estEndFalsePercList_Plum,color='lightcyan',edgecolor='teal')   
+        axs[2].bar(End_Plot_x,estEndFalsePercList_Plum,color='lightcyan',edgecolor='teal')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
-        
+
         #Intermediate nodes - likelihood samples
         if lklhdBool == True:
             fig = plt.figure()
@@ -707,43 +707,43 @@ for rep in range(numReplications):
             ax.set_ylabel('Est. model parameter distribution',fontsize=16)
             for i in range(intermediateNum):
                 plt.hist(simModules.invlogit(estFalsePerc_LklhdSamples[:,i]))
-            
+
             fig = plt.figure()
             ax = fig.add_axes([0,0,2,1])
             ax.set_xlabel('End Node',fontsize=16)
             ax.set_ylabel('Est. model parameter distribution',fontsize=16)
             for i in range(endNum):
                 plt.hist(simModules.invlogit(estFalsePerc_LklhdSamples[:,intermediateNum+i]))
-            
+
             meanSampVec = []
             for i in range(intermediateNum):
                 meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_LklhdSamples[:,i])))
             meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
-            
+
             print([round(estIntFalsePercList[i],3) for i in range(len(intSFVec))])
             print([round(estIntFalsePercList_Bern[i],3) for i in range(len(intSFVec))])
             print([round(estIntFalsePercList_Plum[i],3) for i in range(len(intSFVec))])
             print(meanSampVec)
             print(intSFVec)
-                     
-        
+
+
     ### END OF PRINT OUTPUT LOOP
-    
+
     # REMOVE LATER
     currTrVec.append(np.trace(A.T @ A))
     currStVec.append(np.mean(Intermediate_Plot_y))
-    
+
     if warmUpRun == False:
         # Update our output dictionary
         List_demandResultsInt = [] # For intermediate node demand results
-        for indInt in range(intermediateNum): 
+        for indInt in range(intermediateNum):
             currInt = List_IntermediateNode[indInt]
             List_demandResultsInt.append(currInt.demandResults)
         List_demandResultsEnd = [] # For end node demand results
         for indEnd in range(endNum):
             currEnd = List_EndNode[indEnd]
             List_demandResultsEnd.append(currEnd.demandResults)
-        
+
         # Update the "true" underlying vector for end nodes to be the underlying rate + the proportion of orders due to stockouts
         endSFVecCombo = []
         for indEnd in range(endNum):
@@ -753,12 +753,20 @@ for rep in range(numReplications):
             else:
                 currStockoutOrderRate = 0
             endSFVecCombo.append(endSFVec[indEnd] + currStockoutOrderRate)
-        
+
+        #Send the testing results to the output dictionary?
+
+        if saveTestResults == True:
+            TestReportTblToSend = TestReportTbl
+        else:
+            TestReportTblToSend = []
+
         currOutputLine = {'inputParameterDictionary':inputParameterDictionary,
                           'rootConsumption':List_RootConsumption,
                           'intDemandResults':List_demandResultsInt,
                           'endDemandResults':List_demandResultsEnd,
-                          'testResults':TestReportTbl,
+                          'testResults':TestReportTblToSend,
+                          'dynTestResults':List_TestResults,
                           'intFalseEstimates':estIntFalsePercList,
                           'endFalseEstimates':estEndFalsePercList,
                           'intFalseEstimates_Bern':estIntFalsePercList_Bern,
@@ -770,11 +778,11 @@ for rep in range(numReplications):
                           'simStartTime':startTime,
                           'simRunTime':totalRunTime
                           }
-                          
+
         outputDict[rep] = currOutputLine # Save to the output dictionary
-        
+
 ########## END OF REPLICATION LOOP ##########
-  
+
 # Store the outputDict
 if warmUpRun == False and storeOutput == True:
     outputFilePath  = os.getcwd() + '\\outputDictionaries'
