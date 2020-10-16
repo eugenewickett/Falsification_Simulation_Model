@@ -51,14 +51,16 @@ def parse_commandline():
                         type = int)
     parser.add_argument("--glob_dem",
                         help = "level of global demand bump",
-                        default = 0,
+                        default = 0.,
                         type = float)
     args = parser.parse_args()
 
     return args
+
 args = parse_commandline()
+
 #print(args.job_id)
-print(args.diag_sens, args.diag_spec, args.mult_days, args.sim_days)
+#print(args.diag_sens, args.diag_spec, args.mult_days, args.sim_days)
 ### END IMPORTANT QUEST STUFF ###
 
 # Run supporting files
@@ -75,20 +77,21 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
 NumSimDays = args.sim_days
-samplingBudget = NumSimDays*(args.mult_days)
+samplingBudget = round(NumSimDays*(args.mult_days))
 diagnosticSensitivity = args.diag_sens # Tool sensitivity
 diagnosticSpecificity = args.diag_spec # Tool specificity
 globalDemand = args.glob_dem #Level of global demand increase across all outlets, in mean demand/simulation day
 
 numReplications = 50
-alertIter = 7 # How frequently we're alerted of a set of replications being completed
+alertIter = 100 # How frequently we're alerted of a set of replications being completed
 printOutput = False # Whether individual replication output should be displayed
 storeOutput = True # Do we store the output in an output dictionary file?
 OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(int(samplingBudget/NumSimDays))+'_'+\
-            str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' + str(globalDemand)
+            str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' +\
+            str(globalDemand) + '_' + str(time.perf_counter())
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
-saveTestResults = False # Store the testing results to the output dictionary? (Greatly increases file size if True)
+saveTestResults = True # Store the testing results to the output dictionary? (Greatly increases file size if True)
 '''
 testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',
@@ -409,8 +412,8 @@ for rep in range(numReplications):
         if np.mod(today+1,200) == 0: # For updating while running
             print('Rep ' + str(rep+1) + ', Day ' + str(today+1) + ' finished.')
 
-        if today == NumSimDays-1 and np.mod(rep,alertIter)==0: # For updating while running
-            simModules.CEOTTKbeep()          
+        #if today == NumSimDays-1 and np.mod(rep,alertIter)==0: # For updating while running
+        #    simModules.CEOTTKbeep()          
         
         if warmUpRun == True and np.mod(today,warmUpIterationGap) == 0: # For storing dictionaries during long run
             warmUpFile = open(warmUpFileName,'rb') # Read the file 

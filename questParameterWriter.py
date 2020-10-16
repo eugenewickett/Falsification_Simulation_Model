@@ -5,12 +5,19 @@ Created on Wed Aug 26 19:42:01 2020
 @author: eugen
 """
 
-
+'''
 sens = [0.75,0.85,0.95,0.99]
 spec = [0.75,0.85,0.95,0.99]
 sampleMult = [1,5,10]
 simDays = [100,400,700]
 globalDem = [0.,35.,70.]
+'''
+sens = [0.99,0.95,0.9]
+spec = [0.99,0.95,0.9]
+sampleMult = [*range(6,22,3)]
+sampleMult = [sampleMult[i]/10 for i in range(len(sampleMult))]
+simDays = [200]
+globalDem = [0.]
 
 with open('parameterFile.txt', 'w') as f:
     for se in sens:

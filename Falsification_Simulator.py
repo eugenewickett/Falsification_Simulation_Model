@@ -43,8 +43,8 @@ globalDemand = 0. #Level of global demand increase across all outlets, in mean d
 
 numReplications = 1
 alertIter = 7 # How frequently we're alerted of a set of replications being completed
-printOutput = True # Whether individual replication output should be displayed
-storeOutput = False # Do we store the output in an output dictionary file?
+printOutput = False # Whether individual replication output should be displayed
+storeOutput = True # Do we store the output in an output dictionary file?
 OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(int(samplingBudget/NumSimDays))+'_'+\
             str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' + str(globalDemand)
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
@@ -68,7 +68,7 @@ currTrVec = []
 currStVec = []
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day

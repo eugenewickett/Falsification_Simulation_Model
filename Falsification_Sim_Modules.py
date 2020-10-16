@@ -26,6 +26,7 @@ def CEOTTKbeep():
     winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)  
 
+
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',
                               arcLTsFileString='',
@@ -533,7 +534,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     '''
     Generates comparison tables and plots for a LIST of output dictionaries.
     Intended for comparison with the underlying "true" SF rates at the
-    importer level.
+    importer and outlet levels.
     'dictNamesVec' signifies the vector of names that should be used in plots.
     'threshold' signifies the limit below which estimated SFP rates are
     designated as "OK" and above which they are designated as "Bad"
@@ -541,6 +542,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     numDicts = len(OPdicts)
     if dictNamesVec == [] or not len(dictNamesVec) == numDicts: # Empty names vector or mismatch; generate a numbered one
         dictNamesVec = [num for num in range(numDicts)]
+    
     scenarioList = [] # Initialize a list of possible 'true' underyling SF rates
     # Initialize deviation lists; contains lists of deviations for each replication
     avgDevList_Lin = []
@@ -884,7 +886,257 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           }
         scenDict[ind] = currOutputLine
         ind += 1
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # Now repeat everything above, but for the outlets
+    #scenarioList_E = [] # Initialize a list of possible 'true' underyling SF rates
+    # Initialize deviation lists; contains lists of deviations for each replication
+    avgDevList_Lin_E = []
+    avgDevList_Bern_E = []
+    avgDevList_MLE_E = []
+    avgDevList_NUTS_E = []
+    absDevList_Lin_E = []
+    absDevList_Bern_E = []
+    absDevList_MLE_E = []
+    absDevList_NUTS_E = []
+    stdDevList_Lin_E = []
+    stdDevList_Bern_E = []
+    stdDevList_MLE_E = [] 
+    stdDevList_NUTS_E = []
+    
+    # For binary classification of different methods, using the entered threshold
+    truePos_Lin_E = []
+    truePos_Bern_E = []
+    truePos_MLE_E = []
+    truePos_NUTS_E = []
+    trueNeg_Lin_E = []
+    trueNeg_Bern_E = []
+    trueNeg_MLE_E = []
+    trueNeg_NUTS_E = []
+    falsePos_Lin_E = []
+    falsePos_Bern_E = []
+    falsePos_MLE_E = []
+    falsePos_NUTS_E = []
+    falseNeg_Lin_E = []
+    falseNeg_Bern_E = []
+    falseNeg_MLE_E = []
+    falseNeg_NUTS_E = []
+    accuracy_Lin_E = []
+    accuracy_Bern_E = []
+    accuracy_MLE_E = []
+    accuracy_NUTS_E = []
+    
+    # For each output dictionary, generate deviation estimates of varying types
+    for currDict in OPdicts:
         
+        # Loop through each replication contained in the current output dictionary
+        currDict_avgDevList_Lin = []
+        currDict_avgDevList_Bern = []
+        currDict_avgDevList_MLE = []
+        currDict_avgDevList_NUTS = []
+        currDict_absDevList_Lin = []
+        currDict_absDevList_Bern = []
+        currDict_absDevList_MLE = []
+        currDict_absDevList_NUTS = []
+        currDict_stdDevList_Lin = []
+        currDict_stdDevList_Bern = []
+        currDict_stdDevList_MLE = []
+        currDict_stdDevList_NUTS = []
+        
+        currDict_truePos_Lin = []
+        currDict_truePos_Bern = []
+        currDict_truePos_MLE = []
+        currDict_truePos_NUTS = []
+        currDict_trueNeg_Lin = []
+        currDict_trueNeg_Bern = []
+        currDict_trueNeg_MLE = []
+        currDict_trueNeg_NUTS = []
+        currDict_falsePos_Lin = []
+        currDict_falsePos_Bern = []
+        currDict_falsePos_MLE = []
+        currDict_falsePos_NUTS = []
+        currDict_falseNeg_Lin = []
+        currDict_falseNeg_Bern = []
+        currDict_falseNeg_MLE = []
+        currDict_falseNeg_NUTS = []
+        currDict_accuracy_Lin = []
+        currDict_accuracy_Bern = []
+        currDict_accuracy_MLE = []
+        currDict_accuracy_NUTS = []
+        
+        for repNum in currDict.keys():
+            numInts = len(currDict[repNum]['intSFTrueValues'])
+            currTrueSFVec = currDict[repNum]['endSFTrueValues']
+            for scen in currTrueSFVec:
+                if not scen in scenarioList:
+                    scenarioList.append(scen)
+                    scenarioList.sort()
+            currLinProj = currDict[repNum]['endFalseEstimates']
+            currBernProj = currDict[repNum]['endFalseEstimates_Bern']
+            currMLEProj = currDict[repNum]['endFalseEstimates_Plum']
+            currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
+            hasNUTS = True
+            if currNUTSsamples == []: # No NUTS samples included
+                hasNUTS = False
+            
+            currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            if hasNUTS:
+                currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            
+            currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            currBernProjAbsdevs = [np.abs(currBernProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            if hasNUTS:
+                currNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            
+            
+            currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
+            currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
+            currDict_avgDevList_MLE.append(np.mean(currMLEProjdevs))
+            if hasNUTS:
+                currDict_avgDevList_NUTS.append(np.mean(currNUTSdevs))
+            
+            currDict_absDevList_Lin.append(np.mean(currLinProjAbsdevs))
+            currDict_absDevList_Bern.append(np.mean(currBernProjAbsdevs))
+            currDict_absDevList_MLE.append(np.mean(currMLEProjAbsdevs))
+            if hasNUTS:
+                currDict_absDevList_NUTS.append(np.mean(currNUTSAbsdevs))
+            
+            currDict_stdDevList_Lin.append(np.std(currLinProjdevs))
+            currDict_stdDevList_Bern.append(np.std(currBernProjdevs))
+            currDict_stdDevList_MLE.append(np.std(currMLEProjdevs))
+            if hasNUTS:
+                currDict_stdDevList_NUTS.append(np.std(currNUTSdevs))
+            
+            # Generate binary classifications using 'threshold'
+            currTrueSFVec_Bin = [1 if currTrueSFVec[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currLinProj_Bin = [1 if currLinProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currBernProj_Bin = [1 if currBernProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currMLEProj_Bin = [1 if currMLEProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
+            currNUTSProj_Bin = [1 if np.mean(invlogit(currNUTSsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            # Generate true/false positives/negatives rates, plus accuracy
+            if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_Lin.append(None)
+                print("None entered")
+            if len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Bern.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]))
+            else:
+                 currDict_truePos_Bern.append(None)
+                 print("None entered")
+            if len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_MLE.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_MLE.append(None)
+                print("None entered")
+            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_NUTS.append(None)
+                print("None entered")
+            if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_Lin.append(None)
+            if len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Bern.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_Bern.append(None)
+            if len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_MLE.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_MLE.append(None)
+            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_NUTS.append(None)
+             
+            currDict_falsePos_Lin.append(1 - currDict_truePos_Lin[-1] if currDict_truePos_Lin[-1] is not None else None)
+            currDict_falsePos_Bern.append(1 - currDict_truePos_Bern[-1] if currDict_truePos_Bern[-1] is not None else None)
+            currDict_falsePos_MLE.append(1 - currDict_truePos_MLE[-1] if currDict_truePos_MLE[-1] is not None else None)
+            currDict_falsePos_NUTS.append(1 - currDict_truePos_NUTS[-1] if currDict_truePos_NUTS[-1] is not None else None)
+            currDict_trueNeg_Lin.append(1 - currDict_falseNeg_Lin[-1] if currDict_falseNeg_Lin[-1] is not None else None)
+            currDict_trueNeg_Bern.append(1 - currDict_falseNeg_Bern[-1] if currDict_falseNeg_Bern[-1] is not None else None)
+            currDict_trueNeg_MLE.append(1 - currDict_falseNeg_MLE[-1] if currDict_falseNeg_MLE[-1] is not None else None)
+            currDict_trueNeg_NUTS.append(1 - currDict_falseNeg_NUTS[-1] if currDict_falseNeg_NUTS[-1] is not None else None)
+            currDict_accuracy_Lin.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])) \
+                                          /len(currLinProj_Bin))
+            currDict_accuracy_Bern.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 0) ])) \
+                                          /len(currBernProj_Bin))
+            currDict_accuracy_MLE.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 0) ])) \
+                                          /len(currMLEProj_Bin))
+            currDict_accuracy_NUTS.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])) \
+                                          /len(currNUTSProj_Bin))
+        
+        avgDevList_Lin_E.append(currDict_avgDevList_Lin)
+        avgDevList_Bern_E.append(currDict_avgDevList_Bern)
+        avgDevList_MLE_E.append(currDict_avgDevList_MLE)
+        if hasNUTS:
+            avgDevList_NUTS_E.append(currDict_avgDevList_NUTS)
+        
+        absDevList_Lin_E.append(currDict_absDevList_Lin) 
+        absDevList_Bern_E.append(currDict_absDevList_Bern)
+        absDevList_MLE_E.append(currDict_absDevList_MLE)
+        if hasNUTS:
+            absDevList_NUTS_E.append(currDict_absDevList_NUTS)
+        
+        stdDevList_Lin_E.append(currDict_stdDevList_Lin)
+        stdDevList_Bern_E.append(currDict_stdDevList_Bern)
+        stdDevList_MLE_E.append(currDict_stdDevList_MLE)
+        if hasNUTS:
+            stdDevList_NUTS_E.append(currDict_stdDevList_NUTS)
+            
+        truePos_Lin_E.append(currDict_truePos_Lin)
+        truePos_Bern_E.append(currDict_truePos_Bern)
+        truePos_MLE_E.append(currDict_truePos_MLE)
+        truePos_NUTS_E.append(currDict_truePos_NUTS)
+        trueNeg_Lin_E.append(currDict_trueNeg_Lin)
+        trueNeg_Bern_E.append(currDict_trueNeg_Bern)
+        trueNeg_MLE_E.append(currDict_trueNeg_MLE)
+        trueNeg_NUTS_E.append(currDict_trueNeg_NUTS)
+        falsePos_Lin_E.append(currDict_falsePos_Lin)
+        falsePos_Bern_E.append(currDict_falsePos_Bern)
+        falsePos_MLE_E.append(currDict_falsePos_MLE)
+        falsePos_NUTS_E.append(currDict_falsePos_NUTS)
+        falseNeg_Lin_E.append(currDict_falseNeg_Lin)
+        falseNeg_Bern_E.append(currDict_falseNeg_Bern)
+        falseNeg_MLE_E.append(currDict_falseNeg_MLE)
+        falseNeg_NUTS_E.append(currDict_falseNeg_NUTS)
+        accuracy_Lin_E.append(currDict_accuracy_Lin)
+        accuracy_Bern_E.append(currDict_accuracy_Bern)
+        accuracy_MLE_E.append(currDict_accuracy_MLE)
+        accuracy_NUTS_E.append(currDict_accuracy_NUTS)
+    '''
+    # Scenario-dependent looks at performance OUTLETS NEED TO BE APPROACHED DIFFERENTLY,
+                    AS 'TRUE' UNDERLYING RATES ARE DEPENDENT ON SIMULATION CIRCUMSTANCES
+    '''
+    
     ############# PLOTTING #############
     xTickLabels = [] # For plot x ticks
     # How many replications?
@@ -896,7 +1148,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     
     # Build pandas dataframes for seaborn plots
     headCol = ['dict','calcMethod','devVal']
-    # Absolute deviations
+    # Absolute deviations - importers
     DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
     for dictInd,currDict in enumerate(dictNamesVec):
         block1 = list(zip(itertools.cycle([currDict]),\
@@ -924,7 +1176,46 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     
     # Build boxplot
     plt.figure(figsize=(13,7))
-    plt.suptitle('Estimate Deviations - ABSOLUTE',fontsize=18)
+    plt.suptitle('ABSOLUTE Estimate Deviations - Importers',fontsize=18)
+    plt.ylim(0,0.3)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('Absolute Deviation',fontsize=16)
+    ax.set_xticklabels(xTickLabels)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+    plt.show()
+    
+    # Absolute deviations - outlets
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          absDevList_Lin_E[dictInd]))
+        block2 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Bernoulli Projection']),\
+                          absDevList_Bern_E[dictInd]))
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['MLE w/ nonlinear optimizer']),\
+                          absDevList_MLE_E[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['NUTS sample means']),\
+                          absDevList_NUTS_E[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        for tup in block2:
+            DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)       
+    
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('ABSOLUTE Estimate Deviations - Outlets',fontsize=18)
     plt.ylim(0,0.3)
     ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
                       hue='calcMethod')

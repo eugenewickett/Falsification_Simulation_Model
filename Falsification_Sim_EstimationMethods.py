@@ -130,8 +130,9 @@ def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     log-likelihood of different SF rates for a given set of testing data and 
     diagnostic capabilities
     '''
+   
     PosData = np.array(PosData)
-    NumSamples= np.array(NumSamples)
+    NumSamples = np.array(NumSamples)
     n = A.shape[0]
     m = A.shape[1]
     beta0 = -6 * np.ones(m+n) + np.random.uniform(-1,1,m+n)
@@ -151,6 +152,13 @@ def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
                          method='L-BFGS-B',
                          options={'disp': False},
                          bounds=bds)
+    '''
+    #Insert 'nan' where we didn't have any samples
+    for i in range(len(zeroInds[0])):
+        endProj = np.insert(endProj,zeroInds[0][i],np.nan)
+    for i in range(len(zeroInds[1])):
+        intProj = np.insert(intProj,zeroInds[1][i],np.nan)
+    '''
     return simModules.invlogit(opval.x)[0:A.shape[1]].tolist(), simModules.invlogit(opval.x)[A.shape[1]:].tolist()
 
 def Est_NUTS(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
