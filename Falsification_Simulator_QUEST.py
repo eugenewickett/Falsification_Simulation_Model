@@ -32,34 +32,16 @@ def parse_commandline():
     #parser.add_argument("--job-id",
                        #help="Job number",
                        #default=0)
-
-    parser.add_argument("--diag_sens",
-                       help="The sensitivity we will use in this iteration",
-                       default=.95,
-                       type=float)
-    parser.add_argument("--diag_spec",
-                       help="The specificity we will use in this iteration",
-                       default=.98,
-                       type=float)
-    parser.add_argument("--mult_days",
-                        help= "The amount we will multiple # of daysby to determine sampling budget",
-                        default = 5,
-                        type = int)
-    parser.add_argument("--sim_days",
-                        help = "number of days of our simulation",
-                        default = 200,
-                        type = int)
-    parser.add_argument("--glob_dem",
-                        help = "level of global demand bump",
-                        default = 0.,
-                        type = float)
+    '''
+    diag_sens, diag_spec, mult_days, sim_days, glob_dem
+    '''
+    parser.add_argument('vars',type=float,nargs='+',default=[0.95,0.98,5.,200.,0.])
     args = parser.parse_args()
 
     return args
 
 args = parse_commandline()
 
-#print(args.job_id)
 #print(args.diag_sens, args.diag_spec, args.mult_days, args.sim_days)
 ### END IMPORTANT QUEST STUFF ###
 
@@ -76,22 +58,20 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = args.sim_days
-samplingBudget = round(NumSimDays*(args.mult_days))
-diagnosticSensitivity = args.diag_sens # Tool sensitivity
-diagnosticSpecificity = args.diag_spec # Tool specificity
-globalDemand = args.glob_dem #Level of global demand increase across all outlets, in mean demand/simulation day
-
+NumSimDays = round(args.vars[3])
+samplingBudget = round(NumSimDays*(args.vars[2]))
+diagnosticSensitivity = args.vars[0] # Tool sensitivity
+diagnosticSpecificity = args.vars[1] # Tool specificity
+globalDemand = args.vars[4] #Level of global demand increase across all outlets, in mean demand/simulation day
 numReplications = 50
+
+
 alertIter = 100 # How frequently we're alerted of a set of replications being completed
 printOutput = False # Whether individual replication output should be displayed
 storeOutput = True # Do we store the output in an output dictionary file?
-OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(int(samplingBudget/NumSimDays))+'_'+\
-            str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' +\
-            str(globalDemand) + '_' + str(time.perf_counter())
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
-saveTestResults = True # Store the testing results to the output dictionary? (Greatly increases file size if True)
+saveTestResults = False # Store the testing results to the output dictionary? (Greatly increases file size if True)
 '''
 testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',
@@ -100,6 +80,10 @@ testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGre
 '''
 testPolicy = 'Static_Deterministic'
 testPolicyParam = [[100,200,300,400],0.30] # Set testing policy parameter list here
+
+OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(args.vars[2])+'_'+\
+            str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' +\
+            str(globalDemand) + '_' + str(time.perf_counter())
 
 # Diffusion level is set by modifying importer lead times from their suppliers,
 # affecting importer stockouts
@@ -224,9 +208,24 @@ for rep in range(numReplications):
     # Generate an importer SF scenario if the boolean is active
     intSFVec = []
     if intSFscenario_bool == True:
+        for indEnd in range(2):
+            intSFVec.append(0.0)
+        for indEnd in range(2):
+            intSFVec.append(0.1)
+        for indEnd in range(2):
+            intSFVec.append(0.25)
+        for indEnd in range(2):
+            intSFVec.append(0.5)
+        for indEnd in range(1):
+            intSFVec.append(0.75)
+        for indEnd in range(1):
+            intSFVec.append(0.9)
+        '''
+        OLD WAY
         SFscenarios = [0.00,0.10,0.25,0.50,0.75,0.90]
         for indInt in range(intermediateNum):
             intSFVec.append(np.random.choice(SFscenarios))
+        '''
     else:
         for indInt in range(intermediateNum):
             intSFVec.append(0)
@@ -439,8 +438,6 @@ for rep in range(numReplications):
         
         
     # END OF SIMULATIONS DAYS LOOP
-    # Simulation end time
-    totalRunTime = [time.time() - startTime]
     
     # OUTPUT FUNCTIONS
     # Report consumption levels from each node
@@ -492,19 +489,19 @@ for rep in range(numReplications):
     Test_Plot_y1 = []
     Test_Plot_y2 = []
     Test_Plot_y3 = []
-    for sample in TestReportTbl:
-        if not sample[1] in testNodeList:
-            testNodeList.append(sample[1])
-    testNodeList.sort()
+    # Initialize all end nodes in testNodeList
+    for indEnd in range(endNum):
+        currEnd = List_EndNode[indEnd]
+        testNodeList.append(currEnd.id)
+
     TestSummaryTbl = []
-    
     InvCheckSummaryTbl = [] # For counting inventory checks during sampling
     tempInvCheckVec = []
     InvCheckHeadersVec = []
     estTransitionMatrix = np.zeros([endNum,intermediateNum]) # For storing transition data 
     estFalseVector = np.zeros([endNum,1]) # For storing falsifieds found at each 
     
-    for indInt in range(intermediateNum):
+    for indInt in range(intermediateNum): # Generate headers for printing
         InvCheckHeadersVec.append('N'+str(List_IntermediateNode[indInt].id))
         tempInvCheckVec.append(0)
     for testedNode in testNodeList:
@@ -576,6 +573,7 @@ for rep in range(numReplications):
                                                    Spec=diagnosticSpecificity)
     except:
         print("Couldn't generate the LINEAR PROJECTION estimates")
+        
         estIntFalsePercList = []
         estEndFalsePercList = []
     
@@ -621,7 +619,7 @@ for rep in range(numReplications):
             '''
             #print(time.time()-startCalc)        
         except:
-            print("Couldn't generate the estimated node falsification percentages for LIKELIHOOD ESTIMATE")
+            print("Couldn't generate the POSTERIOR SAMPLES")
             estFalsePerc_LklhdSamples = []
             #print(time.time()-startCalc)
             
@@ -772,9 +770,8 @@ for rep in range(numReplications):
         
     ### END OF PRINT OUTPUT LOOP
     
-    # REMOVE LATER
-    currTrVec.append(np.trace(A.T @ A))
-    currStVec.append(np.mean(Intermediate_Plot_y))
+    # Simulation end time
+    totalRunTime = [time.time() - startTime]
     
     if warmUpRun == False:
         # Update our output dictionary

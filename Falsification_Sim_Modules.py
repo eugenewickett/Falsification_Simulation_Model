@@ -542,7 +542,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     numDicts = len(OPdicts)
     if dictNamesVec == [] or not len(dictNamesVec) == numDicts: # Empty names vector or mismatch; generate a numbered one
         dictNamesVec = [num for num in range(numDicts)]
-    
+    print(dictNamesVec)
     scenarioList = [] # Initialize a list of possible 'true' underyling SF rates
     # Initialize deviation lists; contains lists of deviations for each replication
     avgDevList_Lin = []
@@ -1142,7 +1142,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     # How many replications?
     for dictNum in range(len(dictNamesVec)):
         nCurr = len(absDevList_Lin[dictNum])
-        xTickLabels.append(dictNamesVec[dictNum]+' \n n=%i' % nCurr)
+        xTickLabels.append(str(dictNamesVec[dictNum])+' \n n=%i' % nCurr)
     # For plot x ticks
     
     

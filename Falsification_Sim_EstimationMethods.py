@@ -44,7 +44,8 @@ def GetUsableSampleVectors(A,PosData,NumSamples):
     adjNumSamples = [NumSamples[i] for i in range(n) if (NumSamples[i] > 0)]
     
     return adjA, adjPosData, adjNumSamples, zeroInds
-    
+
+
 ########################### SF RATE ESTIMATORS ###########################
 def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
                          Madapt=5000,delta=0.4): 
@@ -56,7 +57,7 @@ def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     # Grab 'usable' data
     adjA, adjPosData, adjNumSamples, zeroInds = GetUsableSampleVectors(A,PosData\
                                                                        ,NumSamples)
-    
+
     X = np.array([adjPosData[i]/adjNumSamples[i] for i in range(len(adjNumSamples))])
     intProj = np.dot(np.linalg.inv(np.dot(adjA.T,adjA)),np.dot(adjA.T,X))
     endProj = np.subtract(X,np.dot(adjA,intProj))

@@ -35,17 +35,17 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 100
-samplingBudget = NumSimDays*1
+NumSimDays = 200
+samplingBudget = NumSimDays*5
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.99 # Tool specificity
 globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
-
 numReplications = 1
+
 alertIter = 7 # How frequently we're alerted of a set of replications being completed
-printOutput = False # Whether individual replication output should be displayed
-storeOutput = True # Do we store the output in an output dictionary file?
-OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(int(samplingBudget/NumSimDays))+'_'+\
+printOutput = True # Whether individual replication output should be displayed
+storeOutput = False # Do we store the output in an output dictionary file?
+OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(samplingBudget/NumSimDays)+'_'+\
             str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' + str(globalDemand)
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
@@ -68,7 +68,7 @@ currTrVec = []
 currStVec = []
 
 optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -182,9 +182,25 @@ for rep in range(numReplications):
     # Generate an importer SF scenario if the boolean is active
     intSFVec = []
     if intSFscenario_bool == True:
+        for indEnd in range(2):
+            intSFVec.append(0.0)
+        for indEnd in range(2):
+            intSFVec.append(0.1)
+        for indEnd in range(2):
+            intSFVec.append(0.25)
+        for indEnd in range(2):
+            intSFVec.append(0.5)
+        for indEnd in range(1):
+            intSFVec.append(0.75)
+        for indEnd in range(1):
+            intSFVec.append(0.9)
+        
+        '''
+        OLD WAY
         SFscenarios = [0.00,0.10,0.25,0.50,0.75,0.90]
         for indInt in range(intermediateNum):
             intSFVec.append(np.random.choice(SFscenarios))
+        '''    
     else:
         for indInt in range(intermediateNum):
             intSFVec.append(0)
@@ -397,8 +413,6 @@ for rep in range(numReplications):
 
 
     # END OF SIMULATIONS DAYS LOOP
-    # Simulation end time
-    totalRunTime = [time.time() - startTime]
 
     # OUTPUT FUNCTIONS
     # Report consumption levels from each node
@@ -579,7 +593,7 @@ for rep in range(numReplications):
             '''
             #print(time.time()-startCalc)
         except:
-            print("Couldn't generate the estimated node falsification percentages for LIKELIHOOD ESTIMATE")
+            print("Couldn't generate the POSTERIOR SAMPLES")
             estFalsePerc_LklhdSamples = []
             #print(time.time()-startCalc)
 
@@ -728,10 +742,9 @@ for rep in range(numReplications):
 
 
     ### END OF PRINT OUTPUT LOOP
-
-    # REMOVE LATER
-    currTrVec.append(np.trace(A.T @ A))
-    currStVec.append(np.mean(Intermediate_Plot_y))
+    
+    # Simulation end time
+    totalRunTime = [time.time() - startTime]
 
     if warmUpRun == False:
         # Update our output dictionary
@@ -780,7 +793,8 @@ for rep in range(numReplications):
                           }
 
         outputDict[rep] = currOutputLine # Save to the output dictionary
-
+    
+    
 ########## END OF REPLICATION LOOP ##########
 
 # Store the outputDict
