@@ -14,20 +14,29 @@ os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsi
 
 import Falsification_Sim_Modules as simModules
 
+directory = r'C:\Users\eugen\OneDrive\Documents\EAGER Project\Simulator'+\
+         '\Sim Model Files TOO BIG FOR REPO\Consolidated Budgets & Diagnostics'
 # BAD INTERMEDIATE NODE
-OPFileNames = ['OP_Static_200_0.6_0.99_0.99_0.0_33946773.29296132',\
-               'OP_Static_200_0.9_0.99_0.99_0.0_6143606.200114578',\
-               'OP_Static_200_1.2_0.99_0.99_0.0_6143606.200414138']
+OPFileNames = os.listdir(directory)
 OPDicts = []
 for item in OPFileNames:
-    fileName1 = 'C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator'+\
-    '\\Sim Model Files TOO BIG FOR REPO\\Sampling Budgets and Diagnostics\\'+item
+    fileName1 = directory + '\\'+item
     outputDict1 = pickle.load(open(fileName1, 'rb'))
     OPDicts.append(outputDict1)
 
-simModules.SimSFEstimateOutput(OPDicts)
+
+OPDicts1 = OPDicts[0:25]
+OPDicts2 = OPDicts[25:50]
+OPDicts3 = OPDicts[50:75]
+OPDicts4 = OPDicts[75:]
+
+simModules.SimSFEstimateOutput(OPDicts3)
 
 '''
 for i in range(5):
-    print(OPDicts[2][i]['falsePerc_LklhdSamples'])
+    print(OPDicts[2][i]['intSFTrueValues'])
+
+len(OPDicts)
+len(OPDicts[6])
+OPDicts[8][3]['intFalseEstimates']
 '''

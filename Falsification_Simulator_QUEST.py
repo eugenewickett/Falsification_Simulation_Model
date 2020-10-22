@@ -229,8 +229,7 @@ for rep in range(numReplications):
     else:
         for indInt in range(intermediateNum):
             intSFVec.append(0)
-    #print(intSFVec)
-    
+    random.shuffle(intSFVec)
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
         currIntermediate.FalsifierProbability = intSFVec[indInt]

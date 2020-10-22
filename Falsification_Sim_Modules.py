@@ -542,7 +542,6 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     numDicts = len(OPdicts)
     if dictNamesVec == [] or not len(dictNamesVec) == numDicts: # Empty names vector or mismatch; generate a numbered one
         dictNamesVec = [num for num in range(numDicts)]
-    print(dictNamesVec)
     scenarioList = [] # Initialize a list of possible 'true' underyling SF rates
     # Initialize deviation lists; contains lists of deviations for each replication
     avgDevList_Lin = []

@@ -204,8 +204,7 @@ for rep in range(numReplications):
     else:
         for indInt in range(intermediateNum):
             intSFVec.append(0)
-    #print(intSFVec)
-
+    random.shuffle(intSFVec)
     for indInt in range(intermediateNum):
         currIntermediate = List_IntermediateNode[indInt]
         currIntermediate.FalsifierProbability = intSFVec[indInt]
@@ -600,7 +599,10 @@ for rep in range(numReplications):
     else:
         estFalsePerc_LklhdSamples = []
     ### END LIKELIHOOD ESTIMATOR ###
-
+    
+    # Simulation end time
+    totalRunTime = [time.time() - startTime]
+    
     if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES
         print('*'*100)
@@ -742,9 +744,6 @@ for rep in range(numReplications):
 
 
     ### END OF PRINT OUTPUT LOOP
-    
-    # Simulation end time
-    totalRunTime = [time.time() - startTime]
 
     if warmUpRun == False:
         # Update our output dictionary
