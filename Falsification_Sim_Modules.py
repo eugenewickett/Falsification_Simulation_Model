@@ -623,17 +623,26 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                 if not scen in scenarioList:
                     scenarioList.append(scen)
                     scenarioList.sort()
-            currLinProj = currDict[repNum]['intFalseEstimates']
-            currBernProj = currDict[repNum]['intFalseEstimates_Bern']
-            currMLEProj = currDict[repNum]['intFalseEstimates_Plum']
+            if not currDict[repNum]['intFalseEstimates'] == []:
+                currLinProj = currDict[repNum]['intFalseEstimates']
+            else:
+                currLinProj = [np.nan for i in range(len(currTrueSFVec))]
+            if not currDict[repNum]['intFalseEstimates_Bern'] == []:
+                currBernProj = currDict[repNum]['intFalseEstimates_Bern']
+            else:
+                currBernProj = [np.nan for i in range(len(currTrueSFVec))]
+            if not currDict[repNum]['intFalseEstimates_Plum'] == []:
+                currMLEProj = currDict[repNum]['intFalseEstimates_Plum']
+            else:
+                currMLEProj = [np.nan for i in range(len(currTrueSFVec))]
             currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
             hasNUTS = True
             if currNUTSsamples == []: # No NUTS samples included
                 hasNUTS = False
             
-            currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
-            currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
-            currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currLinProj[i])]
+            currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currBernProj[i])]
+            currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEProj[i])]
             if hasNUTS:
                 currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             
@@ -642,8 +651,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             if hasNUTS:
                 currNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
-            
-            
+                    
             currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
             currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
             currDict_avgDevList_MLE.append(np.mean(currMLEProjdevs))
@@ -674,25 +682,25 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                                             len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]))
             else:
                 currDict_truePos_Lin.append(None)
-                print("None entered")
+            
             if len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_Bern.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1) ])/\
                                             len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]))
             else:
                  currDict_truePos_Bern.append(None)
-                 print("None entered")
+            
             if len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_MLE.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1) ])/\
                                             len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]))
             else:
                 currDict_truePos_MLE.append(None)
-                print("None entered")
+            
             if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])/\
                                             len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]))
             else:
                 currDict_truePos_NUTS.append(None)
-                print("None entered")
+                
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]) > 0:
                 currDict_falseNeg_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])/\
                                             len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]))
@@ -815,17 +823,28 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                 currScenInds = [i for i, val in enumerate(currTrueSFVec) if val == currScen]
                 if not not currScenInds: #Only find deviations if the scenario was used (list is nonempty)
                     currScenTrueSFVec = [currTrueSFVec[i] for i in currScenInds]
-                    currScenLinProj = [currDict[repNum]['intFalseEstimates'][i] for i in currScenInds]
-                    currScenBernProj = [currDict[repNum]['intFalseEstimates_Bern'][i] for i in currScenInds]
-                    currScenMLEProj = [currDict[repNum]['intFalseEstimates_Plum'][i] for i in currScenInds]
+                    
+                    if not currDict[repNum]['intFalseEstimates'] == []:
+                        currScenLinProj = [currDict[repNum]['intFalseEstimates'][i] for i in currScenInds]
+                    else:
+                        currScenLinProj = [np.nan for i in range(len(currScenInds))]
+
+                    if not currDict[repNum]['intFalseEstimates_Bern'] == []:
+                        currScenBernProj = [currDict[repNum]['intFalseEstimates_Bern'][i] for i in currScenInds]
+                    else:
+                        currScenBernProj = [np.nan for i in range(len(currScenInds))]
+                    if not currDict[repNum]['intFalseEstimates_Plum'] == []:
+                        currScenMLEProj = [currDict[repNum]['intFalseEstimates_Plum'][i] for i in currScenInds]
+                    else:
+                        currScenMLEProj = [np.nan for i in range(len(currScenInds))]
                     currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
                     hasNUTS = True
                     if currNUTSsamples == []: # No NUTS samples included
                         hasNUTS = False
                     
-                    currScenLinProjdevs = [currScenLinProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
-                    currScenBernProjdevs = [currScenBernProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
-                    currScenMLEProjdevs = [currScenMLEProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    currScenLinProjdevs = [currScenLinProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currLinProj[i])]
+                    currScenBernProjdevs = [currScenBernProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currScenBernProj[i])]
+                    currScenMLEProjdevs = [currScenMLEProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currScenMLEProj[i])]
                     if hasNUTS:
                         currScenNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
                     
@@ -885,18 +904,6 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           }
         scenDict[ind] = currOutputLine
         ind += 1
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     # Now repeat everything above, but for the outlets
     #scenarioList_E = [] # Initialize a list of possible 'true' underyling SF rates
@@ -977,21 +984,27 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for repNum in currDict.keys():
             numInts = len(currDict[repNum]['intSFTrueValues'])
             currTrueSFVec = currDict[repNum]['endSFTrueValues']
-            for scen in currTrueSFVec:
-                if not scen in scenarioList:
-                    scenarioList.append(scen)
-                    scenarioList.sort()
-            currLinProj = currDict[repNum]['endFalseEstimates']
-            currBernProj = currDict[repNum]['endFalseEstimates_Bern']
-            currMLEProj = currDict[repNum]['endFalseEstimates_Plum']
+            if not currDict[repNum]['endFalseEstimates'] == []:
+                currLinProj = currDict[repNum]['endFalseEstimates']
+            else:
+                currLinProj = [np.nan for i in range(len(currTrueSFVec))]
+            if not currDict[repNum]['endFalseEstimates_Bern'] == []:
+                currBernProj = currDict[repNum]['endFalseEstimates_Bern']
+            else:
+                currBernProj = [np.nan for i in range(len(currTrueSFVec))]
+            if not currDict[repNum]['endFalseEstimates_Plum'] == []:
+                currMLEProj = currDict[repNum]['endFalseEstimates_Plum']
+            else:
+                currMLEProj = [np.nan for i in range(len(currTrueSFVec))]    
+            
             currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
             hasNUTS = True
             if currNUTSsamples == []: # No NUTS samples included
                 hasNUTS = False
             
-            currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
-            currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
-            currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currLinProj[i])]
+            currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currBernProj[i])]
+            currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEProj[i])]
             if hasNUTS:
                 currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             
@@ -1032,25 +1045,21 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                                             len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]))
             else:
                 currDict_truePos_Lin.append(None)
-                print("None entered")
             if len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_Bern.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1) ])/\
                                             len([i for i in range(len(currBernProj_Bin)) if (currBernProj_Bin[i] == 1)]))
             else:
                  currDict_truePos_Bern.append(None)
-                 print("None entered")
             if len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_MLE.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1) ])/\
                                             len([i for i in range(len(currMLEProj_Bin)) if (currMLEProj_Bin[i] == 1)]))
             else:
                 currDict_truePos_MLE.append(None)
-                print("None entered")
             if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])/\
                                             len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]))
             else:
                 currDict_truePos_NUTS.append(None)
-                print("None entered")
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]) > 0:
                 currDict_falseNeg_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])/\
                                             len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]))
@@ -1181,7 +1190,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('Absolute Deviation',fontsize=16)
-    ax.set_xticklabels(xTickLabels)
+    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
@@ -1220,7 +1229,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('Absolute Deviation',fontsize=16)
-    ax.set_xticklabels(xTickLabels)
+    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
@@ -1258,7 +1267,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('Average Deviation',fontsize=16)
-    ax.set_xticklabels(xTickLabels)
+    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
@@ -1351,7 +1360,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           hue='calcMethod')
         ax.set_xlabel('Output Dictionary',fontsize=16)
         ax.set_ylabel('Absolute Deviation',fontsize=16)
-        ax.set_xticklabels(xTickLabels)
+        ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
         plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
         plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
         plt.show()
@@ -1389,7 +1398,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           hue='calcMethod')
         ax.set_xlabel('Output Dictionary',fontsize=16)
         ax.set_ylabel('Average Deviation',fontsize=16)
-        ax.set_xticklabels(xTickLabels)
+        ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
         plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
         plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
         plt.show()
@@ -1443,7 +1452,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('Accuracy Rate',fontsize=16)
-    ax.set_xticklabels(xTickLabels)
+    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
@@ -1481,7 +1490,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('True Positive Rate',fontsize=16)
-    ax.set_xticklabels(xTickLabels)
+    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
@@ -1519,7 +1528,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                       hue='calcMethod')
     ax.set_xlabel('Output Dictionary',fontsize=16)
     ax.set_ylabel('True Negative Rate',fontsize=16)
-    ax.set_xticklabels(xTickLabels)
+    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
     plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
     plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
     plt.show()
