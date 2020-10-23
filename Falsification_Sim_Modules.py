@@ -1586,7 +1586,7 @@ def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
 #### Likelihood estimate functions
 def invlogit(beta):
     return sps.expit(beta)
-
+    
 def invlogit_grad(beta):
     return np.diag(np.exp(beta)/((np.exp(beta)+1) ** 2))
 

@@ -20,6 +20,7 @@ testing results. The inputs to these methdos are:
 
 import numpy as np
 import scipy.optimize as spo
+import scipy.stats as spstat
 #import scipy.special as sps
 import Falsification_Sim_Modules as simModules
 
@@ -54,19 +55,74 @@ def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     and the (estimated) percentage SF at each end node, X, calculaed as PosData
     / NumSamples
     '''
+    # Initialize output dictionary
+    outDict = {}
     # Grab 'usable' data
     adjA, adjPosData, adjNumSamples, zeroInds = GetUsableSampleVectors(A,PosData\
                                                                        ,NumSamples)
 
     X = np.array([adjPosData[i]/adjNumSamples[i] for i in range(len(adjNumSamples))])
-    intProj = np.dot(np.linalg.inv(np.dot(adjA.T,adjA)),np.dot(adjA.T,X))
+    AtA_inv = np.linalg.inv(np.dot(adjA.T,adjA)) # Store so we only calculate once
+    intProj = np.dot(AtA_inv,np.dot(adjA.T,X))
     endProj = np.subtract(X,np.dot(adjA,intProj))
+    # Generate variance of intermediate projections
+    H = np.dot(np.dot(adjA,AtA_inv),adjA.T)
+    X_fitted = np.dot(H,X)
+    resids = np.subtract(X,X_fitted)
+    sampVar = np.dot(resids.T,resids)/(adjA.shape[0]-adjA.shape[1])
+    covarInt = sampVar*AtA_inv
+    covarInt_diag = np.diag(covarInt)
+    varEnds = [sampVar*(1-H[i][i]) for i in range(len(X))]
+    t90 = spstat.t.ppf(0.95,adjA.shape[0]-adjA.shape[1])
+    t95 = spstat.t.ppf(0.975,adjA.shape[0]-adjA.shape[1])
+    t99 = spstat.t.ppf(0.995,adjA.shape[0]-adjA.shape[1])
+    int90upper = [intProj[i]+t90*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
+    int90lower = [intProj[i]-t90*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
+    int95upper = [intProj[i]+t95*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
+    int95lower = [intProj[i]-t95*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
+    int99upper = [intProj[i]+t99*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
+    int99lower = [intProj[i]-t99*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
+    end90upper = [endProj[i]+t90*np.sqrt(varEnds[i]) for i in range(len(intProj))]
+    end90lower = [endProj[i]-t90*np.sqrt(varEnds[i]) for i in range(len(intProj))]
+    end95upper = [endProj[i]+t95*np.sqrt(varEnds[i]) for i in range(len(intProj))]
+    end95lower = [endProj[i]-t95*np.sqrt(varEnds[i]) for i in range(len(intProj))]
+    end99upper = [endProj[i]+t99*np.sqrt(varEnds[i]) for i in range(len(intProj))]
+    end99lower = [endProj[i]-t99*np.sqrt(varEnds[i]) for i in range(len(intProj))]
     #Insert 'nan' where we didn't have any samples
     for i in range(len(zeroInds[0])):
         endProj = np.insert(endProj,zeroInds[0][i],np.nan)
+        end90upper = np.insert(end90upper,zeroInds[0][i],np.nan)
+        end90lower = np.insert(end90upper,zeroInds[0][i],np.nan)
+        end95upper = np.insert(end90upper,zeroInds[0][i],np.nan)
+        end95lower = np.insert(end90upper,zeroInds[0][i],np.nan)
+        end99upper = np.insert(end90upper,zeroInds[0][i],np.nan)
+        end99lower = np.insert(end90upper,zeroInds[0][i],np.nan)
     for i in range(len(zeroInds[1])):
         intProj = np.insert(intProj,zeroInds[1][i],np.nan)
-    return np.ndarray.tolist(intProj.T), np.ndarray.tolist(endProj.T)
+        int90upper = np.insert(int90upper,zeroInds[1][i],np.nan)
+        int90lower = np.insert(int90lower,zeroInds[1][i],np.nan)
+        int95upper = np.insert(int95upper,zeroInds[1][i],np.nan)
+        int95lower = np.insert(int95lower,zeroInds[1][i],np.nan)
+        int99upper = np.insert(int99upper,zeroInds[1][i],np.nan)
+        int99lower = np.insert(int99lower,zeroInds[1][i],np.nan)
+    
+    outDict['intProj'] = np.ndarray.tolist(intProj.T)
+    outDict['endProj'] = np.ndarray.tolist(endProj.T)
+    outDict['covarInt'] = covarInt_diag
+    outDict['varEnd'] = varEnds
+    outDict['90upper_int'] = int90upper
+    outDict['90lower_int'] = int90lower
+    outDict['95upper_int'] = int95upper
+    outDict['95lower_int'] = int95lower
+    outDict['99upper_int'] = int99upper
+    outDict['99lower_int'] = int99lower
+    outDict['90upper_end'] = end90upper
+    outDict['90lower_end'] = end90lower
+    outDict['95upper_end'] = end95upper
+    outDict['95lower_end'] = end95lower
+    outDict['99upper_end'] = end99upper
+    outDict['99lower_end'] = end99lower
+    return outDict
 
 def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
                             Madapt=5000,delta=0.4):
@@ -74,6 +130,9 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     MLE of a Bernoulli variable, using iteratively reweighted least squares;
     see Wikipedia page for notation
     '''
+    # Initialize output dictionary
+    outDict = {}
+    
     # Grab 'usable' data
     big_m = A.shape[1]
     adjA, adjPosData, adjNumSamples, zeroInds = GetUsableSampleVectors(A,PosData\
@@ -122,7 +181,21 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     for i in range(len(zeroInds[1])):
         intProj = np.insert(intProj,zeroInds[1][i],np.nan)
     # Could also return the covariance matrix and Wald statistics if needed
-    return intProj, endProj
+    outDict['intProj'] = intProj
+    outDict['endProj'] = endProj
+    outDict['covar'] = w_Var
+    outDict['waldStats'] = wald_stats
+    # Confidence intervals: 90%, 95%, 99%
+    z90 = spstat.norm.ppf(0.95)
+    z95 = spstat.norm.ppf(0.975)
+    z99 = spstat.norm.ppf(0.995)
+    outDict['90upper_int'] = [simModules.invlogit(w_k[i]+z90*np.sqrt(w_Var[i]))[0] for i in range(m)]
+    outDict['90lower_int'] = [simModules.invlogit(w_k[i]-z90*np.sqrt(w_Var[i]))[0] for i in range(m)]
+    outDict['95upper_int'] = [simModules.invlogit(w_k[i]+z95*np.sqrt(w_Var[i]))[0] for i in range(m)]
+    outDict['95lower_int'] = [simModules.invlogit(w_k[i]-z95*np.sqrt(w_Var[i]))[0] for i in range(m)]
+    outDict['99upper_int'] = [simModules.invlogit(w_k[i]+z99*np.sqrt(w_Var[i]))[0] for i in range(m)]
+    outDict['99lower_int'] = [simModules.invlogit(w_k[i]-z99*np.sqrt(w_Var[i]))[0] for i in range(m)]
+    return outDict
 
 def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
                       Madapt=5000,delta=0.4):
