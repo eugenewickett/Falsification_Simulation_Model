@@ -35,8 +35,8 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 200
-samplingBudget = NumSimDays*5
+NumSimDays = 400
+samplingBudget = NumSimDays*10
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.99 # Tool specificity
 globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
@@ -57,7 +57,7 @@ testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGre
               'Dyn_ExploreWithNUTS_2','Dyn_ThresholdWithNUTS']
 '''
 testPolicy = 'Static_Deterministic'
-testPolicyParam = [[100,200,300,400],0.30] # Set testing policy parameter list here
+testPolicyParam = [[200,300,400],0.30] # Set testing policy parameter list here
 
 # Diffusion level is set by modifying importer lead times from their suppliers,
 # affecting importer stockouts
@@ -162,7 +162,7 @@ for rep in range(numReplications):
 
     # Initialize our testing results reporting table
     TestReportTbl = []
-
+    SampleReportTbl = []
     ### THINGS TO CHANGE AND PLAY WITH ONCE THE LISTS ARE GENERATED ###
     # Freeze end node demand to give intermediate nodes a chance to order and stock their shelves
     # We do this by setting the first (maxLT) days at each node equal to 0
@@ -320,6 +320,16 @@ for rep in range(numReplications):
                             for indDP in List_DP:
                                 if testDPID == indDP.id:
                                     DPRoot = indDP.nodeIDList[0] # Source of this DP
+                                    DPImpID = indDP.nodeIDList[1] # Importer of this DP
+                                    if DPImpID == currNode.id: # if outlet got this straight from the falsifier, choose an importer based on A
+                                        currNodeIndex = currNode.id-intermediateNum-rootNum
+                                        if List_TestResults[currNodeIndex][4] !=  np.zeros(intermediateNum,np.int8).tolist():
+                                            normedVec = List_TestResults[currNodeIndex][4]/np.sum(List_TestResults[currNodeIndex][4])
+                                            DPImpID = rootNum + np.random.choice(range(intermediateNum),p=normedVec)
+                                        else: # just pick a random importer
+                                            DPImpID = rootNum + np.random.choice(range(intermediateNum))
+                                            
+                                         
                             currNode.InventoryLevel[invPile] -= 1 # "Buy" the sample
                             currNode.demandResults[0] += 1 # "Satisifed" demand
                             # Update available budget
@@ -344,7 +354,17 @@ for rep in range(numReplications):
                 # Save the result to the reporting table
                 newTestRow = [today,currTestNodeID,DPRoot,invPileOriginList]
                 TestReportTbl.append(newTestRow)
-
+                
+                # Save the result to the sample-wise result table:
+                #   [importer INDEX (not ID), outlet INDEX, result]
+                for ind,obj in enumerate(List_EndNode):
+                    if obj.id == currTestNodeID:
+                        sampOutletID = ind
+                for ind,obj in enumerate(List_IntermediateNode):
+                    if obj.id == DPImpID:
+                        sampImporterID = ind
+                SampleReportTbl.append([sampImporterID,sampOutletID,DPRoot])
+                
                 if madeTest == True: # Recalculate the dynamic results list
                     for currInd in range(len(List_TestResults)):
                         if List_TestResults[currInd][0] == currTestNodeID: # Found matching node ID
@@ -541,10 +561,11 @@ for rep in range(numReplications):
 
     #LINEAR PROJECTION
     try:
-        estIntFalsePercList, estEndFalsePercList = simEstMethods.Est_LinearProjection(\
-                                                   A,PosData=ydata,NumSamples=numSamples,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity)
+        output_Lin = simEstMethods.Est_LinearProjection(A,PosData=ydata,\
+                                    NumSamples=numSamples,Sens=diagnosticSensitivity,\
+                                    Spec=diagnosticSpecificity)
+        estIntFalsePercList = output_Lin['intProj']
+        estEndFalsePercList = output_Lin['endProj']
     except:
         print("Couldn't generate the LINEAR PROJECTION estimates")
         estIntFalsePercList = []
@@ -552,10 +573,11 @@ for rep in range(numReplications):
 
     #BERNOULLI MLE
     try:
-        estIntFalsePercList_Bern, estEndFalsePercList_Bern = simEstMethods.Est_BernoulliProjection(\
-                                                   A,PosData=ydata,NumSamples=numSamples,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity)
+         output_Bern = simEstMethods.Est_BernoulliProjection(A,PosData=ydata,\
+                                        NumSamples=numSamples,Sens=diagnosticSensitivity,\
+                                        Spec=diagnosticSpecificity)
+         estIntFalsePercList_Bern = output_Bern['intProj']
+         estEndFalsePercList_Bern = output_Bern['endProj']
     except:
         print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
@@ -599,6 +621,22 @@ for rep in range(numReplications):
     else:
         estFalsePerc_LklhdSamples = []
     ### END LIKELIHOOD ESTIMATOR ###
+    
+    #SAMPLE-WISE MLE
+    try:
+        estIntFalsePercList_SampMLE , estEndFalsePercList_SampMLE = simEstMethods.Est_SampleMLE_Optimizer(\
+                                                   sampleWiseData=SampleReportTbl,\
+                                                   numImp=intermediateNum,\
+                                                   numOut=endNum,\
+                                                   Sens=diagnosticSensitivity,\
+                                                   Spec=diagnosticSpecificity,\
+                                                   RglrWt=100*optRegularizationWeight)
+    except:
+        print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
+        estIntFalsePercList_SampMLE = []
+        estEndFalsePercList_SampMLE = []
+    
+    
     
     # Simulation end time
     totalRunTime = [time.time() - startTime]
@@ -671,9 +709,9 @@ for rep in range(numReplications):
         plt.show()
 
         # Intermediate nodes
-        fig, axs = plt.subplots(3, 1,figsize=(9,13))
+        fig, axs = plt.subplots(4, 1,figsize=(9,13))
         fig.suptitle('Intermediate Node SF % Estimates',fontsize=18)
-        for subP in range(3):
+        for subP in range(4):
             axs[subP].set_xlabel('Intermediate Node',fontsize=12)
             axs[subP].set_ylabel('Est. SF %',fontsize=12)
             axs[subP].set_ylim([0.0,1.0])
@@ -688,14 +726,17 @@ for rep in range(numReplications):
         # MLE w Nonlinear optimizer
         axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
         axs[2].bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')
+        # Sample MLE
+        axs[3].set_title('Sample MLE',fontweight='bold')
+        axs[3].bar(Intermediate_Plot_x,estIntFalsePercList_SampMLE,color='deepskyblue',edgecolor='darkcyan')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
 
         # End nodes
-        fig, axs = plt.subplots(3, 1,figsize=(17,13))
+        fig, axs = plt.subplots(4, 1,figsize=(17,13))
         fig.suptitle('End Node SF % Estimates',fontsize=18)
-        for subP in range(3):
+        for subP in range(4):
             axs[subP].set_xlabel('End Node',fontsize=12)
             axs[subP].set_ylabel('Est. SF %',fontsize=12)
             axs[subP].tick_params(labelrotation=90)
@@ -711,6 +752,9 @@ for rep in range(numReplications):
         # MLE w Nonlinear optimizer
         axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
         axs[2].bar(End_Plot_x,estEndFalsePercList_Plum,color='lightcyan',edgecolor='teal')
+        # Sample MLE
+        axs[3].set_title('Sample MLE',fontweight='bold')
+        axs[3].bar(End_Plot_x,estEndFalsePercList_SampMLE,color='pink',edgecolor='deeppink')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
@@ -785,6 +829,8 @@ for rep in range(numReplications):
                           'endFalseEstimates_Bern':estEndFalsePercList_Bern,
                           'intFalseEstimates_Plum':estIntFalsePercList_Plum,
                           'endFalseEstimates_Plum':estEndFalsePercList_Plum,
+                          'intFalseEstimates_SampMLE':estIntFalsePercList_SampMLE,
+                          'endFalseEstimates_SampMLE':estEndFalsePercList_SampMLE,
                           'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples,
                           'intSFTrueValues':intSFVec,'endSFTrueValues':endSFVecCombo,
                           'simStartTime':startTime,

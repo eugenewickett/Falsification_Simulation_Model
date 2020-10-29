@@ -235,6 +235,49 @@ def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     '''
     return simModules.invlogit(opval.x)[0:A.shape[1]].tolist(), simModules.invlogit(opval.x)[A.shape[1]:].tolist()
 
+def Est_SampleMLE_Optimizer(sampleWiseData,numImp,numOut,Sens,Spec,\
+                            RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
+    '''
+    Forms MLE sample-wise - DOES NOT use A, but instead a list of samples,
+    which should be entered [importer index, outlet index, result in {0,1}].
+    Then uses the L-BFGS-B method of the SciPy Optimizer to maximize the
+    log-likelihood of different SF rates for a given set of testing data and 
+    diagnostic capabilities
+    '''
+    N = np.zeros(shape=(numOut,numImp))
+    Y = np.zeros(shape=(numOut,numImp))
+    for samp in sampleWiseData:
+        j,i,res = samp[0], samp[1], samp[2]
+        N[i,j] += 1
+        Y[i,j] += res
+    def newNegLikeFunc(pVec,numMat, posMat,sens,spec):
+        # pVec should be [importers, outlets]
+        n,m = numMat.shape
+        th=pVec[:m]
+        py = pVec[m:]
+        pMat = np.zeros(shape=(n,m))
+        for i in range(n):
+            for j in range(m):
+                pMat[i,j] = th[j]+(1-th[j])*py[i]
+        pMatTilda = np.zeros(shape=(n,m))
+        for i in range(n):
+            for j in range(m):
+                pMatTilda[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+        # Regularize?
+        L = np.sum(np.multiply(Y,np.log(pMatTilda))+np.multiply(np.subtract(numMat,posMat),\
+                   np.log(1-pMatTilda))) - RglrWt*np.sum(np.abs(py))
+        return L*-1
+    p_0 = 0.01 * np.ones(numImp+numOut) + np.random.uniform(-0.001,0.001,numImp+numOut)
+    bds = spo.Bounds(p_0-p_0, np.ones(numImp+numOut))
+    opVal = spo.minimize(newNegLikeFunc, p_0,
+                         args=(N,Y,Sens,Spec),
+                         method='L-BFGS-B',
+                         options={'disp': False},
+                         bounds=bds)
+    
+    return opVal.x[0:numImp].tolist(), opVal.x[numImp:].tolist()
+    
+
 def Est_NUTS(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
     '''
     Returns the mean estimate of M NUTS samples, using the Madapt and delta
@@ -251,8 +294,8 @@ def Est_NUTS(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0
 
     beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
     samples, _, _ = simModules.nuts6(postForNUTS,M,Madapt,beta0,delta)
-    intMeans = [np.mean(simModules.invlogit(samples[:,i])) for i in range(A.shape[1])]
-    endMeans = [np.mean(simModules.invlogit(samples[:,A.shape[1]+i])) for i in range(A.shape[0])]
+    intMeans = [simModules.invlogit(np.mean(samples[:,i])) for i in range(A.shape[1])]
+    endMeans = [simModules.invlogit(np.mean(samples[:,A.shape[1]+i])) for i in range(A.shape[0])]
     return intMeans, endMeans
 
 
