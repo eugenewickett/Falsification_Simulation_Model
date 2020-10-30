@@ -328,8 +328,7 @@ for rep in range(numReplications):
                                             DPImpID = rootNum + np.random.choice(range(intermediateNum),p=normedVec)
                                         else: # just pick a random importer
                                             DPImpID = rootNum + np.random.choice(range(intermediateNum))
-                                            
-                                         
+                                                                                     
                             currNode.InventoryLevel[invPile] -= 1 # "Buy" the sample
                             currNode.demandResults[0] += 1 # "Satisifed" demand
                             # Update available budget
@@ -630,13 +629,11 @@ for rep in range(numReplications):
                                                    numOut=endNum,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
-                                                   RglrWt=100*optRegularizationWeight)
+                                                   RglrWt=50*optRegularizationWeight)
     except:
         print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_SampMLE = []
         estEndFalsePercList_SampMLE = []
-    
-    
     
     # Simulation end time
     totalRunTime = [time.time() - startTime]
