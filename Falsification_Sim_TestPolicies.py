@@ -30,7 +30,7 @@ from scipy.stats import beta
 import Falsification_Sim_Modules as simModules
 
 def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     '''
     Takes in a testing policy choice, calls the respective function, and
     returns the generated testing schedule
@@ -44,40 +44,40 @@ def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
     
     if polType == 'Static_Deterministic':
         sampleSchedule = Pol_Stat_Deterministic(resultsList,totalSimDays,numDaysRemain,\
-                                                totalBudget,numBudgetRemain,policyParamList)
+                                                totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Static_Random':
         sampleSchedule = Pol_Stat_Random(resultsList,totalSimDays,numDaysRemain,\
-                                         totalBudget,numBudgetRemain,policyParamList)
+                                         totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_EpsGreedy':
         sampleSchedule = Pol_Dyn_EpsGreedy(resultsList,totalSimDays,numDaysRemain,\
-                                           totalBudget,numBudgetRemain,policyParamList)
+                                           totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_EpsExpDecay':
         sampleSchedule = Pol_Dyn_EpsExpDecay(resultsList,totalSimDays,numDaysRemain,\
-                                             totalBudget,numBudgetRemain,policyParamList)
+                                             totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_EpsFirst':
         sampleSchedule = Pol_Dyn_EpsFirst(resultsList,totalSimDays,numDaysRemain,\
-                                          totalBudget,numBudgetRemain,policyParamList)
+                                          totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_ThompSamp':
         sampleSchedule = Pol_Dyn_ThompSamp(resultsList,totalSimDays,numDaysRemain,\
-                                           totalBudget,numBudgetRemain,policyParamList)
+                                           totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_EveryOther':
         sampleSchedule = Pol_Dyn_EveryOther(resultsList,totalSimDays,numDaysRemain,\
-                                            totalBudget,numBudgetRemain,policyParamList)
+                                            totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_EpsSine':
         sampleSchedule = Pol_Dyn_EpsSine(resultsList,totalSimDays,numDaysRemain,\
-                                         totalBudget,numBudgetRemain,policyParamList)
+                                         totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_TSwithNUTS':
         sampleSchedule = Pol_Dyn_TSwithNUTS(resultsList,totalSimDays,numDaysRemain,\
-                                            totalBudget,numBudgetRemain,policyParamList)
+                                            totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_ExploreWithNUTS':
         sampleSchedule = Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays,numDaysRemain,\
-                                            totalBudget,numBudgetRemain,policyParamList)
+                                            totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_ExploreWithNUTS_2':
         sampleSchedule = Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays,numDaysRemain,\
-                                            totalBudget,numBudgetRemain,policyParamList)
+                                            totalBudget,numBudgetRemain,policyParamList,startDay)
     elif polType == 'Dyn_ThresholdWithNUTS':
         sampleSchedule = Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays,numDaysRemain,\
-                                            totalBudget,numBudgetRemain,policyParamList)
+                                            totalBudget,numBudgetRemain,policyParamList,startDay)
     return sampleSchedule
     
     
@@ -85,7 +85,7 @@ def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
     
 
 def Pol_Stat_Deterministic(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Deterministic policy that rotates through each end node in numerical order
     until the sampling budget is exhausted, such that Day 1 features End Node 1,
@@ -101,8 +101,8 @@ def Pol_Stat_Deterministic(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     currNode = endNodes[nodeCount]
     lastEndNode = endNodes[-1]        
     for samp in range(totalBudget):
-        day = np.mod(samp,totalSimDays)
-        sampleSchedule.append([day,currNode])
+        day = np.mod(samp,totalSimDays-startDay)
+        sampleSchedule.append([day+startDay,currNode])
         if currNode == lastEndNode:
             nodeCount = 0
             currNode = endNodes[nodeCount]
@@ -114,7 +114,7 @@ def Pol_Stat_Deterministic(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Stat_Random(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Random policy that selects random nodes on each day until the sampling
     budget is exhausted
@@ -127,16 +127,16 @@ def Pol_Stat_Random(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     numEndNodes = len(endNodes)
     # Generate a sampling schedule randomly sampling the list of end nodes         
     for samp in range(totalBudget):
-        day = np.mod(samp,totalSimDays)
+        day = np.mod(samp,totalSimDays-startDay)
         currEndInd = int(np.floor(np.random.uniform(low=0,high=numEndNodes,size=1)))
         currNode = endNodes[currEndInd]
-        sampleSchedule.append([day,currNode])
+        sampleSchedule.append([day+startDay,currNode])
         
     sampleSchedule.sort(key=lambda x: x[0]) # Sort our schedule by day before output
     return sampleSchedule
 
 def Pol_Dyn_EpsGreedy(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Epsilon-greedy policy, where the first element of policyParamList is the
     desired exploration ratio, epsilon
@@ -177,7 +177,7 @@ def Pol_Dyn_EpsGreedy(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
     
 def Pol_Dyn_EpsExpDecay(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Similar to the epsilon-greedy strategy, except that the value of epsilon
     decays exponentially over time, resulting in more exploring at the start and
@@ -220,7 +220,7 @@ def Pol_Dyn_EpsExpDecay(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_EpsFirst(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Epsilon is now the fraction of our budget we devote to exploration before
     moving to pure exploitation
@@ -262,7 +262,7 @@ def Pol_Dyn_EpsFirst(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_ThompSamp(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                      totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Thompson sampling, using the testing results achieved thus far
     """
@@ -290,7 +290,7 @@ def Pol_Dyn_ThompSamp(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_EveryOther(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Every-other sampling, where we exploit on even days, explore on odd days
     """
@@ -330,7 +330,7 @@ def Pol_Dyn_EveryOther(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_EpsSine(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Epsilon follows a sine function of the number of days that have elapsed
     """
@@ -371,7 +371,7 @@ def Pol_Dyn_EpsSine(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_TSwithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Grab intermediate and end node distribtuions via NUTS, then project onto
     end nodes for different samples from the resulting distribution; pick
@@ -431,7 +431,7 @@ def Pol_Dyn_TSwithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Grab intermediate and end node distribtuions via NUTS. Identify intermediate node
     sample variances. Pick an intermediate node, weighed towards picking those 
@@ -515,7 +515,7 @@ def Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Grab intermediate and end node distribtuions via NUTS. Identify intermediate node
     sample variances. Pick an intermediate node, weighed towards picking those 
@@ -617,7 +617,7 @@ def Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     return sampleSchedule
 
 def Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
-                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0]):
+                            totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """
     Grab intermediate and end node distribtuions via NUTS. Identify intermediate node
     distributions spread over a designated threshold value, by calculating 1/|F(t)-0.5|,

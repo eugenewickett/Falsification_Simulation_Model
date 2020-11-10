@@ -35,13 +35,12 @@ def parse_commandline():
     '''
     diag_sens, diag_spec, mult_days, sim_days, glob_dem
     '''
-    parser.add_argument('vars',type=float,nargs='+',default=[0.95,0.98,5.,200.,0.])
+    parser.add_argument('vars',type=float,nargs='+',default=[0.95,0.98,5.,600.,0.,0.,0.5])
     args = parser.parse_args()
 
     return args
 
 args = parse_commandline()
-
 #print(args.diag_sens, args.diag_spec, args.mult_days, args.sim_days)
 ### END IMPORTANT QUEST STUFF ###
 
@@ -59,31 +58,45 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
 NumSimDays = round(args.vars[3])
-samplingBudget = round(NumSimDays*(args.vars[2]))
+samplingBudget = round(args.vars[2])*NumSimDays
 diagnosticSensitivity = args.vars[0] # Tool sensitivity
 diagnosticSpecificity = args.vars[1] # Tool specificity
 globalDemand = args.vars[4] #Level of global demand increase across all outlets, in mean demand/simulation day
-numReplications = 50
+numReplications = 1
 
 
 alertIter = 100 # How frequently we're alerted of a set of replications being completed
-printOutput = False # Whether individual replication output should be displayed
-storeOutput = True # Do we store the output in an output dictionary file?
+printOutput = True # Whether individual replication output should be displayed
+storeOutput = False # Do we store the output in an output dictionary file?
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
-saveTestResults = False # Store the testing results to the output dictionary? (Greatly increases file size if True)
+saveTestResults = True # Store the testing results to the output dictionary? (Greatly increases file size if True)
 '''
 testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',
               'Dyn_EpsSine','Dyn_TSwithNUTS','Dyn_ExploreWithNUTS',
               'Dyn_ExploreWithNUTS_2','Dyn_ThresholdWithNUTS']
 '''
-testPolicy = 'Static_Deterministic'
+
+if args.vars[5] == 0.:
+    sampPolArg = 'Static_Deterministic'
+elif args.vars[5] == 1.:
+    sampPolArg = 'Static_Random'
+elif args.vars[5] == 2.:
+    sampPolArg = 'Dyn_ExploreWithNUTS_2'
+elif args.vars[5] == 3.:
+    sampPolArg = 'Dyn_ThresholdWithNUTS'   
+else:
+    print('Issue grabbing sampling policy')
+    raise SystemExit(0)
+
+testPolicy = sampPolArg
 testPolicyParam = [[100,200,300,400],0.30] # Set testing policy parameter list here
 
-OPfilename = "OP_Static_"+str(NumSimDays)+'_'+str(args.vars[2])+'_'+\
+OPfilename = "OP_"+str(NumSimDays)+'_'+str(args.vars[2])+'_'+\
             str(diagnosticSensitivity) + '_' + str(diagnosticSpecificity) + '_' +\
-            str(globalDemand) + '_' + str(time.perf_counter())
+            str(globalDemand) + '_' + str(args.vars[5]) + '_' +\
+            str(args.vars[6]) + '_' + str(time.perf_counter())
 
 # Diffusion level is set by modifying importer lead times from their suppliers,
 # affecting importer stockouts
@@ -93,8 +106,8 @@ endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
 currTrVec = []
 currStVec = []
 
-optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+optRegularizationWeight = args.vars[6] # Regularization weight to use with the MLE nonlinear optimizer
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -184,7 +197,8 @@ for rep in range(numReplications):
                                                              numDaysRemain=NumSimDays,\
                                                              totalBudget=samplingBudget,\
                                                              numBudgetRemain=BudgetRemaining,\
-                                                             policyParamList=testPolicyParam)
+                                                             policyParamList=testPolicyParam,\
+                                                             startDay=burnInDays_End)
 
     # Initialize our testing results reporting table
     TestReportTbl = []
@@ -585,22 +599,25 @@ for rep in range(numReplications):
     
     #LINEAR PROJECTION
     try:
-        estIntFalsePercList, estEndFalsePercList = simEstMethods.Est_LinearProjection(\
-                                                   A,PosData=ydata,NumSamples=numSamples,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity)
+        output_Lin = simEstMethods.Est_LinearProjection(\
+                       A,PosData=ydata,NumSamples=numSamples,\
+                       Sens=diagnosticSensitivity,\
+                       Spec=diagnosticSpecificity)
+        estIntFalsePercList = output_Lin['intProj']
+        estEndFalsePercList = output_Lin['endProj']
     except:
         print("Couldn't generate the LINEAR PROJECTION estimates")
-        
         estIntFalsePercList = []
         estEndFalsePercList = []
     
     #BERNOULLI MLE
     try:
-        estIntFalsePercList_Bern, estEndFalsePercList_Bern = simEstMethods.Est_BernoulliProjection(\
-                                                   A,PosData=ydata,NumSamples=numSamples,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity)
+        output_Bern = simEstMethods.Est_BernoulliProjection(\
+                       A,PosData=ydata,NumSamples=numSamples,\
+                       Sens=diagnosticSensitivity,\
+                       Spec=diagnosticSpecificity)
+        estIntFalsePercList_Bern = output_Bern['intProj']
+        estEndFalsePercList_Bern = output_Bern['endProj']
     except:
         print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
@@ -608,7 +625,7 @@ for rep in range(numReplications):
     
     #MLE USING NONLINEAR OPTIMIZER
     try:
-        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simEstMethods.Est_MLE_Optimizer(\
+        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simEstMethods.Est_UntrackedMLE(\
                                                    A,PosData=ydata,NumSamples=numSamples,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
@@ -647,13 +664,13 @@ for rep in range(numReplications):
     
     #SAMPLE-WISE MLE
     try:
-        estIntFalsePercList_SampMLE , estEndFalsePercList_SampMLE = simEstMethods.Est_SampleMLE_Optimizer(\
+        estIntFalsePercList_SampMLE , estEndFalsePercList_SampMLE = simEstMethods.Est_TrackedMLE(\
                                                    sampleWiseData=SampleReportTbl,\
                                                    numImp=intermediateNum,\
                                                    numOut=endNum,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
-                                                   RglrWt=50*optRegularizationWeight)
+                                                   RglrWt=optRegularizationWeight)
     except:
         print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_SampMLE = []
@@ -809,7 +826,7 @@ for rep in range(numReplications):
     ### END OF PRINT OUTPUT LOOP
     
     # Simulation end time
-    totalRunTime = [time.time() - startTime]
+    totalRunTime = time.time() - startTime
     
     if warmUpRun == False:
         # Update our output dictionary

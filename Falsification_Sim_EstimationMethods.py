@@ -197,7 +197,7 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     outDict['99lower_int'] = [simModules.invlogit(w_k[i]-z99*np.sqrt(w_Var[i]))[0] for i in range(m)]
     return outDict
 
-def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
+def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
                       Madapt=5000,delta=0.4):
     '''
     Uses the L-BFGS-B method of the SciPy Optimizer to maximize the
@@ -235,7 +235,7 @@ def Est_MLE_Optimizer(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     '''
     return simModules.invlogit(opval.x)[0:A.shape[1]].tolist(), simModules.invlogit(opval.x)[A.shape[1]:].tolist()
 
-def Est_SampleMLE_Optimizer(sampleWiseData,numImp,numOut,Sens,Spec,\
+def Est_TrackedMLE(sampleWiseData,numImp,numOut,Sens,Spec,\
                             RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
     '''
     Forms MLE sample-wise - DOES NOT use A, but instead a list of samples,
@@ -246,6 +246,7 @@ def Est_SampleMLE_Optimizer(sampleWiseData,numImp,numOut,Sens,Spec,\
     '''
     N = np.zeros(shape=(numOut,numImp))
     Y = np.zeros(shape=(numOut,numImp))
+    beta0 = -6 * np.ones(numImp+numOut) + np.random.uniform(-1,1,numImp+numOut)
     for samp in sampleWiseData:
         j,i,res = samp[0], samp[1], samp[2]
         N[i,j] += 1
@@ -258,24 +259,24 @@ def Est_SampleMLE_Optimizer(sampleWiseData,numImp,numOut,Sens,Spec,\
         pMat = np.zeros(shape=(n,m))
         for i in range(n):
             for j in range(m):
-                pMat[i,j] = th[j]+(1-th[j])*py[i]
+                pMat[i,j] = simModules.invlogit(th[j])+(1-simModules.invlogit(th[j]))\
+                            *simModules.invlogit(py[i])
         pMatTilda = np.zeros(shape=(n,m))
         for i in range(n):
             for j in range(m):
                 pMatTilda[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
         # Regularize?
         L = np.sum(np.multiply(Y,np.log(pMatTilda))+np.multiply(np.subtract(numMat,posMat),\
-                   np.log(1-pMatTilda))) - RglrWt*np.sum(np.abs(py))
+                   np.log(1-pMatTilda))) - RglrWt*np.sum(np.abs(py-beta0[m:]))
         return L*-1
-    p_0 = 0.01 * np.ones(numImp+numOut) + np.random.uniform(-0.001,0.001,numImp+numOut)
-    bds = spo.Bounds(p_0-p_0, np.ones(numImp+numOut))
-    opVal = spo.minimize(newNegLikeFunc, p_0,
+    bds = spo.Bounds(beta0-8, beta0+8)
+    opVal = spo.minimize(newNegLikeFunc, beta0,
                          args=(N,Y,Sens,Spec),
                          method='L-BFGS-B',
                          options={'disp': False},
                          bounds=bds)
     
-    return opVal.x[0:numImp].tolist(), opVal.x[numImp:].tolist()
+    return simModules.invlogit(opVal.x)[0:numImp].tolist(), simModules.invlogit(opVal.x)[numImp:].tolist()
     
 
 def Est_NUTS(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4):

@@ -36,7 +36,7 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 400
-samplingBudget = NumSimDays*10
+samplingBudget = NumSimDays*5
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.99 # Tool specificity
 globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
@@ -158,8 +158,8 @@ for rep in range(numReplications):
                                                              numDaysRemain=NumSimDays,\
                                                              totalBudget=samplingBudget,\
                                                              numBudgetRemain=BudgetRemaining,\
-                                                             policyParamList=testPolicyParam)
-
+                                                             policyParamList=testPolicyParam,\
+                                                             startDay=burnInDays_End)
     # Initialize our testing results reporting table
     TestReportTbl = []
     SampleReportTbl = []
@@ -563,6 +563,7 @@ for rep in range(numReplications):
         output_Lin = simEstMethods.Est_LinearProjection(A,PosData=ydata,\
                                     NumSamples=numSamples,Sens=diagnosticSensitivity,\
                                     Spec=diagnosticSpecificity)
+        
         estIntFalsePercList = output_Lin['intProj']
         estEndFalsePercList = output_Lin['endProj']
     except:
@@ -572,11 +573,12 @@ for rep in range(numReplications):
 
     #BERNOULLI MLE
     try:
-         output_Bern = simEstMethods.Est_BernoulliProjection(A,PosData=ydata,\
-                                        NumSamples=numSamples,Sens=diagnosticSensitivity,\
-                                        Spec=diagnosticSpecificity)
-         estIntFalsePercList_Bern = output_Bern['intProj']
-         estEndFalsePercList_Bern = output_Bern['endProj']
+        output_Bern = simEstMethods.Est_BernoulliProjection(A,PosData=ydata,\
+                                    NumSamples=numSamples,Sens=diagnosticSensitivity,\
+                                    Spec=diagnosticSpecificity)
+     
+        estIntFalsePercList_Bern = output_Bern['intProj']
+        estEndFalsePercList_Bern = output_Bern['endProj']
     except:
         print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
@@ -584,7 +586,7 @@ for rep in range(numReplications):
 
     #MLE USING NONLINEAR OPTIMIZER
     try:
-        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simEstMethods.Est_MLE_Optimizer(\
+        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simEstMethods.Est_UntrackedMLE(\
                                                    A,PosData=ydata,NumSamples=numSamples,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
@@ -623,20 +625,20 @@ for rep in range(numReplications):
     
     #SAMPLE-WISE MLE
     try:
-        estIntFalsePercList_SampMLE , estEndFalsePercList_SampMLE = simEstMethods.Est_SampleMLE_Optimizer(\
+        estIntFalsePercList_SampMLE , estEndFalsePercList_SampMLE = simEstMethods.Est_TrackedMLE(\
                                                    sampleWiseData=SampleReportTbl,\
                                                    numImp=intermediateNum,\
                                                    numOut=endNum,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
-                                                   RglrWt=50*optRegularizationWeight)
+                                                   RglrWt=optRegularizationWeight)
     except:
         print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_SampMLE = []
         estEndFalsePercList_SampMLE = []
     
     # Simulation end time
-    totalRunTime = [time.time() - startTime]
+    totalRunTime = time.time() - startTime
     
     if printOutput == True: # Printing of tables and charts
         # PRINT RESULTS TABLES
@@ -706,9 +708,9 @@ for rep in range(numReplications):
         plt.show()
 
         # Intermediate nodes
-        fig, axs = plt.subplots(4, 1,figsize=(9,13))
+        fig, axs = plt.subplots(3, 1,figsize=(9,13))
         fig.suptitle('Intermediate Node SF % Estimates',fontsize=18)
-        for subP in range(4):
+        for subP in range(3):
             axs[subP].set_xlabel('Intermediate Node',fontsize=12)
             axs[subP].set_ylabel('Est. SF %',fontsize=12)
             axs[subP].set_ylim([0.0,1.0])
@@ -718,22 +720,22 @@ for rep in range(numReplications):
         axs[0].set_title('Linear projection',fontweight='bold')
         axs[0].bar(Intermediate_Plot_x,estIntFalsePercList,color='thistle',edgecolor='indigo')
         # Bernoulli MLE projection
-        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-        axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='mediumspringgreen',edgecolor='green')
+        #axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+        #axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='mediumspringgreen',edgecolor='green')
         # MLE w Nonlinear optimizer
-        axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-        axs[2].bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')
+        axs[1].set_title('Untracked MLE',fontweight='bold')
+        axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')
         # Sample MLE
-        axs[3].set_title('Sample MLE',fontweight='bold')
-        axs[3].bar(Intermediate_Plot_x,estIntFalsePercList_SampMLE,color='deepskyblue',edgecolor='darkcyan')
+        axs[2].set_title('Tracked MLE',fontweight='bold')
+        axs[2].bar(Intermediate_Plot_x,estIntFalsePercList_SampMLE,color='deepskyblue',edgecolor='darkcyan')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
 
         # End nodes
-        fig, axs = plt.subplots(4, 1,figsize=(17,13))
+        fig, axs = plt.subplots(3, 1,figsize=(17,13))
         fig.suptitle('End Node SF % Estimates',fontsize=18)
-        for subP in range(4):
+        for subP in range(3):
             axs[subP].set_xlabel('End Node',fontsize=12)
             axs[subP].set_ylabel('Est. SF %',fontsize=12)
             axs[subP].tick_params(labelrotation=90)
@@ -744,14 +746,14 @@ for rep in range(numReplications):
         axs[0].set_title('Linear projection',fontweight='bold')
         axs[0].bar(End_Plot_x,estEndFalsePercList,color='peachpuff',edgecolor='red')
         # Bernoulli MLE projection
-        axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
-        axs[1].bar(End_Plot_x,estEndFalsePercList_Bern,color='khaki',edgecolor='goldenrod')
+        #axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
+        #axs[1].bar(End_Plot_x,estEndFalsePercList_Bern,color='khaki',edgecolor='goldenrod')
         # MLE w Nonlinear optimizer
-        axs[2].set_title('MLE w/ Nonlinear Optimizer',fontweight='bold')
-        axs[2].bar(End_Plot_x,estEndFalsePercList_Plum,color='lightcyan',edgecolor='teal')
+        axs[1].set_title('Untracked MLE',fontweight='bold')
+        axs[1].bar(End_Plot_x,estEndFalsePercList_Plum,color='lightcyan',edgecolor='teal')
         # Sample MLE
-        axs[3].set_title('Sample MLE',fontweight='bold')
-        axs[3].bar(End_Plot_x,estEndFalsePercList_SampMLE,color='pink',edgecolor='deeppink')
+        axs[2].set_title('Tracked MLE',fontweight='bold')
+        axs[2].bar(End_Plot_x,estEndFalsePercList_SampMLE,color='pink',edgecolor='deeppink')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()

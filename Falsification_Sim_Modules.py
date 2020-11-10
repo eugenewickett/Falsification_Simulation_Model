@@ -16,16 +16,17 @@ import os
 import sys
 import pickle
 import matplotlib.pyplot as plt
-import winsound
+#import winsound #COMMENT OUT BEFORE SENDING TO QUEST
 import Falsification_Sim_Classes as simClasses # modules for the simulation
 
+'''
 def CEOTTKbeep():
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**10)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**12)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)  
-
+'''
 
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',

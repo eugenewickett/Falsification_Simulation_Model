@@ -15,7 +15,7 @@ os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsi
 import Falsification_Sim_Modules as simModules
 
 directory = r'C:\Users\eugen\OneDrive\Documents\EAGER Project\Simulator'+\
-         '\Sim Model Files TOO BIG FOR REPO\Consolidated Budgets & Diagnostics'
+         '\Sim Model Files TOO BIG FOR REPO'
 # BAD INTERMEDIATE NODE
 OPFileNames = os.listdir(directory)
 OPDicts = []
@@ -61,5 +61,25 @@ for i in range(5):
 
 len(OPDicts)
 len(OPDicts[6])
-OPDicts[8][3]['intFalseEstimates']
+OPDicts[1][0]['intFalseEstimates_Plum']
+
+currOutputLine = {'inputParameterDictionary':inputParameterDictionary,
+                          'rootConsumption':List_RootConsumption,
+                          'intDemandResults':List_demandResultsInt,
+                          'endDemandResults':List_demandResultsEnd,
+                          'testResults':TestReportTblToSend,
+                          'dynTestResults':List_TestResults,
+                          'intFalseEstimates':estIntFalsePercList,
+                          'endFalseEstimates':estEndFalsePercList,
+                          'intFalseEstimates_Bern':estIntFalsePercList_Bern,
+                          'endFalseEstimates_Bern':estEndFalsePercList_Bern,
+                          'intFalseEstimates_Plum':estIntFalsePercList_Plum,
+                          'endFalseEstimates_Plum':estEndFalsePercList_Plum,
+                          'intFalseEstimates_SampMLE':estIntFalsePercList_SampMLE,
+                          'endFalseEstimates_SampMLE':estEndFalsePercList_SampMLE,
+                          'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples,
+                          'intSFTrueValues':intSFVec,'endSFTrueValues':endSFVecCombo,
+                          'simStartTime':startTime,
+                          'simRunTime':totalRunTime
+                          }
 '''
