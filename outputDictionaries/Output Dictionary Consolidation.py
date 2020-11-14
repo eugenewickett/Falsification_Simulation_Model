@@ -15,7 +15,7 @@ import pickle # for saving/loading objects in Python
 #os.getcwd() Run this command to get the current working directory string
 # SET DIRECTORY LOCATION HERE
 directory = r'C:\Users\eugen\OneDrive\Documents\EAGER Project\Simulator'+\
-         '\Sim Model Files TOO BIG FOR REPO\Sampling Budgets and Diagnostics' # Set directory    
+         '\Sim Model Files TOO BIG FOR REPO\SIXNOV_RUNS' # Set directory    
 
 os.chdir(directory)
 

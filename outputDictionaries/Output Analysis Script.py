@@ -15,16 +15,37 @@ os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsi
 import Falsification_Sim_Modules as simModules
 
 directory = r'C:\Users\eugen\OneDrive\Documents\EAGER Project\Simulator'+\
-         '\Sim Model Files TOO BIG FOR REPO'
+         '\Sim Model Files TOO BIG FOR REPO\SIXNOV_RUNS\Consolidated Files'
 # BAD INTERMEDIATE NODE
 OPFileNames = os.listdir(directory)
+'''
+OPFileNames=['OP_600_10.0_0.99_0.85_0.0_0.0_0.5',
+             'OP_600_10.0_0.99_0.95_0.0_0.0_0.5',
+             'OP_600_10.0_0.99_0.9_0.0_0.0_0.5',
+             'OP_600_10.0_0.99_0.99_0.0_0.0_0.5',
+             'OP_600_10.0_0.99_0.85_80.0_0.0_0.5',
+             'OP_600_10.0_0.99_0.95_80.0_0.0_0.5',
+             'OP_600_10.0_0.99_0.9_80.0_0.0_0.5',
+             'OP_600_10.0_0.99_0.99_80.0_0.0_0.5'
+             ]
+'''
+
 OPDicts = []
 for item in OPFileNames:
-    fileName1 = directory + '\\'+item
-    outputDict1 = pickle.load(open(fileName1, 'rb'))
-    OPDicts.append(outputDict1)
+    if len(OPDicts) < 10:
+        fileName1 = directory + '\\'+item
+        outputDict1 = pickle.load(open(fileName1, 'rb'))
+        OPDicts.append(outputDict1)
 
 
+simModules.SimSFEstimateOutput(OPDicts,OPFileNames)
+
+
+OPDicts[2][0]['inputParameterDictionary']
+
+
+
+'''
 OPDicts1 = OPDicts[0:20]
 OPFileNames1 = OPFileNames[0:20]
 OPDicts2 = OPDicts[20:40]
@@ -36,24 +57,27 @@ OPFileNames4 = OPFileNames[60:80]
 OPDicts5 = OPDicts[80:]
 OPFileNames5 = OPFileNames[80:]
 
-simModules.SimSFEstimateOutput(OPDicts2,OPFileNames2)
+currOutputLine = {'inputParameterDictionary':inputParameterDictionary,
+                          'rootConsumption':List_RootConsumption,
+                          'intDemandResults':List_demandResultsInt,
+                          'endDemandResults':List_demandResultsEnd,
+                          'testResults':TestReportTblToSend,
+                          'dynTestResults':List_TestResults,
+                          'intFalseEstimates':estIntFalsePercList,
+                          'endFalseEstimates':estEndFalsePercList,
+                          'intFalseEstimates_Bern':estIntFalsePercList_Bern,
+                          'endFalseEstimates_Bern':estEndFalsePercList_Bern,
+                          'intFalseEstimates_Plum':estIntFalsePercList_Plum,
+                          'endFalseEstimates_Plum':estEndFalsePercList_Plum,
+                          'intFalseEstimates_SampMLE':estIntFalsePercList_SampMLE,
+                          'endFalseEstimates_SampMLE':estEndFalsePercList_SampMLE,
+                          'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples,
+                          'intSFTrueValues':intSFVec,'endSFTrueValues':endSFVecCombo,
+                          'simStartTime':startTime,
+                          'simRunTime':totalRunTime
+                          }
 
-OPDicts_PerfDiag_Names = ['OP_Static_200_0.6_0.99_0.99_0.0',\
-                          'OP_Static_200_0.9_0.99_0.99_0.0',\
-                          'OP_Static_200_1.2_0.99_0.99_0.0',\
-                          'OP_Static_200_1.5_0.99_0.99_0.0',\
-                          'OP_Static_200_1.8_0.99_0.99_0.0',\
-                          'OP_Static_200_2.1_0.99_0.99_0.0',\
-                          'OP_Static_200_2.4_0.99_0.99_0.0',\
-                          'OP_Static_200_2.7_0.99_0.99_0.0',\
-                          'OP_Static_200_3.0_0.99_0.99_0.0']
-OPDicts_PerfDiag = []
-for item in OPDicts_PerfDiag_Names:
-    fileName1 = directory + '\\'+item
-    outputDict1 = pickle.load(open(fileName1, 'rb'))
-    OPDicts_PerfDiag.append(outputDict1)
-
-simModules.SimSFEstimateOutput(OPDicts_PerfDiag,OPDicts_PerfDiag_Names)
+'''
 
 '''
 for i in range(5):

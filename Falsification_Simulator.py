@@ -35,10 +35,10 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
-NumSimDays = 400
-samplingBudget = NumSimDays*5
-diagnosticSensitivity = 0.95 # Tool sensitivity
-diagnosticSpecificity = 0.99 # Tool specificity
+NumSimDays = 600
+samplingBudget = NumSimDays*1
+diagnosticSensitivity = 0.99 # Tool sensitivity
+diagnosticSpecificity = 0.9 # Tool specificity
 globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
 numReplications = 1
 
@@ -661,7 +661,7 @@ for rep in range(numReplications):
         print('*'*100)
         print('OVERALL SUMMARY STATISTICS')
         print('*'*100)
-        print(tabulate([totalRunTime+TestOverallSummary],headers=['Simulation Run Time','Total Tests','SFPs Found','Stocked Out Found']))
+        print(tabulate([[totalRunTime]+TestOverallSummary],headers=['Simulation Run Time','Total Tests','SFPs Found','Stocked Out Found']))
 
         # GENERATE PLOTS
         # Root consumption %'s
