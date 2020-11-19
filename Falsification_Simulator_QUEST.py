@@ -645,7 +645,7 @@ for rep in range(numReplications):
             '''
             Commented out, as we want to store the actual samples, but don't want to run the NUTS
             algorithm twice (getting samples one time, mean estimates another time).
-            estIntFalsePercList_NUTS, estEndFalsePercList_NUTS = simEstMethods.Est_NUTS(\
+            estIntFalsePercList_NUTS, estEndFalsePercList_NUTS = simEstMethods.Est_PostSamps_Untracked(\
                                                    A,PosData=ydata,NumSamples=numSamples,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\

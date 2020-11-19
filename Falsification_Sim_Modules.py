@@ -163,39 +163,6 @@ def demandScheduleGenerator_EndNode(int_numDays=1000,
 
  ### END "demandScheduleGenerator_EndNode" ###       
 
-def GenerateTransitionMatrix(dynamicResultsList):
-    # Results list should be in form 
-    #   [Node ID, Num Samples, Num Positive, Positive Rate, [IntNodeSourceCounts]]
-    rowNum = len(dynamicResultsList)
-    colNum = len(dynamicResultsList[0][4])
-    A = np.zeros([rowNum,colNum])
-    indRow = 0
-    for rw in dynamicResultsList:        
-        currRowTotal = np.sum(rw[4])
-        if not currRowTotal == 0:
-            transRow = rw[4]/currRowTotal
-        else:
-            transRow = np.zeros([1,colNum],np.int8).tolist()[0]
-        
-        A[indRow] = transRow
-        indRow += 1
-    
-    return A
-
-def GenerateNUTSsamples(posData,numSamples,A,sens,spec,M,Madapt,delta):
-    def exampletargetfornuts(beta):
-        """
-        Example of a target distribution that could be sampled from using NUTS.
-        (Although of course you could sample from it more efficiently)
-        Doesn't include the normalizing constant.
-        """
-        return mylogpost(beta,posData,numSamples,A,sens,spec), mylogpost_grad(beta,posData,numSamples,A,sens,spec)
-
-    beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
-    samples, lnprob, epsilon = nuts6(exampletargetfornuts,M,Madapt,beta0,delta)
-    
-    return samples
-
 def SimReplicationOutput(OPdict):
     """
     Generates output tables and plots for a given output dictionary, OPdict.
@@ -1749,8 +1716,108 @@ def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
     
     
     return numReps, warmUpRunBool, useWarmUpFileBool, warmUpDirectory, warmUpFileName_str, warmUpDict
+
+
+#### Some useful functions 
+def GenerateTransitionMatrix(dynamicResultsList):
+    # Results list should be in form 
+    #   [Node ID, Num Samples, Num Positive, Positive Rate, [IntNodeSourceCounts]]
+    rowNum = len(dynamicResultsList)
+    colNum = len(dynamicResultsList[0][4])
+    A = np.zeros([rowNum,colNum])
+    indRow = 0
+    for rw in dynamicResultsList:        
+        currRowTotal = np.sum(rw[4])
+        if not currRowTotal == 0:
+            transRow = rw[4]/currRowTotal
+        else:
+            transRow = np.zeros([1,colNum],np.int8).tolist()[0]
+        
+        A[indRow] = transRow
+        indRow += 1
     
+    return A
+
+def GenerateNUTSsamples(posData,numSamples,A,sens,spec,M,Madapt,delta):
+    def exampletargetfornuts(beta):
+        """
+        Example of a target distribution that could be sampled from using NUTS.
+        (Although of course you could sample from it more efficiently)
+        Doesn't include the normalizing constant.
+        """
+        return mylogpost(beta,posData,numSamples,A,sens,spec), mylogpost_grad(beta,posData,numSamples,A,sens,spec)
+
+    beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
+    samples, lnprob, epsilon = nuts6(exampletargetfornuts,M,Madapt,beta0,delta)
+    
+    return samples
+
+
 #### Likelihood estimate functions
+
+def TRACKED_NegLikeFunc(pVec,numMat,posMat,sens,spec,RglrWt):
+    # pVec should be [importers, outlets]
+    n,m = numMat.shape
+    th=pVec[:m]
+    py = pVec[m:]
+    betaInitial = -6*np.ones(m+n)
+    pMat = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))\
+                        *invlogit(py[i])
+    pMatTilda = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMatTilda[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+    
+    L = np.sum(np.multiply(posMat,np.log(pMatTilda))+np.multiply(np.subtract(numMat,posMat),\
+               np.log(1-pMatTilda))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
+    return L*-1
+
+def TRACKED_NegLikeFunc_Jac(pVec,numMat,posMat,sens,spec,RglrWt):
+    # pVec should be [importers, outlets]
+    n,m = numMat.shape
+    th=pVec[:m]
+    py = pVec[m:]
+    betaInitial = -6*np.ones(m+n)
+    pMat = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))\
+                        *invlogit(py[i])
+    pMatTilda = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMatTilda[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+    
+    #Grab importers partials first, then outlets
+    partialsVec = []
+    
+    for impInd in range(m):
+        term=np.exp(-1*th[impInd])/((np.exp(-1*th[impInd])+1)**2)
+        currImpPartial = np.sum([posMat[a,impInd]*(1-invlogit(py[a]))*term*(sens+spec-1)/pMatTilda[a,impInd]
+                                - (numMat[a,impInd]-posMat[a,impInd])*(1-invlogit(py[a]))*term*(sens+spec-1)/(1-pMatTilda[a,impInd])                                
+                                 for a in range(n)])
+        partialsVec.append(currImpPartial)
+    for outInd in range(n):
+        term=np.exp(-1*py[outInd])/((np.exp(-1*th[impInd])+1)**2)
+        if py[outInd] > betaInitial[m+outInd-1]:
+            c = 1
+        elif py[outInd] < betaInitial[m+outInd-1]:
+            c = -1
+        else:
+            c = 0
+        currOutPartial = np.sum([posMat[outInd,b]*(1-invlogit(th[b]))*term*(sens+spec-1)/pMatTilda[outInd,b]
+                                - (numMat[outInd,b]-posMat[outInd,b])*(1-invlogit(th[b]))*term*(sens+spec-1)/(1-pMatTilda[outInd,b])
+                                - 0#RglrWt*c                               
+                                 for b in range(m)])
+        partialsVec.append(currOutPartial)
+        
+    return [partialsVec[i]*-1 for i in range(len(partialsVec))]
+
+
+
 def invlogit(beta):
     return sps.expit(beta)
     

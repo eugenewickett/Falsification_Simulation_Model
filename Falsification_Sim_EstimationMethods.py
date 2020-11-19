@@ -236,7 +236,7 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     return simModules.invlogit(opval.x)[0:A.shape[1]].tolist(), simModules.invlogit(opval.x)[A.shape[1]:].tolist()
 
 def Est_TrackedMLE(sampleWiseData,numImp,numOut,Sens,Spec,\
-                            RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
+                            RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_List=[]):
     '''
     Forms MLE sample-wise - DOES NOT use A, but instead a list of samples,
     which should be entered [importer index, outlet index, result in {0,1}].
@@ -246,40 +246,33 @@ def Est_TrackedMLE(sampleWiseData,numImp,numOut,Sens,Spec,\
     '''
     N = np.zeros(shape=(numOut,numImp))
     Y = np.zeros(shape=(numOut,numImp))
-    beta0 = -6 * np.ones(numImp+numOut) + np.random.uniform(-1,1,numImp+numOut)
     for samp in sampleWiseData:
         j,i,res = samp[0], samp[1], samp[2]
         N[i,j] += 1
         Y[i,j] += res
-    def newNegLikeFunc(pVec,numMat, posMat,sens,spec):
-        # pVec should be [importers, outlets]
-        n,m = numMat.shape
-        th=pVec[:m]
-        py = pVec[m:]
-        pMat = np.zeros(shape=(n,m))
-        for i in range(n):
-            for j in range(m):
-                pMat[i,j] = simModules.invlogit(th[j])+(1-simModules.invlogit(th[j]))\
-                            *simModules.invlogit(py[i])
-        pMatTilda = np.zeros(shape=(n,m))
-        for i in range(n):
-            for j in range(m):
-                pMatTilda[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
-        # Regularize?
-        L = np.sum(np.multiply(Y,np.log(pMatTilda))+np.multiply(np.subtract(numMat,posMat),\
-                   np.log(1-pMatTilda))) - RglrWt*np.sum(np.abs(py-beta0[m:]))
-        return L*-1
-    bds = spo.Bounds(beta0-8, beta0+8)
-    opVal = spo.minimize(newNegLikeFunc, beta0,
-                         args=(N,Y,Sens,Spec),
-                         method='L-BFGS-B',
-                         options={'disp': False},
-                         bounds=bds)
     
-    return simModules.invlogit(opVal.x)[0:numImp].tolist(), simModules.invlogit(opVal.x)[numImp:].tolist()
+    if beta0_List == []: # We do not have any initial points to test; generate a generic initial point
+        beta0_List.append(-6 * np.ones(numImp+numOut) + np.random.uniform(-1,1,numImp+numOut))
+    
+    #Loop through each possible initial point and store the optimal solution likelihood values
+    likelihoodsList = []
+    solsList = []
+    bds = spo.Bounds(np.zeros(numImp+numOut)-8, np.zeros(numImp+numOut)+8)
+    for curr_beta0 in beta0_List:
+        opVal = spo.minimize(simModules.TRACKED_NegLikeFunc,
+                             curr_beta0,
+                             args=(N,Y,Sens,Spec,RglrWt),
+                             method='L-BFGS-B',
+                             options={'disp': False},
+                             bounds=bds)
+        likelihoodsList.append(opVal.fun)
+        solsList.append(opVal.x)
+    best_x = solsList[np.argmin(likelihoodsList)]
+    
+    return simModules.invlogit(best_x)[0:numImp].tolist(), simModules.invlogit(best_x)[numImp:].tolist()
     
 
-def Est_NUTS(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
+def Est_PostSamps_Untracked(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
     '''
     Returns the mean estimate of M NUTS samples, using the Madapt and delta
     parameters and given testing data

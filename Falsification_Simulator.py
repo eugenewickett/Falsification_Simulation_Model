@@ -37,8 +37,8 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 # Enter the length of the simulation and the sampling budget
 NumSimDays = 600
 samplingBudget = NumSimDays*1
-diagnosticSensitivity = 0.99 # Tool sensitivity
-diagnosticSpecificity = 0.9 # Tool specificity
+diagnosticSensitivity = 0.95 # Tool sensitivity
+diagnosticSpecificity = 0.98 # Tool specificity
 globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
 numReplications = 1
 
@@ -67,7 +67,7 @@ endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
 currTrVec = []
 currStVec = []
 
-optRegularizationWeight = 0.5 # Regularization weight to use with the MLE nonlinear optimizer
+optRegularizationWeight = 0.1 # Regularization weight to use with the MLE nonlinear optimizer
 lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
@@ -606,7 +606,7 @@ for rep in range(numReplications):
             '''
             Commented out, as we want to store the actual samples, but don't want to run the NUTS
             algorithm twice (getting samples one time, mean estimates another time).
-            estIntFalsePercList_NUTS, estEndFalsePercList_NUTS = simEstMethods.Est_NUTS(\
+            estIntFalsePercList_NUTS, estEndFalsePercList_NUTS = simEstMethods.Est_PostSamps_Untracked(\
                                                    A,PosData=ydata,NumSamples=numSamples,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
@@ -631,7 +631,8 @@ for rep in range(numReplications):
                                                    numOut=endNum,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
-                                                   RglrWt=optRegularizationWeight)
+                                                   RglrWt=optRegularizationWeight,\
+                                                   beta0_List=[])
     except:
         print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
         estIntFalsePercList_SampMLE = []
