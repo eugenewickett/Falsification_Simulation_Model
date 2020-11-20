@@ -194,13 +194,7 @@ for rep in range(numReplications):
             intSFVec.append(0.75)
         for indEnd in range(1):
             intSFVec.append(0.9)
-        
-        '''
-        OLD WAY
-        SFscenarios = [0.00,0.10,0.25,0.50,0.75,0.90]
-        for indInt in range(intermediateNum):
-            intSFVec.append(np.random.choice(SFscenarios))
-        '''    
+    
     else:
         for indInt in range(intermediateNum):
             intSFVec.append(0)
@@ -637,6 +631,7 @@ for rep in range(numReplications):
         estIntMLE_Untracked = []
         estEndMLE_Untracked = []
     ### END UNTRACKED MLE ###
+    
     #TRACKED MLE
     try:
         k = 10

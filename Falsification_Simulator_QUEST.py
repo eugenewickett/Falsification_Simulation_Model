@@ -66,7 +66,7 @@ numReplications = 1
 
 
 alertIter = 100 # How frequently we're alerted of a set of replications being completed
-printOutput = True # Whether individual replication output should be displayed
+printOutput = False # Whether individual replication output should be displayed
 storeOutput = False # Do we store the output in an output dictionary file?
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
@@ -686,6 +686,7 @@ for rep in range(numReplications):
         estIntMLE_Untracked = []
         estEndMLE_Untracked = []
     ### END UNTRACKED MLE ###
+    
     #TRACKED MLE
     try:
         k = 10

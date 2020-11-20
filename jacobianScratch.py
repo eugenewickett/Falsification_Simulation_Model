@@ -38,7 +38,9 @@ for k in range(m+n):
     beta1 = 1*beta0[:]
     beta1[k] = beta1[k] + 10**(-5)
     L1 = simModules.TRACKED_NegLogLikeFunc(beta1,N,Y,Sens, Spec,wt)
-    print((L1-L0) * (10 **(5)))
+    if k==0:
+        c=(L1-L0) * (10 **(5))/dL0[k]
+    print((L1-L0) * (10 **(5))/c) 
     print(dL0[k])
 
 bds = spo.Bounds(np.zeros(n+m)-8, np.zeros(m+n)+8)
@@ -49,10 +51,38 @@ opVal = spo.minimize(simModules.TRACKED_NegLogLikeFunc,
                              options={'disp': False},
                              bounds=bds)
 
-#jac=simModules.TRACKED_NegLikeFunc_Jac,
 simModules.invlogit(opVal.x)        
 
 pVec,numMat,posMat,sens,spec,RglrWt = opVal.x,N,Y,Sens,Spec,wt
+
+lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 
+postSamps_tr = simModules.GeneratePostSamps_TRACKED(N,Y,Sens,Spec,wt,\
+                                                  lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_axes([0,0,2,1])
+ax.set_xlabel('Intermediate Node',fontsize=16)
+ax.set_ylabel('Est. model parameter distribution',fontsize=16)
+for i in range(m):
+    plt.hist(simModules.invlogit(postSamps_tr[:,i]))
+
+fig = plt.figure()
+ax = fig.add_axes([0,0,2,1])
+ax.set_xlabel('End Node',fontsize=16)
+ax.set_ylabel('Est. model parameter distribution',fontsize=16)
+for i in range(n):
+    plt.hist(simModules.invlogit(postSamps_tr[:,m+i]))
+
+meanSampVec = []
+for i in range(m):
+    meanSampVec.append(np.mean(simModules.invlogit(postSamps_tr[:,i])))
+for i in range(n):
+    meanSampVec.append(np.mean(simModules.invlogit(postSamps_tr[:,i+m])))
+meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
+
+
+
 
 #UNTRACKED
 Q = np.array([[0.5,0.2,0.3],
@@ -74,7 +104,9 @@ for k in range(m+n):
     beta1 = 1*beta0[:]
     beta1[k] = beta1[k] + 10**(-5)
     L1 = simModules.UNTRACKED_NegLogLikeFunc(beta1,N,Y,Sens, Spec,Q,wt)
-    print((L1-L0) * (10 **(5)))
+    if k==0:
+        c=(L1-L0) * (10 **(5))/dL0[k]
+    print((L1-L0) * (10 **(5))/c)
     print(dL0[k])
 
 bds = spo.Bounds(beta0-8, beta0+8)
@@ -130,33 +162,6 @@ for i in range(n):
     for j in range(m):
         N[i,j] += numSamps
         Y[i,j] += np.random.binomial(numSamps,trackPtildes[i,j])
-
-lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 
-postSamps = simModules.GeneratePostSamps_TRACKED(N,Y,Sens,Spec,wt,\
-                                                  lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
-
-
-fig = plt.figure()
-ax = fig.add_axes([0,0,2,1])
-ax.set_xlabel('Intermediate Node',fontsize=16)
-ax.set_ylabel('Est. model parameter distribution',fontsize=16)
-for i in range(m):
-    plt.hist(simModules.invlogit(postSamps[:,i]))
-
-fig = plt.figure()
-ax = fig.add_axes([0,0,2,1])
-ax.set_xlabel('End Node',fontsize=16)
-ax.set_ylabel('Est. model parameter distribution',fontsize=16)
-for i in range(n):
-    plt.hist(simModules.invlogit(postSamps[:,m+i]))
-
-meanSampVec = []
-for i in range(m):
-    meanSampVec.append(np.mean(simModules.invlogit(postSamps[:,i])))
-for i in range(n):
-    meanSampVec.append(np.mean(simModules.invlogit(postSamps[:,i+m])))
-meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
-
 
 
 

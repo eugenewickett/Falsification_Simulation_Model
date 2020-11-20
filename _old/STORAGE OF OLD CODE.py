@@ -569,20 +569,56 @@ def dynamicTestingGenerator(resultsList,
 
 
  ### END "dynamicTestingGenerator" ###
+'''
+   
+''' DELETE???
+def myloglik(beta, ydata, nsamp, A, sens, spec):
+    betaI = beta[0:A.shape[1]]
+    betaJ = beta[A.shape[1]:]
+    probs = (1-invlogit(betaJ)) * np.squeeze(np.matmul(A,invlogit(betaI)))  + invlogit(betaJ)
+    probsz = probs*sens + (1-probs) * (1-spec)
+    return np.sum(ydata * np.log(probsz) + (np.asarray(nsamp)-np.asarray(ydata)) * np.log(1-probsz))
+
+def mynegloglik_grad(beta, nsamp, ydata, sens, spec, A):
+    betaI = beta[0:A.shape[1]]
+    betaJ = beta[A.shape[1]:]
+    iliJ = invlogit(betaJ)
+    iliJg = np.diag(iliJ * (1-iliJ))
+    iliI = invlogit(betaI)
+    AiliI = A * iliI
+    AiliIg = AiliI * (1-iliI)
+    AiliI = np.sum(AiliI,1)
+    probs = (1-iliJ) * AiliI + iliJ
     
+    probs_dirJ = -iliJg * AiliI + iliJg
+    probs_dirI =  AiliIg.T * (1- iliJ)
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    '''
+    probz_dirI = probs_dirI*sens - (probs_dirI) * (1-spec)
+    probz_dirJ = probs_dirJ*sens - (probs_dirJ) * (1-spec)
+    probsz = probs*sens + (1-probs) * (1-spec)
+    negloglikI =  -np.sum((np.asarray(ydata) / probsz  - (np.asarray(nsamp)-np.asarray(ydata)) / (1-probsz)) *  (probz_dirI),1) 
+    negloglikJ =  -np.sum((np.asarray(ydata) / probsz  - (np.asarray(nsamp)-np.asarray(ydata)) / (1-probsz)) *  (probz_dirJ),1) 
+
+    return np.concatenate((negloglikI,negloglikJ))
+
+def mynegloglik(beta, ydata, nsamp, A, sens, spec):
+    betaI = beta[0:A.shape[1]]
+    betaJ = beta[A.shape[1]:]   
+    probs = (1-invlogit(betaJ)) * np.matmul(A,invlogit(betaI)) + invlogit(betaJ)
+    probsz = probs*sens + (1-probs) * (1-spec)
+    return -np.sum(np.asarray(ydata) * np.log(probsz) + (np.asarray(nsamp)-np.asarray(ydata)) * np.log(1-probsz))
+
+def mylogprior(beta, ydata, nsamp, A, sens, spec):
+    #betaJ = beta[A.shape[1]:]
+    return -0.25*np.sum(np.abs(beta + 3))
+
+def mylogprior_grad(beta, ydata, nsamp, A, sens, spec):
+    #betaI = beta[0:A.shape[1]]
+    #betaJ = beta[A.shape[1]:]
+    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3))
+
+def mylogpost(beta, ydata, nsamp, A, sens, spec):
+    return mylogprior(beta, ydata, nsamp, A, sens, spec)+myloglik(beta, ydata, nsamp, A, sens, spec)
+'''
+
+
