@@ -1819,11 +1819,6 @@ def UNTRACKED_LogPost_Grad(beta, nsamp, ydata, sens, spec, A):
 
 def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,delta):
     def UNTRACKEDtargetForNUTS(beta):
-        """
-        Example of a target distribution that could be sampled from using NUTS.
-        (Although of course you could sample from it more efficiently)
-        Doesn't include the normalizing constant.
-        """
         return UNTRACKED_LogPost(beta,numSamples,posData,sens,spec,A),\
                UNTRACKED_LogPost_Grad(beta,numSamples,posData,sens,spec,A)
 
@@ -1917,11 +1912,6 @@ def TRACKED_LogPost_Grad(beta, N, Y, sens, spec):
            -TRACKED_NegLogLikeFunc_Jac(beta,N,Y,sens,spec,0)
 def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta):
     def TRACKEDtargetForNUTS(beta):
-        """
-        Example of a target distribution that could be sampled from using NUTS.
-        (Although of course you could sample from it more efficiently)
-        Doesn't include the normalizing constant.
-        """
         return TRACKED_LogPost(beta,N,Y,sens,spec),\
                TRACKED_LogPost_Grad(beta,N,Y,sens,spec)
 
