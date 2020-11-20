@@ -615,15 +615,15 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                 currBernProj = currDict[repNum]['intFalseEstimates_Bern']
             else:
                 currBernProj = [np.nan for i in range(len(currTrueSFVec))]
-            if not currDict[repNum]['intFalseEstimates_Plum'] == []:
-                currMLEProj = currDict[repNum]['intFalseEstimates_Plum']
+            if not currDict[repNum]['intEstMLE_Untracked'] == []:
+                currMLEProj = currDict[repNum]['intEstMLE_Untracked']
             else:
                 currMLEProj = [np.nan for i in range(len(currTrueSFVec))]
-            if not currDict[repNum]['intFalseEstimates_SampMLE'] == []:
-                currMLEtrProj = currDict[repNum]['intFalseEstimates_SampMLE']
+            if not currDict[repNum]['intEstMLE_Tracked'] == []:
+                currMLEtrProj = currDict[repNum]['intEstMLE_Tracked']
             else:
                 currMLEtrProj = [np.nan for i in range(len(currTrueSFVec))]    
-            currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
+            currNUTSsamples = currDict[repNum]['postSamps_Untracked']
             hasNUTS = True
             if currNUTSsamples == []: # No NUTS samples included
                 hasNUTS = False
@@ -858,15 +858,15 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                         currScenBernProj = [currDict[repNum]['intFalseEstimates_Bern'][i] for i in currScenInds]
                     else:
                         currScenBernProj = [np.nan for i in range(len(currScenInds))]
-                    if not currDict[repNum]['intFalseEstimates_Plum'] == []:
-                        currScenMLEProj = [currDict[repNum]['intFalseEstimates_Plum'][i] for i in currScenInds]
+                    if not currDict[repNum]['intEstMLE_Untracked'] == []:
+                        currScenMLEProj = [currDict[repNum]['intEstMLE_Untracked'][i] for i in currScenInds]
                     else:
                         currScenMLEProj = [np.nan for i in range(len(currScenInds))]
-                    if not currDict[repNum]['intFalseEstimates_SampMLE'] == []:
-                        currScenMLEtrProj = [currDict[repNum]['intFalseEstimates_SampMLE'][i] for i in currScenInds]
+                    if not currDict[repNum]['intEstMLE_Tracked'] == []:
+                        currScenMLEtrProj = [currDict[repNum]['intEstMLE_Tracked'][i] for i in currScenInds]
                     else:
                         currScenMLEtrProj = [np.nan for i in range(len(currScenInds))]
-                    currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
+                    currNUTSsamples = currDict[repNum]['postSamps_Untracked']
                     hasNUTS = True
                     if currNUTSsamples == []: # No NUTS samples included
                         hasNUTS = False
@@ -1048,15 +1048,15 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                 currBernProj = currDict[repNum]['endFalseEstimates_Bern']
             else:
                 currBernProj = [np.nan for i in range(len(currTrueSFVec))]
-            if not currDict[repNum]['endFalseEstimates_Plum'] == []:
-                currMLEProj = currDict[repNum]['endFalseEstimates_Plum']
+            if not currDict[repNum]['endEstMLE_Untracked'] == []:
+                currMLEProj = currDict[repNum]['endEstMLE_Untracked']
             else:
                 currMLEProj = [np.nan for i in range(len(currTrueSFVec))]    
-            if not currDict[repNum]['endFalseEstimates_SampMLE'] == []:
-                currMLEtrProj = currDict[repNum]['endFalseEstimates_SampMLE']
+            if not currDict[repNum]['endEstMLE_Tracked'] == []:
+                currMLEtrProj = currDict[repNum]['endEstMLE_Tracked']
             else:
                 currMLEtrProj = [np.nan for i in range(len(currTrueSFVec))] 
-            currNUTSsamples = currDict[repNum]['falsePerc_LklhdSamples']
+            currNUTSsamples = currDict[repNum]['postSamps_Untracked']
             hasNUTS = True
             if currNUTSsamples == []: # No NUTS samples included
                 hasNUTS = False
@@ -1259,7 +1259,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           itertools.cycle(['Untracked MLE']),\
                           absDevList_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Posterior Sampling Means']),\
+                          itertools.cycle(['Untracked Posterior Sample Means']),\
                           absDevList_NUTS[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Tracked MLE']),\
@@ -1303,7 +1303,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           itertools.cycle(['Untracked MLE']),\
                           absDevList_MLE_E[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Posterior Sampling Means']),\
+                          itertools.cycle(['Untracked Posterior Sample Means']),\
                           absDevList_NUTS_E[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Tracked MLE']),\
@@ -1347,7 +1347,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           itertools.cycle(['Untracked MLE']),\
                           avgDevList_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Posterior Sampling Means']),\
+                          itertools.cycle(['Untracked Posterior Sample Means']),\
                           avgDevList_NUTS[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Tracked MLE']),\
@@ -1447,7 +1447,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                               itertools.cycle(['Untracked MLE']),\
                               absDevListMLE_scen[dictInd]))
             block4 = list(zip(itertools.cycle([currDict]),\
-                              itertools.cycle(['Posterior Sampling Means']),\
+                              itertools.cycle(['Untracked Posterior Sample Means']),\
                               absDevListNUTS_scen[dictInd]))
             block5 = list(zip(itertools.cycle([currDict]),\
                               itertools.cycle(['Tracked MLE']),\
@@ -1490,7 +1490,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                               itertools.cycle(['Untracked MLE']),\
                               avgDevListMLE_scen[dictInd]))
             block4 = list(zip(itertools.cycle([currDict]),\
-                              itertools.cycle(['Posterior Sampling Means']),\
+                              itertools.cycle(['Untracked Posterior Sample Means']),\
                               avgDevListNUTS_scen[dictInd]))
             block5 = list(zip(itertools.cycle([currDict]),\
                               itertools.cycle(['Tracked MLE']),\
@@ -1522,21 +1522,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         plt.show()
         
     ### END SCENARIOS LOOP
-    '''
-   
-    trueNeg_Lin = []
-    trueNeg_Bern = []
-    trueNeg_MLE = []
-    trueNeg_NUTS = []
-    falsePos_Lin = []
-    falsePos_Bern = []
-    falsePos_MLE = []
-    falsePos_NUTS = []
-    falseNeg_Lin = []
-    falseNeg_Bern = []
-    falseNeg_MLE = []
-    falseNeg_NUTS = []
-    '''
+    
     # Accuracy rates
     DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
     for dictInd,currDict in enumerate(dictNamesVec):
@@ -1550,7 +1536,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           itertools.cycle(['Untracked MLE']),\
                           accuracy_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Posterior Sampling Means']),\
+                          itertools.cycle(['Untracked Posterior Sample Means']),\
                           accuracy_NUTS[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Tracked MLE']),\
@@ -1593,7 +1579,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           itertools.cycle(['Untracked MLE']),\
                           truePos_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Posterior Sampling Means']),\
+                          itertools.cycle(['Untracked Posterior Sample Means']),\
                           truePos_NUTS[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Tracked MLE']),\
@@ -1636,7 +1622,7 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           itertools.cycle(['Untracked MLE']),\
                           trueNeg_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Posterior Sampling Means']),\
+                          itertools.cycle(['Untracked Posterior Sample Means']),\
                           trueNeg_NUTS[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Tracked MLE']),\
@@ -1738,92 +1724,217 @@ def GenerateTransitionMatrix(dynamicResultsList):
     
     return A
 
-def GenerateNUTSsamples(posData,numSamples,A,sens,spec,M,Madapt,delta):
-    def exampletargetfornuts(beta):
-        """
-        Example of a target distribution that could be sampled from using NUTS.
-        (Although of course you could sample from it more efficiently)
-        Doesn't include the normalizing constant.
-        """
-        return mylogpost(beta,posData,numSamples,A,sens,spec), mylogpost_grad(beta,posData,numSamples,A,sens,spec)
+def GenerateMatrixForTracked(sampleWiseData,numImp,numOut):
+    N = np.zeros(shape=(numOut,numImp))
+    Y = np.zeros(shape=(numOut,numImp))
+    for samp in sampleWiseData:
+        j,i,res = samp[0], samp[1], samp[2]
+        N[i,j] += 1
+        Y[i,j] += res
+    return N,Y
 
-    beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
-    samples, lnprob, epsilon = nuts6(exampletargetfornuts,M,Madapt,beta0,delta)
+def invlogit(beta):
+    return sps.expit(beta)
     
-    return samples
+def invlogit_grad(beta):
+    return (np.exp(beta)/((np.exp(beta)+1) ** 2))
 
 
 #### Likelihood estimate functions
-
-def TRACKED_NegLikeFunc(pVec,numMat,posMat,sens,spec,RglrWt):
+###### BEGIN UNTRACKED FUNCTIONS ######
+def UNTRACKED_NegLogLikeFunc(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
     # pVec should be [importers, outlets]
-    n,m = numMat.shape
-    th=pVec[:m]
+    n,m = transMat.shape
+    th = pVec[:m]
     py = pVec[m:]
     betaInitial = -6*np.ones(m+n)
-    pMat = np.zeros(shape=(n,m))
+    pVec = np.zeros(shape=(n))
     for i in range(n):
-        for j in range(m):
-            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))\
-                        *invlogit(py[i])
-    pMatTilda = np.zeros(shape=(n,m))
+        pVec[i] = invlogit(py[i])+(1-invlogit(py[i]))*np.matmul(transMat[i],invlogit(th))
+    pVecTilde = np.zeros(shape=(n))
     for i in range(n):
-        for j in range(m):
-            pMatTilda[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+        pVecTilde[i] = sens*pVec[i] + (1-spec)*(1-pVec[i])
     
-    L = np.sum(np.multiply(posMat,np.log(pMatTilda))+np.multiply(np.subtract(numMat,posMat),\
-               np.log(1-pMatTilda))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
+    L = np.sum(np.multiply(posVec,np.log(pVecTilde))+np.multiply(np.subtract(numVec,posVec),\
+               np.log(1-pVecTilde))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
     return L*-1
 
-def TRACKED_NegLikeFunc_Jac(pVec,numMat,posMat,sens,spec,RglrWt):
+def UNTRACKED_NegLogLikeFunc_Jac(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
     # pVec should be [importers, outlets]
-    n,m = numMat.shape
-    th=pVec[:m]
+    n,m = transMat.shape
+    th = pVec[:m]
     py = pVec[m:]
     betaInitial = -6*np.ones(m+n)
-    pMat = np.zeros(shape=(n,m))
+    pVec = np.zeros(shape=(n,1))
     for i in range(n):
-        for j in range(m):
-            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))\
-                        *invlogit(py[i])
-    pMatTilda = np.zeros(shape=(n,m))
+        pVec[i] = invlogit(py[i])+(1-invlogit(py[i]))*np.matmul(transMat[i],invlogit(th))
+    pVecTilde = np.zeros(shape=(n,1))
     for i in range(n):
-        for j in range(m):
-            pMatTilda[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+        pVecTilde[i] = sens*pVec[i] + (1-spec)*(1-pVec[i])
     
     #Grab importers partials first, then outlets
     partialsVec = []
     
     for impInd in range(m):
-        term=np.exp(-1*th[impInd])/((np.exp(-1*th[impInd])+1)**2)
-        currImpPartial = np.sum([posMat[a,impInd]*(1-invlogit(py[a]))*term*(sens+spec-1)/pMatTilda[a,impInd]
-                                - (numMat[a,impInd]-posMat[a,impInd])*(1-invlogit(py[a]))*term*(sens+spec-1)/(1-pMatTilda[a,impInd])                                
+        currImpPartial = np.sum([posVec[a]*transMat[a,impInd]*(1-invlogit(py[a]))*invlogit_grad(th[impInd])*(sens+spec-1)/pVecTilde[a]
+                                - (numVec[a]-posVec[a])*transMat[a,impInd]*(1-invlogit(py[a]))*invlogit_grad(th[impInd])*(sens+spec-1)/(1-pVecTilde[a])                                
                                  for a in range(n)])
         partialsVec.append(currImpPartial)
     for outInd in range(n):
-        term=np.exp(-1*py[outInd])/((np.exp(-1*th[impInd])+1)**2)
         if py[outInd] > betaInitial[m+outInd-1]:
             c = 1
         elif py[outInd] < betaInitial[m+outInd-1]:
             c = -1
         else:
             c = 0
-        currOutPartial = np.sum([posMat[outInd,b]*(1-invlogit(th[b]))*term*(sens+spec-1)/pMatTilda[outInd,b]
-                                - (numMat[outInd,b]-posMat[outInd,b])*(1-invlogit(th[b]))*term*(sens+spec-1)/(1-pMatTilda[outInd,b])
-                                - 0#RglrWt*c                               
-                                 for b in range(m)])
+        currOutPartial = posVec[outInd]*(1-np.matmul(transMat[outInd],invlogit(th)))*invlogit_grad(py[outInd])*(sens+spec-1)/pVecTilde[outInd]\
+                                - (numVec[outInd]-posVec[outInd])*(1-np.matmul(transMat[outInd],invlogit(th)))*invlogit_grad(py[outInd])*(sens+spec-1)/(1-pVecTilde[outInd])\
+                                - RglrWt*c
         partialsVec.append(currOutPartial)
-        
-    return [partialsVec[i]*-1 for i in range(len(partialsVec))]
-
-
-
-def invlogit(beta):
-    return sps.expit(beta)
     
-def invlogit_grad(beta):
-    return np.diag(np.exp(beta)/((np.exp(beta)+1) ** 2))
+    retVal = np.array([partialsVec[i]*-1 for i in range(len(partialsVec))])
+    #Scale by l2 norm to avoid issues with optimizer later
+    return retVal/np.linalg.norm(retVal)
 
+def UNTRACKED_LogPrior(pVec,numVec,posVec,sens,spec,transMat):
+    '''
+    Prior is a Laplace distribution with parameters: mu=-3, scale=4
+    '''
+    return -0.25*np.sum(np.abs(pVec + 3))
+
+def UNTRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec, A):
+    '''
+    Prior is a Laplace distribution with parameters: mu=-3, scale=4
+    '''
+    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3))
+
+def UNTRACKED_LogPost(pVec,numVec,posVec,sens,spec,transMat):
+    return UNTRACKED_LogPrior(pVec,numVec,posVec,sens,spec,transMat)\
+           -UNTRACKED_NegLogLikeFunc(pVec,numVec,posVec,sens,spec,transMat,0)
+
+def UNTRACKED_LogPost_Grad(beta, nsamp, ydata, sens, spec, A):
+    return UNTRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec, A)\
+           -UNTRACKED_NegLogLikeFunc_Jac(beta,nsamp,ydata,sens,spec,A,0)
+
+def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,delta):
+    def UNTRACKEDtargetForNUTS(beta):
+        """
+        Example of a target distribution that could be sampled from using NUTS.
+        (Although of course you could sample from it more efficiently)
+        Doesn't include the normalizing constant.
+        """
+        return UNTRACKED_LogPost(beta,numSamples,posData,sens,spec,A),\
+               UNTRACKED_LogPost_Grad(beta,numSamples,posData,sens,spec,A)
+
+    beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
+    samples, lnprob, epsilon = nuts6(UNTRACKEDtargetForNUTS,M,Madapt,beta0,delta)
+    
+    return samples
+
+###### END UNTRACKED FUNCTIONS ######
+###### BEGIN UNTRACKED FUNCTIONS ######
+def TRACKED_NegLogLikeFunc(pVec,numMat,posMat,sens,spec,RglrWt):
+    # pVec should be [importers, outlets]
+    n,m = numMat.shape
+    th = pVec[:m]
+    py = pVec[m:]
+    betaInitial = -6*np.ones(m+n)
+    pMat = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))*invlogit(py[i])
+    pMatTilde = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMatTilde[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+    
+    L = np.sum(np.multiply(posMat,np.log(pMatTilde))+np.multiply(np.subtract(numMat,posMat),\
+               np.log(1-pMatTilde))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
+    return L*-1
+
+def TRACKED_NegLogLikeFunc_Jac(pVec,numMat,posMat,sens,spec,RglrWt):
+    # pVec should be [importers, outlets]
+    n,m = numMat.shape
+    th = pVec[:m]
+    py = pVec[m:]
+    betaInitial = -6*np.ones(m+n)
+    pMat = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))\
+                        *invlogit(py[i])
+    pMatTilde = np.zeros(shape=(n,m))
+    for i in range(n):
+        for j in range(m):
+            pMatTilde[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+    
+    #Grab importers partials first, then outlets
+    partialsVec = []
+    
+    for impInd in range(m):
+        term = invlogit_grad(th[impInd])
+        #term=np.exp(-1*th[impInd])/((np.exp(-1*th[impInd])+1)**2)
+        currImpPartial = np.sum([posMat[a,impInd]*(1-invlogit(py[a]))*term*(sens+spec-1)/pMatTilde[a,impInd]
+                                - (numMat[a,impInd]-posMat[a,impInd])*(1-invlogit(py[a]))*term*(sens+spec-1)/(1-pMatTilde[a,impInd])                                
+                                 for a in range(n)])
+        partialsVec.append(currImpPartial)
+    for outInd in range(n):
+        term = invlogit_grad(py[outInd])
+        if py[outInd] > betaInitial[m+outInd-1]:
+            c = 1
+        elif py[outInd] < betaInitial[m+outInd-1]:
+            c = -1
+        else:
+            c = 0
+        currOutPartial = np.sum([posMat[outInd,b]*(1-invlogit(th[b]))*term*(sens+spec-1)/pMatTilde[outInd,b]
+                                - (numMat[outInd,b]-posMat[outInd,b])*(1-invlogit(th[b]))*term*(sens+spec-1)/(1-pMatTilde[outInd,b])
+                                 for b in range(m)])- RglrWt*c
+        partialsVec.append(currOutPartial)
+    
+    retVal = np.array([partialsVec[i]*-1 for i in range(len(partialsVec))])
+    #Scale by l2 norm to avoid issues with optimizer later
+    return retVal/np.linalg.norm(retVal)
+
+def TRACKED_LogPrior(pVec, numVec, posVec, sens, spec):
+    '''
+    Prior is a Laplace distribution with parameters: mu=-3, scale=4
+    '''
+    return -0.25*np.sum(np.abs(pVec + 3))
+
+def TRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec):
+    '''
+    Prior is a Laplace distribution with parameters: mu=-3, scale=4
+    '''
+    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3))
+
+def TRACKED_LogPost(pVec,N,Y,sens,spec):
+    return TRACKED_LogPrior(pVec,N,Y,sens,spec)\
+           -TRACKED_NegLogLikeFunc(pVec,N,Y,sens,spec,0)
+
+def TRACKED_LogPost_Grad(beta, N, Y, sens, spec):
+    return TRACKED_LogPrior_Grad(beta, N, Y, sens, spec)\
+           -TRACKED_NegLogLikeFunc_Jac(beta,N,Y,sens,spec,0)
+def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta):
+    def TRACKEDtargetForNUTS(beta):
+        """
+        Example of a target distribution that could be sampled from using NUTS.
+        (Although of course you could sample from it more efficiently)
+        Doesn't include the normalizing constant.
+        """
+        return TRACKED_LogPost(beta,N,Y,sens,spec),\
+               TRACKED_LogPost_Grad(beta,N,Y,sens,spec)
+
+    beta0 = -2 * np.ones(N.shape[1] + N.shape[0])
+    samples, lnprob, epsilon = nuts6(TRACKEDtargetForNUTS,M,Madapt,beta0,delta)
+    
+    return samples
+###### END TRACKED FUNCTIONS ######
+
+
+
+
+
+''' DELETE???
 def myloglik(beta, ydata, nsamp, A, sens, spec):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]
@@ -1831,7 +1942,7 @@ def myloglik(beta, ydata, nsamp, A, sens, spec):
     probsz = probs*sens + (1-probs) * (1-spec)
     return np.sum(ydata * np.log(probsz) + (np.asarray(nsamp)-np.asarray(ydata)) * np.log(1-probsz))
 
-def mynegloglik_grad(beta, ydata, nsamp, A, sens, spec):
+def mynegloglik_grad(beta, nsamp, ydata, sens, spec, A):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]
     iliJ = invlogit(betaJ)
@@ -1871,19 +1982,10 @@ def mylogprior_grad(beta, ydata, nsamp, A, sens, spec):
 
 def mylogpost(beta, ydata, nsamp, A, sens, spec):
     return mylogprior(beta, ydata, nsamp, A, sens, spec)+myloglik(beta, ydata, nsamp, A, sens, spec)
-
-def mylogpost_grad(beta, ydata, nsamp, A, sens, spec):
-    return mylogprior_grad(beta, ydata, nsamp, A, sens, spec)-mynegloglik_grad(beta, ydata, nsamp, A, sens, spec) #modified by EOW
-
 '''
-def exampletargetfornuts(beta):
-    """
-    Example of a target distribution that could be sampled from using NUTS.
-    (Although of course you could sample from it more efficiently)
-    Doesn't include the normalizing constant.
-    """
-    return mylogpost(beta,ydata, nsamp, A, sens, spec), mylogpost_grad(beta,ydata, nsamp, A, sens, spec) 
-'''
+
+
+
 
 #### Necessary NUTS module ####
 """
@@ -2220,14 +2322,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.25):
             epsilonbar = exp((1. - eta) * log(epsilonbar) + eta * log(epsilon))
         else:
             epsilon = epsilonbar
-        
-        '''
-        ### EOW ADDITION
-        if np.mod(m,10)==0:
-            print('Round '+str(m)+' of nuts6 finished' )
-        ### END EOW
-        '''
-        
+                
     samples = samples[Madapt:, :]
     lnprob = lnprob[Madapt:]
     return samples, lnprob, epsilon

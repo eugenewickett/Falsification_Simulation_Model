@@ -68,7 +68,7 @@ currTrVec = []
 currStVec = []
 
 optRegularizationWeight = 0.1 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -557,13 +557,16 @@ for rep in range(numReplications):
     for endNodeTestRow in TestSummaryTbl:
         ydata.append(endNodeTestRow[2])
         numSamples.append(endNodeTestRow[1])
+    
+    # These matrices are for our tracked estimation methods
+    Nmat, Ymat = simModules.GenerateMatrixForTracked(SampleReportTbl,intermediateNum,endNum)
 
     #LINEAR PROJECTION
     try:
-        output_Lin = simEstMethods.Est_LinearProjection(A,PosData=ydata,\
-                                    NumSamples=numSamples,Sens=diagnosticSensitivity,\
-                                    Spec=diagnosticSpecificity)
-        
+        output_Lin = simEstMethods.Est_LinearProjection(\
+                        A,PosData=ydata,NumSamples=numSamples,\
+                        Sens=diagnosticSensitivity,\
+                        Spec=diagnosticSpecificity)
         estIntFalsePercList = output_Lin['intProj']
         estEndFalsePercList = output_Lin['endProj']
     except:
@@ -573,10 +576,10 @@ for rep in range(numReplications):
 
     #BERNOULLI MLE
     try:
-        output_Bern = simEstMethods.Est_BernoulliProjection(A,PosData=ydata,\
-                                    NumSamples=numSamples,Sens=diagnosticSensitivity,\
-                                    Spec=diagnosticSpecificity)
-     
+        output_Bern = simEstMethods.Est_BernoulliProjection(\
+                        A,PosData=ydata,NumSamples=numSamples,\
+                        Sens=diagnosticSensitivity,\
+                        Spec=diagnosticSpecificity)
         estIntFalsePercList_Bern = output_Bern['intProj']
         estEndFalsePercList_Bern = output_Bern['endProj']
     except:
@@ -584,59 +587,76 @@ for rep in range(numReplications):
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
 
-    #MLE USING NONLINEAR OPTIMIZER
-    try:
-        estIntFalsePercList_Plum , estEndFalsePercList_Plum = simEstMethods.Est_UntrackedMLE(\
-                                                   A,PosData=ydata,NumSamples=numSamples,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity,\
-                                                   RglrWt=optRegularizationWeight)
-    except:
-        print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
-        estIntFalsePercList_Plum = []
-        estEndFalsePercList_Plum = []
-
-    #LIKELIHOOD ESTIMATOR 2 - USES LIKELIHOOD GRADIENT INFORMATION, NUTS
+    #UNTRACKED POSTERIOR SAMPLING
     if lklhdBool == True:
-        startCalc = time.time()
         try:
-            estFalsePerc_LklhdSamples = simModules.GenerateNUTSsamples(ydata,numSamples,A,diagnosticSensitivity,\
-                                                                       diagnosticSpecificity,lklhdEst_M,\
-                                                                       lklhdEst_Madapt,lklhdEst_delta)
-            '''
-            Commented out, as we want to store the actual samples, but don't want to run the NUTS
-            algorithm twice (getting samples one time, mean estimates another time).
-            estIntFalsePercList_NUTS, estEndFalsePercList_NUTS = simEstMethods.Est_PostSamps_Untracked(\
-                                                   A,PosData=ydata,NumSamples=numSamples,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity,\
-                                                   M=lklhdEst_M,Madapt=lklhdEst_Madapt,\
-                                                   delta=lklhdEst_delta)
-            '''
-            #print(time.time()-startCalc)
+            estFalsePerc_PostSampsUNTRACKED = simModules.GeneratePostSamps_UNTRACKED(numSamples,ydata,A,diagnosticSensitivity,\
+                                                                       diagnosticSpecificity,optRegularizationWeight,\
+                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+                       
         except:
-            print("Couldn't generate the POSTERIOR SAMPLES")
-            estFalsePerc_LklhdSamples = []
-            #print(time.time()-startCalc)
-
+            print("Couldn't generate the UNTRACKED POSTERIOR SAMPLES")
+            estFalsePerc_PostSampsUNTRACKED = []
+            
     else:
-        estFalsePerc_LklhdSamples = []
-    ### END LIKELIHOOD ESTIMATOR ###
+        estFalsePerc_PostSampsUNTRACKED = []
+    ### END UNTRACKED POSTERIOR SAMPLING ###
     
-    #SAMPLE-WISE MLE
+    #TRACKED POSTERIOR SAMPLING
+    if lklhdBool == True:
+        try:
+            estFalsePerc_PostSampsTRACKED = simModules.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
+                                                                       diagnosticSpecificity,optRegularizationWeight,\
+                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+           
+        except:
+            print("Couldn't generate the TRACKED POSTERIOR SAMPLES")
+            estFalsePerc_PostSampsTRACKED = []
+            
+    else:
+        estFalsePerc_PostSampsTRACKED = []
+    ### END TRACKED POSTERIOR SAMPLING ###
+    
+    #UNTRACKED MLE
     try:
-        estIntFalsePercList_SampMLE , estEndFalsePercList_SampMLE = simEstMethods.Est_TrackedMLE(\
-                                                   sampleWiseData=SampleReportTbl,\
-                                                   numImp=intermediateNum,\
-                                                   numOut=endNum,\
+        k = 10
+        if len(estFalsePerc_PostSampsUNTRACKED)>0: #Use a random selection of the posterior samples for the MLE maximization if available
+            randInds = random.sample(range(len(estFalsePerc_PostSampsUNTRACKED)),min(k,len(estFalsePerc_PostSampsUNTRACKED)))
+            randList = estFalsePerc_PostSampsUNTRACKED[randInds]
+        else:
+            randList = []
+            
+        estIntMLE_Untracked , estEndMLE_Untracked = simEstMethods.Est_UntrackedMLE(\
+                                                   A,PosData=ydata,NumSamples=numSamples,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
                                                    RglrWt=optRegularizationWeight,\
-                                                   beta0_List=[])
+                                                   beta0_List=randList)
     except:
-        print("Couldn't generate the MLE W NONLINEAR OPTIMIZER estimates")
-        estIntFalsePercList_SampMLE = []
-        estEndFalsePercList_SampMLE = []
+        print("Couldn't generate the UNTRACKED MLE estimates")
+        estIntMLE_Untracked = []
+        estEndMLE_Untracked = []
+    ### END UNTRACKED MLE ###
+    #TRACKED MLE
+    try:
+        k = 10
+        if len(estFalsePerc_PostSampsTRACKED)>0: #Use a random selection of the posterior samples for the MLE maximization if available
+            randInds = random.sample(range(len(estFalsePerc_PostSampsTRACKED)),min(k,len(estFalsePerc_PostSampsTRACKED)))
+            randList = estFalsePerc_PostSampsTRACKED[randInds]
+        else:
+            randList = []
+            
+        estIntMLE_Tracked , estEndMLE_Tracked = simEstMethods.Est_TrackedMLE(\
+                                                   Nmat,Ymat,\
+                                                   Sens=diagnosticSensitivity,\
+                                                   Spec=diagnosticSpecificity,\
+                                                   RglrWt=optRegularizationWeight,\
+                                                   beta0_List=randList)
+    except:
+        print("Couldn't generate the TRACKED MLE estimates")
+        estIntMLE_Tracked = []
+        estEndMLE_Tracked = []
+    ### END TRACKED MLE ###
     
     # Simulation end time
     totalRunTime = time.time() - startTime
@@ -725,10 +745,10 @@ for rep in range(numReplications):
         #axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Bern,color='mediumspringgreen',edgecolor='green')
         # MLE w Nonlinear optimizer
         axs[1].set_title('Untracked MLE',fontweight='bold')
-        axs[1].bar(Intermediate_Plot_x,estIntFalsePercList_Plum,color='navajowhite',edgecolor='darkorange')
+        axs[1].bar(Intermediate_Plot_x,estIntMLE_Untracked,color='navajowhite',edgecolor='darkorange')
         # Sample MLE
         axs[2].set_title('Tracked MLE',fontweight='bold')
-        axs[2].bar(Intermediate_Plot_x,estIntFalsePercList_SampMLE,color='deepskyblue',edgecolor='darkcyan')
+        axs[2].bar(Intermediate_Plot_x,estIntMLE_Tracked,color='deepskyblue',edgecolor='darkcyan')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
@@ -749,43 +769,60 @@ for rep in range(numReplications):
         # Bernoulli MLE projection
         #axs[1].set_title('Bernoulli MLE projection',fontweight='bold')
         #axs[1].bar(End_Plot_x,estEndFalsePercList_Bern,color='khaki',edgecolor='goldenrod')
-        # MLE w Nonlinear optimizer
+        # Untracked MLE
         axs[1].set_title('Untracked MLE',fontweight='bold')
-        axs[1].bar(End_Plot_x,estEndFalsePercList_Plum,color='lightcyan',edgecolor='teal')
-        # Sample MLE
+        axs[1].bar(End_Plot_x,estEndMLE_Untracked,color='lightcyan',edgecolor='teal')
+        # Tracked MLE
         axs[2].set_title('Tracked MLE',fontweight='bold')
-        axs[2].bar(End_Plot_x,estEndFalsePercList_SampMLE,color='pink',edgecolor='deeppink')
+        axs[2].bar(End_Plot_x,estEndMLE_Tracked,color='pink',edgecolor='deeppink')
         plt.tight_layout()
         plt.subplots_adjust(top=0.94)
         plt.show()
 
-        #Intermediate nodes - likelihood samples
+        #Posterior samples
         if lklhdBool == True:
+            #UNTRACKED POSTERIOR SAMPLES
             fig = plt.figure()
             ax = fig.add_axes([0,0,2,1])
             ax.set_xlabel('Intermediate Node',fontsize=16)
-            ax.set_ylabel('Est. model parameter distribution',fontsize=16)
+            ax.set_ylabel('UNTRACKED posterior distribution',fontsize=16)
             for i in range(intermediateNum):
-                plt.hist(simModules.invlogit(estFalsePerc_LklhdSamples[:,i]))
+                plt.hist(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,i]))
 
             fig = plt.figure()
             ax = fig.add_axes([0,0,2,1])
             ax.set_xlabel('End Node',fontsize=16)
-            ax.set_ylabel('Est. model parameter distribution',fontsize=16)
+            ax.set_ylabel('UNTRACKED posterior distribution',fontsize=16)
             for i in range(endNum):
-                plt.hist(simModules.invlogit(estFalsePerc_LklhdSamples[:,intermediateNum+i]))
+                plt.hist(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,intermediateNum+i]))
 
             meanSampVec = []
             for i in range(intermediateNum):
-                meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_LklhdSamples[:,i])))
+                meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,i])))
             meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
+            
+            #TRACKED POSTERIOR SAMPLES
+            fig = plt.figure()
+            ax = fig.add_axes([0,0,2,1])
+            ax.set_xlabel('Intermediate Node',fontsize=16)
+            ax.set_ylabel('TRACKED posterior distribution',fontsize=16)
+            for i in range(intermediateNum):
+                plt.hist(simModules.invlogit(estFalsePerc_PostSampsTRACKED[:,i]))
 
-            print([round(estIntFalsePercList[i],3) for i in range(len(intSFVec))])
-            print([round(estIntFalsePercList_Bern[i],3) for i in range(len(intSFVec))])
-            print([round(estIntFalsePercList_Plum[i],3) for i in range(len(intSFVec))])
-            print(meanSampVec)
-            print(intSFVec)
+            fig = plt.figure()
+            ax = fig.add_axes([0,0,2,1])
+            ax.set_xlabel('End Node',fontsize=16)
+            ax.set_ylabel('TRACKED posterior distribution',fontsize=16)
+            for i in range(endNum):
+                plt.hist(simModules.invlogit(estFalsePerc_PostSampsTRACKED[:,intermediateNum+i]))
 
+            meanSampVec = []
+            for i in range(intermediateNum):
+                meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_PostSampsTRACKED[:,i])))
+            meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
+            
+            
+            
 
     ### END OF PRINT OUTPUT LOOP
 
@@ -827,18 +864,18 @@ for rep in range(numReplications):
                           'endFalseEstimates':estEndFalsePercList,
                           'intFalseEstimates_Bern':estIntFalsePercList_Bern,
                           'endFalseEstimates_Bern':estEndFalsePercList_Bern,
-                          'intFalseEstimates_Plum':estIntFalsePercList_Plum,
-                          'endFalseEstimates_Plum':estEndFalsePercList_Plum,
-                          'intFalseEstimates_SampMLE':estIntFalsePercList_SampMLE,
-                          'endFalseEstimates_SampMLE':estEndFalsePercList_SampMLE,
-                          'falsePerc_LklhdSamples':estFalsePerc_LklhdSamples,
+                          'intEstMLE_Untracked':estIntMLE_Untracked,
+                          'endEstMLE_Untracked':estEndMLE_Untracked,
+                          'intEstMLE_Tracked':estIntMLE_Tracked,
+                          'endEstMLE_Tracked':estEndMLE_Tracked,
+                          'postSamps_Untracked':estFalsePerc_PostSampsUNTRACKED,
+                          'postSamps_Tracked':estFalsePerc_PostSampsTRACKED,
                           'intSFTrueValues':intSFVec,'endSFTrueValues':endSFVecCombo,
                           'simStartTime':startTime,
                           'simRunTime':totalRunTime
                           }
 
         outputDict[rep] = currOutputLine # Save to the output dictionary
-    
     
 ########## END OF REPLICATION LOOP ##########
 
