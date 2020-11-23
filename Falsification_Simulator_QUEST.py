@@ -33,9 +33,9 @@ def parse_commandline():
                        #help="Job number",
                        #default=0)
     '''
-    diag_sens, diag_spec, mult_days, sim_days, glob_dem
+    diag_sens, diag_spec, multSample_days, sim_days, glob_dem, testPolicy, optRglrWt
     '''
-    parser.add_argument('vars',type=float,nargs='+',default=[0.95,0.98,5.,600.,0.,0.,0.5])
+    parser.add_argument('vars',type=float,nargs='+',default=[0.95,0.98,5.,600.,0.,0.,0.1])
     args = parser.parse_args()
 
     return args
@@ -58,16 +58,16 @@ arcRsFileString = 'LIB_Arcs_Rs_1.csv'
 ##### SIMULATION PARAMETERS
 # Enter the length of the simulation and the sampling budget
 NumSimDays = round(args.vars[3])
-samplingBudget = round(args.vars[2])*NumSimDays
+samplingBudget = round(args.vars[2]*NumSimDays)
 diagnosticSensitivity = args.vars[0] # Tool sensitivity
 diagnosticSpecificity = args.vars[1] # Tool specificity
 globalDemand = args.vars[4] #Level of global demand increase across all outlets, in mean demand/simulation day
-numReplications = 1
+numReplications = 5
 
 
 alertIter = 100 # How frequently we're alerted of a set of replications being completed
 printOutput = False # Whether individual replication output should be displayed
-storeOutput = False # Do we store the output in an output dictionary file?
+storeOutput = True # Do we store the output in an output dictionary file?
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
 saveTestResults = True # Store the testing results to the output dictionary? (Greatly increases file size if True)
@@ -107,7 +107,7 @@ currTrVec = []
 currStVec = []
 
 optRegularizationWeight = args.vars[6] # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -596,7 +596,8 @@ for rep in range(numReplications):
     for endNodeTestRow in TestSummaryTbl:
         ydata.append(endNodeTestRow[2])
         numSamples.append(endNodeTestRow[1])
-    
+    ydata = np.array(ydata)
+    numSamples = np.array(numSamples)
     # These matrices are for our tracked estimation methods
     Nmat, Ymat = simModules.GenerateMatrixForTracked(SampleReportTbl,intermediateNum,endNum)
     
@@ -697,13 +698,12 @@ for rep in range(numReplications):
             randList = []
             
         estIntMLE_Tracked , estEndMLE_Tracked = simEstMethods.Est_TrackedMLE(\
-                                                   sampleWiseData=SampleReportTbl,\
-                                                   numImp=intermediateNum,\
-                                                   numOut=endNum,\
+                                                   Nmat,Ymat,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
                                                    RglrWt=optRegularizationWeight,\
-                                                   beta0_List=randList)
+                                                   beta0_List=randList)                          
+                                                                                                      
     except:
         print("Couldn't generate the TRACKED MLE estimates")
         estIntMLE_Tracked = []

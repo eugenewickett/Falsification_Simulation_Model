@@ -551,7 +551,8 @@ for rep in range(numReplications):
     for endNodeTestRow in TestSummaryTbl:
         ydata.append(endNodeTestRow[2])
         numSamples.append(endNodeTestRow[1])
-    
+    ydata = np.array(ydata)
+    numSamples = np.array(numSamples)
     # These matrices are for our tracked estimation methods
     Nmat, Ymat = simModules.GenerateMatrixForTracked(SampleReportTbl,intermediateNum,endNum)
 

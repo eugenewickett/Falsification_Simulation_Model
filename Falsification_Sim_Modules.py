@@ -14,20 +14,19 @@ import scipy.special as sps
 import csv
 import os
 import sys
-import time
 import pickle
 import matplotlib.pyplot as plt
-import winsound #COMMENT OUT BEFORE SENDING TO QUEST
 import Falsification_Sim_Classes as simClasses # modules for the simulation
 
-
+'''
+import winsound #COMMENT OUT BEFORE SENDING TO QUEST
 def CEOTTKbeep():
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**10)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**12)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)  
-    
+'''    
 
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',
@@ -1743,57 +1742,40 @@ def invlogit_grad(beta):
 
 #### Likelihood estimate functions
 ###### BEGIN UNTRACKED FUNCTIONS ######
-def UNTRACKED_NegLogLikeFunc(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
+def UNTRACKED_NegLogLikeFunc(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
     # pVec should be [importers, outlets]
     n,m = transMat.shape
-    th = pVec[:m]
-    py = pVec[m:]
+    th = betaVec[:m]
+    py = betaVec[m:]
     betaInitial = -6*np.ones(m+n)
-    pVec = np.zeros(shape=(n))
-    for i in range(n):
-        pVec[i] = invlogit(py[i])+(1-invlogit(py[i]))*np.matmul(transMat[i],invlogit(th))
-    pVecTilde = np.zeros(shape=(n))
-    for i in range(n):
-        pVecTilde[i] = sens*pVec[i] + (1-spec)*(1-pVec[i])
+    pVec = invlogit(py)+(1-invlogit(py))*np.matmul(transMat,invlogit(th))
+    pVecTilde = sens*pVec + (1-spec)*(1-pVec)
     
     L = np.sum(np.multiply(posVec,np.log(pVecTilde))+np.multiply(np.subtract(numVec,posVec),\
                np.log(1-pVecTilde))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
     return L*-1
 
-def UNTRACKED_NegLogLikeFunc_Jac(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
+def UNTRACKED_NegLogLikeFunc_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
     # pVec should be [importers, outlets]
     n,m = transMat.shape
-    th = pVec[:m]
-    py = pVec[m:]
+    th = betaVec[:m]
+    py = betaVec[m:]
     betaInitial = -6*np.ones(m+n)
-    pVec = np.zeros(shape=(n,1))
-    for i in range(n):
-        pVec[i] = invlogit(py[i])+(1-invlogit(py[i]))*np.matmul(transMat[i],invlogit(th))
-    pVecTilde = np.zeros(shape=(n,1))
-    for i in range(n):
-        pVecTilde[i] = sens*pVec[i] + (1-spec)*(1-pVec[i])
+    pVec = invlogit(py)+(1-invlogit(py))*np.matmul(transMat,invlogit(th))
+    pVecTilde = sens*pVec + (1-spec)*(1-pVec)
     
     #Grab importers partials first, then outlets
-    partialsVec = []
+    impPartials = np.sum(posVec[:,None]*transMat*invlogit_grad(th)*(sens+spec-1)*\
+                     np.array([(1-invlogit(py))]*m).transpose()/pVecTilde[:,None]\
+                     - (numVec-posVec)[:,None]*transMat*invlogit_grad(th)*(sens+spec-1)*\
+                     np.array([(1-invlogit(py))]*m).transpose()/(1-pVecTilde)[:,None]\
+                     ,axis=0)
+    outletPartials = posVec*(1-np.matmul(transMat,invlogit(th)))*invlogit_grad(py)*\
+                        (sens+spec-1)/pVecTilde - (numVec-posVec)*invlogit_grad(py)*\
+                        (sens+spec-1)*(1-np.matmul(transMat,invlogit(th)))/(1-pVecTilde)\
+                        - RglrWt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
     
-    for impInd in range(m):
-        currImpPartial = np.sum([posVec[a]*transMat[a,impInd]*(1-invlogit(py[a]))*invlogit_grad(th[impInd])*(sens+spec-1)/pVecTilde[a]
-                                - (numVec[a]-posVec[a])*transMat[a,impInd]*(1-invlogit(py[a]))*invlogit_grad(th[impInd])*(sens+spec-1)/(1-pVecTilde[a])                                
-                                 for a in range(n)])
-        partialsVec.append(currImpPartial)
-    for outInd in range(n):
-        if py[outInd] > betaInitial[m+outInd-1]:
-            c = 1
-        elif py[outInd] < betaInitial[m+outInd-1]:
-            c = -1
-        else:
-            c = 0
-        currOutPartial = posVec[outInd]*(1-np.matmul(transMat[outInd],invlogit(th)))*invlogit_grad(py[outInd])*(sens+spec-1)/pVecTilde[outInd]\
-                                - (numVec[outInd]-posVec[outInd])*(1-np.matmul(transMat[outInd],invlogit(th)))*invlogit_grad(py[outInd])*(sens+spec-1)/(1-pVecTilde[outInd])\
-                                - RglrWt*c
-        partialsVec.append(currOutPartial)
-    
-    retVal = np.array([partialsVec[i]*-1 for i in range(len(partialsVec))])
+    retVal = np.concatenate((impPartials,outletPartials))*-1
     #Scale by l2 norm to avoid issues with optimizer later
     return retVal/np.linalg.norm(retVal)
 
@@ -1829,73 +1811,51 @@ def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,de
 
 ###### END UNTRACKED FUNCTIONS ######
 ###### BEGIN UNTRACKED FUNCTIONS ######
-def TRACKED_NegLogLikeFunc(pVec,numMat,posMat,sens,spec,RglrWt):
+def TRACKED_NegLogLikeFunc(betaVec,numMat,posMat,sens,spec,RglrWt):
     # pVec should be [importers, outlets]
     n,m = numMat.shape
-    th = pVec[:m]
-    py = pVec[m:]
+    th = betaVec[:m]
+    py = betaVec[m:]
     betaInitial = -6*np.ones(m+n)
-    pMat = np.zeros(shape=(n,m))
-    for i in range(n):
-        for j in range(m):
-            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))*invlogit(py[i])
-    pMatTilde = np.zeros(shape=(n,m))
-    for i in range(n):
-        for j in range(m):
-            pMatTilde[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+    pMat = np.array([invlogit(th)]*n)+np.array([(1-invlogit(th))]*n)*\
+            np.array([invlogit(py)]*m).transpose()
+    pMatTilde = sens*pMat+(1-spec)*(1-pMat)
     
     L = np.sum(np.multiply(posMat,np.log(pMatTilde))+np.multiply(np.subtract(numMat,posMat),\
                np.log(1-pMatTilde))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
     return L*-1
 
-def TRACKED_NegLogLikeFunc_Jac(pVec,numMat,posMat,sens,spec,RglrWt):
+def TRACKED_NegLogLikeFunc_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
     # pVec should be [importers, outlets]
     n,m = numMat.shape
-    th = pVec[:m]
-    py = pVec[m:]
+    th = betaVec[:m]
+    py = betaVec[m:]
     betaInitial = -6*np.ones(m+n)
-    pMat = np.zeros(shape=(n,m))
-    for i in range(n):
-        for j in range(m):
-            pMat[i,j] = invlogit(th[j])+(1-invlogit(th[j]))\
-                        *invlogit(py[i])
-    pMatTilde = np.zeros(shape=(n,m))
-    for i in range(n):
-        for j in range(m):
-            pMatTilde[i,j] = sens*pMat[i,j] + (1-spec)*(1-pMat[i,j])
+    pMat = np.array([invlogit(th)]*n)+np.array([(1-invlogit(th))]*n)*\
+            np.array([invlogit(py)]*m).transpose()
+    pMatTilde = sens*pMat+(1-spec)*(1-pMat)
     
     #Grab importers partials first, then outlets
-    partialsVec = []
-    
-    for impInd in range(m):
-        term = invlogit_grad(th[impInd])
-        #term=np.exp(-1*th[impInd])/((np.exp(-1*th[impInd])+1)**2)
-        currImpPartial = np.sum([posMat[a,impInd]*(1-invlogit(py[a]))*term*(sens+spec-1)/pMatTilde[a,impInd]
-                                - (numMat[a,impInd]-posMat[a,impInd])*(1-invlogit(py[a]))*term*(sens+spec-1)/(1-pMatTilde[a,impInd])                                
-                                 for a in range(n)])
-        partialsVec.append(currImpPartial)
-    for outInd in range(n):
-        term = invlogit_grad(py[outInd])
-        if py[outInd] > betaInitial[m+outInd-1]:
-            c = 1
-        elif py[outInd] < betaInitial[m+outInd-1]:
-            c = -1
-        else:
-            c = 0
-        currOutPartial = np.sum([posMat[outInd,b]*(1-invlogit(th[b]))*term*(sens+spec-1)/pMatTilde[outInd,b]
-                                - (numMat[outInd,b]-posMat[outInd,b])*(1-invlogit(th[b]))*term*(sens+spec-1)/(1-pMatTilde[outInd,b])
-                                 for b in range(m)])- RglrWt*c
-        partialsVec.append(currOutPartial)
-    
-    retVal = np.array([partialsVec[i]*-1 for i in range(len(partialsVec))])
-    #Scale by l2 norm to avoid issues with optimizer later
+    impPartials = np.sum(posMat*invlogit_grad(th)*(sens+spec-1)*\
+                     np.array([(1-invlogit(py))]*m).transpose()/pMatTilde\
+                     - (numMat-posMat)*invlogit_grad(th)*(sens+spec-1)*\
+                     np.array([(1-invlogit(py))]*m).transpose()/(1-pMatTilde)\
+                     ,axis=0)
+    outletPartials = np.sum(posMat*invlogit_grad(py)[:,None]*(sens+spec-1)*\
+                     np.array([(1-invlogit(th))]*n)/pMatTilde\
+                     - (numMat-posMat)*invlogit_grad(py)[:,None]*(sens+spec-1)*\
+                     np.array([(1-invlogit(th))]*n)/(1-pMatTilde)\
+                     ,axis=1) - RglrWt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
+       
+    retVal = np.concatenate((impPartials,outletPartials))*-1
+    #Scale by l2 norm to avoid issues with optimizer
     return retVal/np.linalg.norm(retVal)
 
-def TRACKED_LogPrior(pVec, numVec, posVec, sens, spec):
+def TRACKED_LogPrior(beta, numVec, posVec, sens, spec):
     '''
     Prior is a Laplace distribution with parameters: mu=-3, scale=4
     '''
-    return -0.25*np.sum(np.abs(pVec + 3))
+    return -0.25*np.sum(np.abs(beta + 3))
 
 def TRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec):
     '''
@@ -1903,9 +1863,9 @@ def TRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec):
     '''
     return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3))
 
-def TRACKED_LogPost(pVec,N,Y,sens,spec):
-    return TRACKED_LogPrior(pVec,N,Y,sens,spec)\
-           -TRACKED_NegLogLikeFunc(pVec,N,Y,sens,spec,0)
+def TRACKED_LogPost(beta,N,Y,sens,spec):
+    return TRACKED_LogPrior(beta,N,Y,sens,spec)\
+           -TRACKED_NegLogLikeFunc(beta,N,Y,sens,spec,0)
 
 def TRACKED_LogPost_Grad(beta, N, Y, sens, spec):
     return TRACKED_LogPrior_Grad(beta, N, Y, sens, spec)\
@@ -2226,7 +2186,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.25):
         n = 1  # Initially the only valid point is the initial point.
         s = 1  # Main loop: will keep going until s == 0.
         
-        if np.mod(m,25)==0 or m==1:
+        if np.mod(m,100)==0 or m==1:
             print('Generating point '+str(m)) #EOW ADD
         
         while (s == 1):
@@ -2251,7 +2211,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.25):
             n += nprime
             
             # Decide if it's time to stop.
-            s = sprime and stop_criterion(thetaminus, thetaplus, rminus, rplus) and (n < 30) # (n<30) EOW EDIT
+            s = sprime and stop_criterion(thetaminus, thetaplus, rminus, rplus) and (n < 50) # (n<50) EOW EDIT
                 
             # Increment depth.
             j += 1

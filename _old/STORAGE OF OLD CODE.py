@@ -571,7 +571,7 @@ def dynamicTestingGenerator(resultsList,
  ### END "dynamicTestingGenerator" ###
 '''
    
-''' DELETE???
+'''
 def myloglik(beta, ydata, nsamp, A, sens, spec):
     betaI = beta[0:A.shape[1]]
     betaJ = beta[A.shape[1]:]

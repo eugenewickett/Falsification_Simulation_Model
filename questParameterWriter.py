@@ -16,13 +16,13 @@ sampPols = [0.]
 regulWts = [0.5]
 '''
 
-sens = [0.85]
-spec = [0.99]
-sampleSize = [5,10]
+sens = [0.85,0.95,0.9]
+spec = [0.99,0.95,0.9]
+sampleSize = [0.25,0.5,1]
 simDays = [600]
-globalDem = [0.,40.,80.]
+globalDem = [0.,40.,80.,120]
 sampPols = [0.]
-regulWts = [0.5]
+regulWts = [0.1]
 
 
 

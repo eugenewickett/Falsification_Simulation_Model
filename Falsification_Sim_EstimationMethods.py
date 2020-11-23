@@ -21,7 +21,6 @@ testing results. The inputs to these methdos are:
 import numpy as np
 import scipy.optimize as spo
 import scipy.stats as spstat
-#import scipy.special as sps
 import Falsification_Sim_Modules as simModules
 
 def GetUsableSampleVectors(A,PosData,NumSamples):
