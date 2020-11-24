@@ -18,7 +18,7 @@ import pickle
 import matplotlib.pyplot as plt
 import Falsification_Sim_Classes as simClasses # modules for the simulation
 
-'''
+
 import winsound #COMMENT OUT BEFORE SENDING TO QUEST
 def CEOTTKbeep():
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**10)),400)
@@ -26,7 +26,7 @@ def CEOTTKbeep():
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)  
-'''    
+
 
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',
@@ -1808,8 +1808,8 @@ def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,de
     samples, lnprob, epsilon = nuts6(UNTRACKEDtargetForNUTS,M,Madapt,beta0,delta)
     
     return samples
-
 ###### END UNTRACKED FUNCTIONS ######
+    
 ###### BEGIN UNTRACKED FUNCTIONS ######
 def TRACKED_NegLogLikeFunc(betaVec,numMat,posMat,sens,spec,RglrWt):
     # pVec should be [importers, outlets]
@@ -2186,7 +2186,7 @@ def nuts6(f, M, Madapt, theta0, delta=0.25):
         n = 1  # Initially the only valid point is the initial point.
         s = 1  # Main loop: will keep going until s == 0.
         
-        if np.mod(m,100)==0 or m==1:
+        if np.mod(m,1000)==0 or m==1:
             print('Generating point '+str(m)) #EOW ADD
         
         while (s == 1):

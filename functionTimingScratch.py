@@ -5,11 +5,12 @@ Created on Sun Nov 22 16:24:25 2020
 @author: eugen
 """
 
-import time
+
+#import time
 import Falsification_Sim_Modules as simModules
-import scipy.optimize as spo
+#import scipy.optimize as spo
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 Sens,Spec,wt = 0.95,0.95,0.1
 pImp = np.array((0.001, 0.2, 0.1,0.001, 0.2, 0.1))
@@ -32,6 +33,7 @@ for i in range(n):
 
 beta0 = -3*np.ones(n+m)
 
+'''
 #TRACKED
 L0 = simModules.TRACKED_NegLogLikeFunc(beta0,N,Y,Sens,Spec,wt)
 dL0 = np.array(simModules.TRACKED_NegLogLikeFunc_Jac(beta0,N,Y,Sens,Spec,wt))
@@ -58,22 +60,14 @@ opVal = spo.minimize(simModules.TRACKED_NegLogLikeFunc,
 simModules.invlogit(opVal.x)        
 
 pVec,numMat,posMat,sens,spec,RglrWt = opVal.x,N,Y,Sens,Spec,wt
+'''
 
-lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 1, 20, 0.4 
-timeVec = []
-for i in range(10):
-    startTime = time.time()
-    postSamps_tr = simModules.GeneratePostSamps_TRACKED(N,Y,Sens,Spec,wt,\
-                                                      lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
-    totalTime = time.time()-startTime
-    print(totalTime)
-    timeVec.append(totalTime)
+lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 200, 200, 0.4 
 
+postSamps_tr = simModules.GeneratePostSamps_TRACKED(N,Y,Sens,Spec,wt,\
+                                                  lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
 
-plt.hist(timeVec)
-np.mean(timeVec)
-
-
+'''
 fig = plt.figure()
 ax = fig.add_axes([0,0,2,1])
 ax.set_xlabel('Intermediate Node',fontsize=16)
@@ -95,9 +89,7 @@ for i in range(n):
     meanSampVec.append(np.mean(simModules.invlogit(postSamps_tr[:,i+m])))
 meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
 
-
-
-
+'''
 
 
 
@@ -120,6 +112,7 @@ Y = np.random.binomial(N,realprobz)
 (n,m) = Q.shape
 beta0 = -3*np.ones(n+m)
 
+'''
 L0 = simModules.UNTRACKED_NegLogLikeFunc(beta0,N,Y,Sens,Spec,Q,wt)
 dL0 = simModules.UNTRACKED_NegLogLikeFunc_Jac(beta0,N,Y,Sens,Spec,Q,wt)
 for k in range(m+n):
@@ -142,10 +135,10 @@ print(simModules.invlogit(opval.x))
 print(pImp)
 print(pOut)
 
-
+'''
 #testing UNTRACKED posterior samples
-lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 
-postSamps = simModules.GeneratePostSamps_UNTRACKED(N,Y,Q,Sens,Spec,wt,\
+lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 200, 200, 0.4 
+postSamps_untr = simModules.GeneratePostSamps_UNTRACKED(N,Y,Q,Sens,Spec,wt,\
                                                   lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
 
 
