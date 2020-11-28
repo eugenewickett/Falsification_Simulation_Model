@@ -7,7 +7,8 @@ Created on Thu Apr  2 00:42:07 2020
 
 import os # for directories
 import pickle # for saving/loading objects in Python
-
+import matplotlib.pyplot as plt
+import numpy as np
 # Run supporting files
 #os.getcwd() Run this command to get the current working directory string
 os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsification_Simulation_Model') # Set directory    
@@ -15,19 +16,26 @@ os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsi
 import Falsification_Sim_Modules as simModules
 
 directory = r'C:\Users\eugen\OneDrive\Documents\EAGER Project\Simulator'+\
-         '\Sim Model Files TOO BIG FOR REPO\SIXNOV_RUNS\Consolidated Files'
-# BAD INTERMEDIATE NODE
+         '\Sim Model Files TOO BIG FOR REPO\TWENTYSEVENNOV_RUNS\Consolidated Files'
+         
 OPFileNames = os.listdir(directory)
 '''
-OPFileNames=['OP_600_10.0_0.99_0.85_0.0_0.0_0.5',
-             'OP_600_10.0_0.99_0.95_0.0_0.0_0.5',
-             'OP_600_10.0_0.99_0.9_0.0_0.0_0.5',
-             'OP_600_10.0_0.99_0.99_0.0_0.0_0.5',
-             'OP_600_10.0_0.99_0.85_80.0_0.0_0.5',
-             'OP_600_10.0_0.99_0.95_80.0_0.0_0.5',
-             'OP_600_10.0_0.99_0.9_80.0_0.0_0.5',
-             'OP_600_10.0_0.99_0.99_80.0_0.0_0.5'
+OPFileNames=['OP_600_1.0_0.99_0.99_0.0_0.0_0.1',
+             'OP_600_1.0_0.99_0.99_40.0_0.0_0.1',
+             'OP_600_1.0_0.99_0.99_80.0_0.0_0.1',
+             'OP_600_1.0_0.99_0.99_120.0_0.0_0.1'
              ]
+'OP_600_1.0_0.99_0.99_0.0_0.0_0.1',
+ 'OP_600_1.0_0.99_0.99_40.0_0.0_0.1',
+ 'OP_600_1.0_0.99_0.99_80.0_0.0_0.1',
+
+'OP_600_0.25_0.99_0.99_0.0_0.0_0.1',
+ 'OP_600_0.25_0.99_0.99_40.0_0.0_0.1',
+ 'OP_600_0.25_0.99_0.99_80.0_0.0_0.1',
+ 
+ 'OP_600_0.5_0.99_0.99_0.0_0.0_0.1',
+ 'OP_600_0.5_0.99_0.99_40.0_0.0_0.1',
+ 'OP_600_0.5_0.99_0.99_80.0_0.0_0.1',
 '''
 
 OPDicts = []
@@ -41,8 +49,34 @@ for item in OPFileNames:
 simModules.SimSFEstimateOutput(OPDicts,OPFileNames)
 
 
-OPDicts[2][0]['inputParameterDictionary']
+numSampsColleced = []
+for i in range(len(OPDicts)):
+    currDict = OPDicts[i]
+    
+    for j in range(len(currDict.keys())):
+        numSampsColleced.append(np.sum([item[1] for item in currDict[j]['dynTestResults']]))
+plt.hist([i for i in numSampsColleced if i > 501])
+np.mean(numSampsColleced)
+'''
+timeVec = []
+for i in range(len(OPDicts)):
+    currDict = OPDicts[i]
+    
+    for j in range(len(currDict.keys())):
+        timeVec.append(currDict[j]['simRunTime'])
 
+plt.hist(timeVec)
+np.mean(timeVec)/60
+
+
+OPDicts[2][0]['inputParameterDictionary']
+OPDicts[2][0]['intSFTrueValues']
+np.sum([i[1] for i in OPDicts[0][5]['dynTestResults']])
+
+for imp in range(10):
+    print(np.mean(simModules.invlogit(OPDicts[2][0]['postSamps_Untracked'][:,imp])))
+    print(np.mean(simModules.invlogit(OPDicts[2][0]['postSamps_Tracked'][:,imp])))
+'''
 
 
 '''

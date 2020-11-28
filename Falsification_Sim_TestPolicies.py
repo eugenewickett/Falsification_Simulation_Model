@@ -135,6 +135,8 @@ def Pol_Stat_Random(resultsList,totalSimDays=1000,numDaysRemain=1000,\
     sampleSchedule.sort(key=lambda x: x[0]) # Sort our schedule by day before output
     return sampleSchedule
 
+
+
 def Pol_Dyn_EpsGreedy(resultsList,totalSimDays=1000,numDaysRemain=1000,\
                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
     """

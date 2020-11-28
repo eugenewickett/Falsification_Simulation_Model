@@ -39,7 +39,7 @@ NumSimDays = 600
 samplingBudget = NumSimDays*1
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
-globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
+globalDemand = 120. #Level of global demand increase across all outlets, in mean demand/simulation day
 numReplications = 1
 
 alertIter = 7 # How frequently we're alerted of a set of replications being completed
@@ -68,7 +68,7 @@ currTrVec = []
 currStVec = []
 
 optRegularizationWeight = 0.1 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -332,6 +332,8 @@ for rep in range(numReplications):
                     # END IF
                 if madeTest == False: # Report -1 if no sample procured due to stockout
                     DPRoot = -1
+                    List_TestingSchedule.append([today+1,int(np.floor(np.random.uniform(rootNum+intermediateNum,rootNum+intermediateNum+endNum)))]) #append a random node to be tested the next day
+                    List_TestingSchedule.sort()
                 # END IF
 
                 # Conduct sensitivity and specificity filters
@@ -578,7 +580,7 @@ for rep in range(numReplications):
         estIntFalsePercList_Bern = output_Bern['intProj']
         estEndFalsePercList_Bern = output_Bern['endProj']
     except:
-        print("Couldn't generate the BERNOULLI MLE estimates")
+        #print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
 
@@ -902,9 +904,7 @@ if warmUpRun == False and storeOutput == True:
 #       ORDER AMOUNT IS REORDER POINT/2
 # 2.1) RECORD NUMBER OF TRIGGERS
 # 3) RUN MULTIPLE REPLICATIONS OVER LONG-RUN SIMULATIONS
-# 4) GENERATE BATCH FILES VARYING DIFFERENT PARAMETERS
 # 5) OUTPUT BATCH CONSUMPTION RATE
-# 6) STREAMLINE TESTING/SAMPLING PROCESS INTO A MODULE
 # 7) "SANDY" CHECKS TO ENSURE THINGS ARE RUNNING SMOOTHLY
 # 8) PUT WARM-UP LINES INTO A MODULE
 # 9) BUILD INVENTORY CHECK SUMMARIES TO HANDLE INTERMEDIATE NODES

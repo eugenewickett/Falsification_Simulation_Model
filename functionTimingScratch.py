@@ -8,13 +8,13 @@ Created on Sun Nov 22 16:24:25 2020
 
 #import time
 import Falsification_Sim_Modules as simModules
-#import scipy.optimize as spo
+import scipy.optimize as spo
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 Sens,Spec,wt = 0.95,0.95,0.1
-pImp = np.array((0.001, 0.2, 0.1,0.001, 0.2, 0.1))
-pOut = np.array((0.001, 0.001, 0.2, 0.001, 0.1, 0.001,0.001, 0.001, 0.2, 0.001, 0.1, 0.001))
+pImp = np.array((0.001, 0.2, 0.1))
+pOut = np.array((0.001, 0.001, 0.2, 0.001, 0.1, 0.001))
 n = len(pOut)
 m = len(pImp)
 trackPtildes = np.zeros(shape=(n,m))
@@ -31,7 +31,7 @@ for i in range(n):
         N[i,j] += numSamps
         Y[i,j] += np.random.binomial(numSamps,trackPtildes[i,j])
 
-beta0 = -3*np.ones(n+m)
+beta0 = -4.5*np.ones(n+m)
 
 '''
 #TRACKED
@@ -42,9 +42,7 @@ for k in range(m+n):
     beta1 = 1*beta0[:]
     beta1[k] = beta1[k] + 10**(-5)
     L1 = simModules.TRACKED_NegLogLikeFunc(beta1,N,Y,Sens, Spec,wt)
-    if k==0:
-        c=(L1-L0) * (10 **(5))/dL0[k]
-    print((L1-L0) * (10 **(5))/c) 
+    print((L1-L0) * (10 **(5))) 
     print(dL0[k])
 
 bds = spo.Bounds(np.zeros(n+m)-8, np.zeros(m+n)+8)
@@ -110,7 +108,7 @@ realprobz = realproby * Sens + (1-realproby) * (1-Spec) #real testing
 N = (1000 * np.ones(Q.shape[0])).astype('int')
 Y = np.random.binomial(N,realprobz)
 (n,m) = Q.shape
-beta0 = -3*np.ones(n+m)
+beta0 = -4.5*np.ones(n+m)
 
 '''
 L0 = simModules.UNTRACKED_NegLogLikeFunc(beta0,N,Y,Sens,Spec,Q,wt)
@@ -119,9 +117,7 @@ for k in range(m+n):
     beta1 = 1*beta0[:]
     beta1[k] = beta1[k] + 10**(-5)
     L1 = simModules.UNTRACKED_NegLogLikeFunc(beta1,N,Y,Sens, Spec,Q,wt)
-    if k==0:
-        c=(L1-L0) * (10 **(5))/dL0[k]
-    print((L1-L0) * (10 **(5))/c)
+    print((L1-L0) * (10 **(5)))
     print(dL0[k])
 
 bds = spo.Bounds(beta0-8, beta0+8)
@@ -140,6 +136,134 @@ print(pOut)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 200, 200, 0.4 
 postSamps_untr = simModules.GeneratePostSamps_UNTRACKED(N,Y,Q,Sens,Spec,wt,\
                                                   lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+
+
+
+import Falsification_Sim_Modules as simModules
+#CHECKING THE HESSIAN
+#TRACKED
+#np.set_printoptions(suppress=True)
+#betaVec,numMat,posMat,sens,spec,RglrWt = beta0,N,Y,Sens,Spec,wt
+dL0 = simModules.TRACKED_NegLogLikeFunc_Jac(beta0,N,Y,Sens,Spec,wt)
+d2L0 = simModules.TRACKED_NegLogLikeFunc_Hess(beta0,N,Y,Sens,Spec,wt)
+
+for k in range(m+n):
+    beta1 = 1*beta0[:]
+    beta1[k] = beta1[k] + 10**(-7)
+      
+    dL1 = simModules.TRACKED_NegLogLikeFunc_Jac(beta1,N,Y,Sens, Spec,wt)
+    print(((dL1-dL0) * (10 **(7))) )
+    print(d2L0[k])
+    
+    
+    
+    
+
+
+
+
+
+import sympy as sym
+betaA = sym.Symbol('betaA')
+s = sym.Symbol('s')
+r = sym.Symbol('r')
+betaB = sym.Symbol('betaB')
+yDat = sym.Symbol('yDat')
+nSam = sym.Symbol('nSam')
+th = sym.exp(betaB)/(sym.exp(betaB)+1)
+pi = sym.exp(betaA)/(sym.exp(betaA)+1)
+z = pi+th-pi*th
+pTilde = s*z + (1-r)*(1-z)
+
+#from the outlet perspective, WRT one importer B
+jac_betaA = (1-th) * (s+r-1) * sym.diff(pi,betaA)*\
+            (yDat/pTilde - (nSam-yDat)/(1-pTilde))
+
+#from the importer perspective, WRT one outlet A
+jac_betaB = (1-pi) * (s+r-1) * sym.diff(th,betaB)*\
+            (yDat/pTilde - (nSam-yDat)/(1-pTilde))
+
+outletPartials = np.zeros(n)
+for outInd in range(n):
+    currPart = 0
+    for impInd in range(m):
+        repl = [(s,Sens),(r,Spec),(betaA,beta0[m+outInd]),(betaB,beta0[impInd])\
+                ,(yDat,Y[outInd,impInd]),(nSam,N[outInd,impInd])]
+        elem = jac_betaA.subs(repl)
+        currPart += elem
+    outletPartials[outInd] = currPart*-1
+    
+
+
+hess_betaA_betaA = sym.diff(jac_betaA,betaA)
+hess_betaA_betaB = sym.diff(jac_betaA,betaB)
+hess_betaB_betaA = sym.diff(jac_betaB,betaA)
+hess_betaB_betaB = sym.diff(jac_betaB,betaB)
+
+hessMat = np.zeros((n+m,n+m))
+
+outletHessDiag = np.zeros(n)
+for outInd in range(n):
+    currPart = 0
+    for impInd in range(m):
+        repl = [(s,Sens),(r,Spec),(betaA,beta0[m+outInd]),(betaB,beta0[impInd])\
+                ,(yDat,Y[outInd,impInd]),(nSam,N[outInd,impInd])]
+        elem = hess_betaA_betaA.subs(repl)
+        currPart += elem
+    outletHessDiag[outInd] = currPart*-1
+
+hessOffDiagMat = np.zeros((n,m))
+for outInd in range(n):
+    currPart = 0
+    for impInd in range(m):
+        repl = [(s,Sens),(r,Spec),(betaA,beta0[m+outInd]),(betaB,beta0[impInd])\
+                ,(yDat,Y[outInd,impInd]),(nSam,N[outInd,impInd])]
+        elem = hess_betaA_betaB.subs(repl)
+        hessOffDiagMat[outInd,impInd] = elem*-1
+
+print(d2L0[m:m+n,0:m])
+
+
+for k in range(3,3+n):
+    print(d2L0[k,k])
+
+Sens,Spec = 0.95, 0.95
+
+outletPart = 0
+for j in range(m):
+    bA, bB = -4.5,-4.5
+    posits, numSamples = 5, 100
+    repl = [(s,Sens),(r,Spec),(betaA,bA),(betaB,bB),(yDat,posits),(nSam,numSamples)]
+    summand = hess_betaA_betaA.subs(repl)
+    outletPart += summand
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

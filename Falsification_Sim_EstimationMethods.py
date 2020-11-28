@@ -81,21 +81,21 @@ def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     int95lower = [intProj[i]-t95*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
     int99upper = [intProj[i]+t99*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
     int99lower = [intProj[i]-t99*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
-    end90upper = [endProj[i]+t90*np.sqrt(varEnds[i]) for i in range(len(intProj))]
-    end90lower = [endProj[i]-t90*np.sqrt(varEnds[i]) for i in range(len(intProj))]
-    end95upper = [endProj[i]+t95*np.sqrt(varEnds[i]) for i in range(len(intProj))]
-    end95lower = [endProj[i]-t95*np.sqrt(varEnds[i]) for i in range(len(intProj))]
-    end99upper = [endProj[i]+t99*np.sqrt(varEnds[i]) for i in range(len(intProj))]
-    end99lower = [endProj[i]-t99*np.sqrt(varEnds[i]) for i in range(len(intProj))]
+    end90upper = [endProj[i]+t90*np.sqrt(varEnds[i]) for i in range(len(endProj))]
+    end90lower = [endProj[i]-t90*np.sqrt(varEnds[i]) for i in range(len(endProj))]
+    end95upper = [endProj[i]+t95*np.sqrt(varEnds[i]) for i in range(len(endProj))]
+    end95lower = [endProj[i]-t95*np.sqrt(varEnds[i]) for i in range(len(endProj))]
+    end99upper = [endProj[i]+t99*np.sqrt(varEnds[i]) for i in range(len(endProj))]
+    end99lower = [endProj[i]-t99*np.sqrt(varEnds[i]) for i in range(len(endProj))]
     #Insert 'nan' where we didn't have any samples
     for i in range(len(zeroInds[0])):
         endProj = np.insert(endProj,zeroInds[0][i],np.nan)
         end90upper = np.insert(end90upper,zeroInds[0][i],np.nan)
-        end90lower = np.insert(end90upper,zeroInds[0][i],np.nan)
-        end95upper = np.insert(end90upper,zeroInds[0][i],np.nan)
-        end95lower = np.insert(end90upper,zeroInds[0][i],np.nan)
-        end99upper = np.insert(end90upper,zeroInds[0][i],np.nan)
-        end99lower = np.insert(end90upper,zeroInds[0][i],np.nan)
+        end90lower = np.insert(end90lower,zeroInds[0][i],np.nan)
+        end95upper = np.insert(end95upper,zeroInds[0][i],np.nan)
+        end95lower = np.insert(end95lower,zeroInds[0][i],np.nan)
+        end99upper = np.insert(end99upper,zeroInds[0][i],np.nan)
+        end99lower = np.insert(end99lower,zeroInds[0][i],np.nan)
     for i in range(len(zeroInds[1])):
         intProj = np.insert(intProj,zeroInds[1][i],np.nan)
         int90upper = np.insert(int90upper,zeroInds[1][i],np.nan)
@@ -156,7 +156,7 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
         S_k = np.diag(Sdiag)
         w_k1 = np.dot(np.linalg.inv(np.dot(A.T,np.dot(S_k,A))),np.dot(A.T, np.subtract(np.add(np.dot(np.dot(S_k,A),w_k),X),mu_k)))
         if np.linalg.norm(w_k-w_k1) > currGap+tol:
-            print('BERNOULLI ALGORITHM COULD NOT CONVERGE')
+            #print('BERNOULLI ALGORITHM COULD NOT CONVERGE')
             intProj = np.zeros([big_m,1])
             endProj = np.zeros([len(NumSamples),1])
             return np.ndarray.tolist(np.squeeze(intProj.T)), np.ndarray.tolist(np.squeeze(endProj.T))

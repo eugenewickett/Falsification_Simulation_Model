@@ -18,7 +18,7 @@ import pickle
 import matplotlib.pyplot as plt
 import Falsification_Sim_Classes as simClasses # modules for the simulation
 
-
+'''
 import winsound #COMMENT OUT BEFORE SENDING TO QUEST
 def CEOTTKbeep():
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**10)),400)
@@ -26,7 +26,7 @@ def CEOTTKbeep():
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**2)*(1.059463094**8)),400)
     winsound.Beep(int(32.7032 * (2**3)*(1.059463094**3)),400)  
-
+'''
 
 def generateNodeListsFromFile(nodeInputFileString='',
                               arcPreferencesFileString='',
@@ -516,44 +516,52 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     avgDevList_Bern = []
     avgDevList_MLE = []
     avgDevList_MLEtr = []
-    avgDevList_NUTS = []
+    avgDevList_Post = []
+    avgDevList_Posttr = []
     absDevList_Lin = []
     absDevList_Bern = []
     absDevList_MLE = []
     absDevList_MLEtr = []
-    absDevList_NUTS = []
+    absDevList_Post = []
+    absDevList_Posttr = []
     stdDevList_Lin = []
     stdDevList_Bern = []
     stdDevList_MLE = []
     stdDevList_MLEtr = []
-    stdDevList_NUTS = []
+    stdDevList_Post = []
+    stdDevList_Posttr = []
     
     # For binary classification of different methods, using the entered threshold
     truePos_Lin = []
     truePos_Bern = []
     truePos_MLE = []
     truePos_MLEtr = []
-    truePos_NUTS = []
+    truePos_Post = []
+    truePos_Posttr = []
     trueNeg_Lin = []
     trueNeg_Bern = []
     trueNeg_MLE = []
     trueNeg_MLEtr = []
-    trueNeg_NUTS = []
+    trueNeg_Post = []
+    trueNeg_Posttr = []
     falsePos_Lin = []
     falsePos_Bern = []
     falsePos_MLE = []
     falsePos_MLEtr = []
-    falsePos_NUTS = []
+    falsePos_Post = []
+    falsePos_Posttr = []
     falseNeg_Lin = []
     falseNeg_Bern = []
     falseNeg_MLE = []
     falseNeg_MLEtr = []
-    falseNeg_NUTS = []
+    falseNeg_Post = []
+    falseNeg_Posttr = []
     accuracy_Lin = []
     accuracy_Bern = []
     accuracy_MLE = []
     accuracy_MLEtr = []
-    accuracy_NUTS = []
+    accuracy_Post = []
+    accuracy_Posttr = []
     
     # For each output dictionary, generate deviation estimates of varying types
     for currDict in OPdicts:
@@ -563,43 +571,51 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         currDict_avgDevList_Bern = []
         currDict_avgDevList_MLE = []
         currDict_avgDevList_MLEtr = []
-        currDict_avgDevList_NUTS = []
+        currDict_avgDevList_Post = []
+        currDict_avgDevList_Posttr = []
         currDict_absDevList_Lin = []
         currDict_absDevList_Bern = []
         currDict_absDevList_MLE = []
         currDict_absDevList_MLEtr = []
-        currDict_absDevList_NUTS = []
+        currDict_absDevList_Post = []
+        currDict_absDevList_Posttr = []
         currDict_stdDevList_Lin = []
         currDict_stdDevList_Bern = []
         currDict_stdDevList_MLE = []
         currDict_stdDevList_MLEtr = []
-        currDict_stdDevList_NUTS = []
+        currDict_stdDevList_Post = []
+        currDict_stdDevList_Posttr = []
         
         currDict_truePos_Lin = []
         currDict_truePos_Bern = []
         currDict_truePos_MLE = []
         currDict_truePos_MLEtr = []
-        currDict_truePos_NUTS = []
+        currDict_truePos_Post = []
+        currDict_truePos_Posttr = []
         currDict_trueNeg_Lin = []
         currDict_trueNeg_Bern = []
         currDict_trueNeg_MLE = []
         currDict_trueNeg_MLEtr = []
-        currDict_trueNeg_NUTS = []
+        currDict_trueNeg_Post = []
+        currDict_trueNeg_Posttr = []
         currDict_falsePos_Lin = []
         currDict_falsePos_Bern = []
         currDict_falsePos_MLE = []
         currDict_falsePos_MLEtr = []
-        currDict_falsePos_NUTS = []
+        currDict_falsePos_Post = []
+        currDict_falsePos_Posttr = []
         currDict_falseNeg_Lin = []
         currDict_falseNeg_Bern = []
         currDict_falseNeg_MLE = []
         currDict_falseNeg_MLEtr = []
-        currDict_falseNeg_NUTS = []
+        currDict_falseNeg_Post = []
+        currDict_falseNeg_Posttr = []
         currDict_accuracy_Lin = []
         currDict_accuracy_Bern = []
         currDict_accuracy_MLE = []
         currDict_accuracy_MLEtr = []
-        currDict_accuracy_NUTS = []
+        currDict_accuracy_Post = []
+        currDict_accuracy_Posttr = []
         
         for repNum in currDict.keys():
             currTrueSFVec = currDict[repNum]['intSFTrueValues']
@@ -623,45 +639,59 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                 currMLEtrProj = currDict[repNum]['intEstMLE_Tracked']
             else:
                 currMLEtrProj = [np.nan for i in range(len(currTrueSFVec))]    
-            currNUTSsamples = currDict[repNum]['postSamps_Untracked']
-            hasNUTS = True
-            if currNUTSsamples == []: # No NUTS samples included
-                hasNUTS = False
+            currPostsamples = currDict[repNum]['postSamps_Untracked']
+            currPosttrsamples = currDict[repNum]['postSamps_Tracked']
+            hasPost = True
+            hasPosttr = True
+            if currPostsamples == []: # No posterior samples included
+                hasPost = False
+            if currPosttrsamples == []: # No posterior samples included
+                hasPosttr = False
             
             currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currLinProj[i])]
             currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currBernProj[i])]
             currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEProj[i])]
             currMLEtrProjdevs = [currMLEtrProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEtrProj[i])]
-            if hasNUTS:
-                currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            if hasPost:
+                currPostdevs = [np.mean(invlogit(currPostsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            if hasPosttr:
+                currPosttrdevs = [np.mean(invlogit(currPosttrsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             
             currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currBernProjAbsdevs = [np.abs(currBernProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEtrProjAbsdevs = [np.abs(currMLEtrProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
-            if hasNUTS:
-                currNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            if hasPost:
+                currPostAbsdevs = [np.abs(np.mean(invlogit(currPostsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            if hasPosttr:
+                currPosttrAbsdevs = [np.abs(np.mean(invlogit(currPosttrsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
                     
             currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
             currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
             currDict_avgDevList_MLE.append(np.mean(currMLEProjdevs))
             currDict_avgDevList_MLEtr.append(np.mean(currMLEtrProjdevs))
-            if hasNUTS:
-                currDict_avgDevList_NUTS.append(np.mean(currNUTSdevs))
+            if hasPost:
+                currDict_avgDevList_Post.append(np.mean(currPostdevs))
+            if hasPosttr:
+                currDict_avgDevList_Posttr.append(np.mean(currPosttrdevs))
             
             currDict_absDevList_Lin.append(np.mean(currLinProjAbsdevs))
             currDict_absDevList_Bern.append(np.mean(currBernProjAbsdevs))
             currDict_absDevList_MLE.append(np.mean(currMLEProjAbsdevs))
             currDict_absDevList_MLEtr.append(np.mean(currMLEtrProjAbsdevs))
-            if hasNUTS:
-                currDict_absDevList_NUTS.append(np.mean(currNUTSAbsdevs))
+            if hasPost:
+                currDict_absDevList_Post.append(np.mean(currPostAbsdevs))
+            if hasPosttr:
+                currDict_absDevList_Posttr.append(np.mean(currPosttrAbsdevs))
             
             currDict_stdDevList_Lin.append(np.std(currLinProjdevs))
             currDict_stdDevList_Bern.append(np.std(currBernProjdevs))
             currDict_stdDevList_MLE.append(np.std(currMLEProjdevs))
             currDict_stdDevList_MLEtr.append(np.std(currMLEtrProjdevs))
-            if hasNUTS:
-                currDict_stdDevList_NUTS.append(np.std(currNUTSdevs))
+            if hasPost:
+                currDict_stdDevList_Post.append(np.std(currPostdevs))
+            if hasPosttr:
+                currDict_stdDevList_Posttr.append(np.std(currPosttrdevs))
             
             # Generate binary classifications using 'threshold'
             currTrueSFVec_Bin = [1 if currTrueSFVec[i] > threshold else 0 for i in range(len(currTrueSFVec))]
@@ -669,7 +699,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currBernProj_Bin = [1 if currBernProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEProj_Bin = [1 if currMLEProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEtrProj_Bin = [1 if currMLEtrProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
-            currNUTSProj_Bin = [1 if np.mean(invlogit(currNUTSsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPostProj_Bin = [1 if np.mean(invlogit(currPostsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPosttrProj_Bin = [1 if np.mean(invlogit(currPosttrsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
             # Generate true/false positives/negatives rates, plus accuracy
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])/\
@@ -695,11 +726,16 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             else:
                 currDict_truePos_MLEtr.append(None)
             
-            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]) > 0:
-                currDict_truePos_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])/\
-                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]))
+            if len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Post.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1)]))
             else:
-                currDict_truePos_NUTS.append(None)
+                currDict_truePos_Post.append(None)
+            if len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Posttr.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_Posttr.append(None)
             
             
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]) > 0:
@@ -722,22 +758,29 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                                             len([i for i in range(len(currMLEtrProj_Bin)) if (currMLEtrProj_Bin[i] == 0)]))
             else:
                 currDict_falseNeg_MLEtr.append(None)
-            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]) > 0:
-                currDict_falseNeg_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])/\
-                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]))
+            if len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Post.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0)]))
             else:
-                currDict_falseNeg_NUTS.append(None)
+                currDict_falseNeg_Post.append(None)
+            if len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Posttr.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_Posttr.append(None)
             
             currDict_falsePos_Lin.append(1 - currDict_truePos_Lin[-1] if currDict_truePos_Lin[-1] is not None else None)
             currDict_falsePos_Bern.append(1 - currDict_truePos_Bern[-1] if currDict_truePos_Bern[-1] is not None else None)
             currDict_falsePos_MLE.append(1 - currDict_truePos_MLE[-1] if currDict_truePos_MLE[-1] is not None else None)
             currDict_falsePos_MLEtr.append(1 - currDict_truePos_MLEtr[-1] if currDict_truePos_MLEtr[-1] is not None else None)
-            currDict_falsePos_NUTS.append(1 - currDict_truePos_NUTS[-1] if currDict_truePos_NUTS[-1] is not None else None)
+            currDict_falsePos_Post.append(1 - currDict_truePos_Post[-1] if currDict_truePos_Post[-1] is not None else None)
+            currDict_falsePos_Posttr.append(1 - currDict_truePos_Posttr[-1] if currDict_truePos_Posttr[-1] is not None else None)
             currDict_trueNeg_Lin.append(1 - currDict_falseNeg_Lin[-1] if currDict_falseNeg_Lin[-1] is not None else None)
             currDict_trueNeg_Bern.append(1 - currDict_falseNeg_Bern[-1] if currDict_falseNeg_Bern[-1] is not None else None)
             currDict_trueNeg_MLE.append(1 - currDict_falseNeg_MLE[-1] if currDict_falseNeg_MLE[-1] is not None else None)
             currDict_trueNeg_MLEtr.append(1 - currDict_falseNeg_MLEtr[-1] if currDict_falseNeg_MLEtr[-1] is not None else None)
-            currDict_trueNeg_NUTS.append(1 - currDict_falseNeg_NUTS[-1] if currDict_falseNeg_NUTS[-1] is not None else None)
+            currDict_trueNeg_Post.append(1 - currDict_falseNeg_Post[-1] if currDict_falseNeg_Post[-1] is not None else None)
+            currDict_trueNeg_Posttr.append(1 - currDict_falseNeg_Posttr[-1] if currDict_falseNeg_Posttr[-1] is not None else None)
             currDict_accuracy_Lin.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])+ \
                                           np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])) \
                                           /len(currLinProj_Bin))
@@ -750,56 +793,70 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currDict_accuracy_MLEtr.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEtrProj_Bin)) if (currMLEtrProj_Bin[i] == 1) ])+ \
                                           np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currMLEtrProj_Bin)) if (currMLEtrProj_Bin[i] == 0) ])) \
                                           /len(currMLEtrProj_Bin))
-            currDict_accuracy_NUTS.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])+ \
-                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])) \
-                                          /len(currNUTSProj_Bin))
+            currDict_accuracy_Post.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0) ])) \
+                                          /len(currPostProj_Bin))
+            currDict_accuracy_Posttr.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0) ])) \
+                                          /len(currPosttrProj_Bin))
         
         avgDevList_Lin.append(currDict_avgDevList_Lin)
         avgDevList_Bern.append(currDict_avgDevList_Bern)
         avgDevList_MLE.append(currDict_avgDevList_MLE)
         avgDevList_MLEtr.append(currDict_avgDevList_MLEtr)
-        if hasNUTS:
-            avgDevList_NUTS.append(currDict_avgDevList_NUTS)
+        if hasPost:
+            avgDevList_Post.append(currDict_avgDevList_Post)
+        if hasPosttr:
+            avgDevList_Posttr.append(currDict_avgDevList_Posttr)
         
         absDevList_Lin.append(currDict_absDevList_Lin) 
         absDevList_Bern.append(currDict_absDevList_Bern)
         absDevList_MLE.append(currDict_absDevList_MLE)
         absDevList_MLEtr.append(currDict_absDevList_MLEtr)
-        if hasNUTS:
-            absDevList_NUTS.append(currDict_absDevList_NUTS)
+        if hasPost:
+            absDevList_Post.append(currDict_absDevList_Post)
+        if hasPosttr:
+            absDevList_Posttr.append(currDict_absDevList_Posttr)
         
         stdDevList_Lin.append(currDict_stdDevList_Lin)
         stdDevList_Bern.append(currDict_stdDevList_Bern)
         stdDevList_MLE.append(currDict_stdDevList_MLE)
         stdDevList_MLEtr.append(currDict_stdDevList_MLEtr)
-        if hasNUTS:
-            stdDevList_NUTS.append(currDict_stdDevList_NUTS)
+        if hasPost:
+            stdDevList_Post.append(currDict_stdDevList_Post)
+        if hasPosttr:
+            stdDevList_Posttr.append(currDict_stdDevList_Posttr)
             
         truePos_Lin.append(currDict_truePos_Lin)
         truePos_Bern.append(currDict_truePos_Bern)
         truePos_MLE.append(currDict_truePos_MLE)
         truePos_MLEtr.append(currDict_truePos_MLEtr)
-        truePos_NUTS.append(currDict_truePos_NUTS)
+        truePos_Post.append(currDict_truePos_Post)
+        truePos_Posttr.append(currDict_truePos_Posttr)
         trueNeg_Lin.append(currDict_trueNeg_Lin)
         trueNeg_Bern.append(currDict_trueNeg_Bern)
         trueNeg_MLE.append(currDict_trueNeg_MLE)
         trueNeg_MLEtr.append(currDict_trueNeg_MLEtr)
-        trueNeg_NUTS.append(currDict_trueNeg_NUTS)
+        trueNeg_Post.append(currDict_trueNeg_Post)
+        trueNeg_Posttr.append(currDict_trueNeg_Posttr)
         falsePos_Lin.append(currDict_falsePos_Lin)
         falsePos_Bern.append(currDict_falsePos_Bern)
         falsePos_MLE.append(currDict_falsePos_MLE)
         falsePos_MLEtr.append(currDict_falsePos_MLEtr)
-        falsePos_NUTS.append(currDict_falsePos_NUTS)
+        falsePos_Post.append(currDict_falsePos_Post)
+        falsePos_Posttr.append(currDict_falsePos_Posttr)
         falseNeg_Lin.append(currDict_falseNeg_Lin)
         falseNeg_Bern.append(currDict_falseNeg_Bern)
         falseNeg_MLE.append(currDict_falseNeg_MLE)
         falseNeg_MLEtr.append(currDict_falseNeg_MLEtr)
-        falseNeg_NUTS.append(currDict_falseNeg_NUTS)
+        falseNeg_Post.append(currDict_falseNeg_Post)
+        falseNeg_Posttr.append(currDict_falseNeg_Posttr)
         accuracy_Lin.append(currDict_accuracy_Lin)
         accuracy_Bern.append(currDict_accuracy_Bern)
         accuracy_MLE.append(currDict_accuracy_MLE)
         accuracy_MLEtr.append(currDict_accuracy_MLEtr)
-        accuracy_NUTS.append(currDict_accuracy_NUTS)
+        accuracy_Post.append(currDict_accuracy_Post)
+        accuracy_Posttr.append(currDict_accuracy_Posttr)
     
     # Scenario-dependent looks at performance
     scenDict = {}
@@ -809,19 +866,22 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         SCENavgDevList_Bern = []
         SCENavgDevList_MLE = []
         SCENavgDevList_MLEtr = []
-        SCENavgDevList_NUTS = []
+        SCENavgDevList_Post = []
+        SCENavgDevList_Posttr = []
         
         SCENabsDevList_Lin = []
         SCENabsDevList_Bern = []
         SCENabsDevList_MLE = []
         SCENabsDevList_MLEtr = []
-        SCENabsDevList_NUTS = []
+        SCENabsDevList_Post = []
+        SCENabsDevList_Posttr = []
         
         SCENstdDevList_Lin = []
         SCENstdDevList_Bern = []
         SCENstdDevList_MLE = []
         SCENstdDevList_MLEtr = []
-        SCENstdDevList_NUTS = []
+        SCENstdDevList_Post = []
+        SCENstdDevList_Posttr = []
         
         for currDict in OPdicts:
         # Loop through each replication contained in the current output dictionary
@@ -829,19 +889,22 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currScenDict_avgDevList_Bern = []
             currScenDict_avgDevList_MLE = []
             currScenDict_avgDevList_MLEtr = []
-            currScenDict_avgDevList_NUTS = []
+            currScenDict_avgDevList_Post = []
+            currScenDict_avgDevList_Posttr = []
             
             currScenDict_absDevList_Lin = []
             currScenDict_absDevList_Bern = []
             currScenDict_absDevList_MLE = []
             currScenDict_absDevList_MLEtr = []
-            currScenDict_absDevList_NUTS = []
+            currScenDict_absDevList_Post = []
+            currScenDict_absDevList_Posttr = []
             
             currScenDict_stdDevList_Lin = []
             currScenDict_stdDevList_Bern = []
             currScenDict_stdDevList_MLE = []
             currScenDict_stdDevList_MLEtr = []
-            currScenDict_stdDevList_NUTS = []
+            currScenDict_stdDevList_Post = []
+            currScenDict_stdDevList_Posttr = []
             
             for repNum in currDict.keys():
                 currTrueSFVec = currDict[repNum]['intSFTrueValues']
@@ -866,81 +929,101 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                         currScenMLEtrProj = [currDict[repNum]['intEstMLE_Tracked'][i] for i in currScenInds]
                     else:
                         currScenMLEtrProj = [np.nan for i in range(len(currScenInds))]
-                    currNUTSsamples = currDict[repNum]['postSamps_Untracked']
-                    hasNUTS = True
-                    if currNUTSsamples == []: # No NUTS samples included
-                        hasNUTS = False
+                    currPostsamples = currDict[repNum]['postSamps_Untracked']
+                    currPosttrsamples = currDict[repNum]['postSamps_Tracked']
+                    hasPost = True
+                    hasPosttr = True
+                    if currPostsamples == []: # No posterior samples included
+                        hasPost = False
+                    if currPosttrsamples == []: # No posterior samples included
+                        hasPosttr = False
                     
                     currScenLinProjdevs = [currScenLinProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currLinProj[i])]
                     currScenBernProjdevs = [currScenBernProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currScenBernProj[i])]
                     currScenMLEProjdevs = [currScenMLEProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currScenMLEProj[i])]
                     currScenMLEtrProjdevs = [currScenMLEtrProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currScenMLEtrProj[i])]
-                    if hasNUTS:
-                        currScenNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    if hasPost:
+                        currScenPostdevs = [np.mean(invlogit(currPostsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                    if hasPosttr:
+                        currScenPosttrdevs = [np.mean(invlogit(currPosttrsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
                     
                     currScenLinProjAbsdevs = [np.abs(currScenLinProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     currScenBernProjAbsdevs = [np.abs(currScenBernProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     currScenMLEProjAbsdevs = [np.abs(currScenMLEProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     currScenMLEtrProjAbsdevs = [np.abs(currScenMLEtrProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]  
-                    if hasNUTS:
-                        currScenNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
+                    if hasPost:
+                        currScenPostAbsdevs = [np.abs(np.mean(invlogit(currPostsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
+                    if hasPosttr:
+                        currScenPosttrAbsdevs = [np.abs(np.mean(invlogit(currPosttrsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     
                     
                     currScenDict_avgDevList_Lin.append(np.mean(currScenLinProjdevs))
                     currScenDict_avgDevList_Bern.append(np.mean(currScenBernProjdevs))
                     currScenDict_avgDevList_MLE.append(np.mean(currScenMLEProjdevs))
                     currScenDict_avgDevList_MLEtr.append(np.mean(currScenMLEtrProjdevs))
-                    if hasNUTS:
-                        currScenDict_avgDevList_NUTS.append(np.mean(currScenNUTSdevs))
+                    if hasPost:
+                        currScenDict_avgDevList_Post.append(np.mean(currScenPostdevs))
+                    if hasPosttr:
+                        currScenDict_avgDevList_Posttr.append(np.mean(currScenPosttrdevs))
                     
                     currScenDict_absDevList_Lin.append(np.mean(currScenLinProjAbsdevs))
                     currScenDict_absDevList_Bern.append(np.mean(currScenBernProjAbsdevs))
                     currScenDict_absDevList_MLE.append(np.mean(currScenMLEProjAbsdevs))
                     currScenDict_absDevList_MLEtr.append(np.mean(currScenMLEtrProjAbsdevs))
-                    if hasNUTS:
-                        currScenDict_absDevList_NUTS.append(np.mean(currScenNUTSAbsdevs))
+                    if hasPost:
+                        currScenDict_absDevList_Post.append(np.mean(currScenPostAbsdevs))
+                    if hasPosttr:
+                        currScenDict_absDevList_Posttr.append(np.mean(currScenPosttrAbsdevs))
                     
                     currScenDict_stdDevList_Lin.append(np.std(currScenLinProjdevs))
                     currScenDict_stdDevList_Bern.append(np.std(currScenBernProjdevs))
                     currScenDict_stdDevList_MLE.append(np.std(currScenMLEProjdevs))
                     currScenDict_stdDevList_MLEtr.append(np.std(currScenMLEtrProjdevs))
-                    if hasNUTS:
-                        currScenDict_stdDevList_NUTS.append(np.std(currScenNUTSdevs))
+                    if hasPost:
+                        currScenDict_stdDevList_Post.append(np.std(currScenPostdevs))
+                    if hasPosttr:
+                        currScenDict_stdDevList_Posttr.append(np.std(currScenPosttrdevs))
             
             SCENavgDevList_Lin.append(currScenDict_avgDevList_Lin)
             SCENavgDevList_Bern.append(currScenDict_avgDevList_Bern)
             SCENavgDevList_MLE.append(currScenDict_avgDevList_MLE)
             SCENavgDevList_MLEtr.append(currScenDict_avgDevList_MLEtr)
-            SCENavgDevList_NUTS.append(currScenDict_avgDevList_NUTS)
+            SCENavgDevList_Post.append(currScenDict_avgDevList_Post)
+            SCENavgDevList_Posttr.append(currScenDict_avgDevList_Posttr)
             
             SCENabsDevList_Lin.append(currScenDict_absDevList_Lin)
             SCENabsDevList_Bern.append(currScenDict_absDevList_Bern)
             SCENabsDevList_MLE.append(currScenDict_absDevList_MLE)
             SCENabsDevList_MLEtr.append(currScenDict_absDevList_MLEtr)
-            SCENabsDevList_NUTS.append(currScenDict_absDevList_NUTS)
+            SCENabsDevList_Post.append(currScenDict_absDevList_Post)
+            SCENabsDevList_Posttr.append(currScenDict_absDevList_Posttr)
             
             SCENstdDevList_Lin.append(currScenDict_stdDevList_Lin)
             SCENstdDevList_Bern.append(currScenDict_stdDevList_Bern)
             SCENstdDevList_MLE.append(currScenDict_stdDevList_MLE)
             SCENstdDevList_MLEtr.append(currScenDict_stdDevList_MLEtr)
-            SCENstdDevList_NUTS.append(currScenDict_stdDevList_NUTS)
+            SCENstdDevList_Post.append(currScenDict_stdDevList_Post)
+            SCENstdDevList_Posttr.append(currScenDict_stdDevList_Posttr)
         
         currOutputLine = {'scenario': currScen,
                           'SCENavgDevList_Lin':SCENavgDevList_Lin,
                           'SCENavgDevList_Bern':SCENavgDevList_Bern,
                           'SCENavgDevList_MLE':SCENavgDevList_MLE,
                           'SCENavgDevList_MLEtr':SCENavgDevList_MLEtr,
-                          'SCENavgDevList_NUTS':SCENavgDevList_NUTS,
+                          'SCENavgDevList_Post':SCENavgDevList_Post,
+                          'SCENavgDevList_Posttr':SCENavgDevList_Posttr,
                           'SCENabsDevList_Lin':SCENabsDevList_Lin,
                           'SCENabsDevList_Bern':SCENabsDevList_Bern,
                           'SCENabsDevList_MLE':SCENabsDevList_MLE,
                           'SCENabsDevList_MLEtr':SCENabsDevList_MLEtr,
-                          'SCENabsDevList_NUTS':SCENabsDevList_NUTS,                        
+                          'SCENabsDevList_Post':SCENabsDevList_Post,
+                          'SCENabsDevList_Posttr':SCENabsDevList_Posttr, 
                           'SCENstdDevList_Lin':SCENstdDevList_Lin,
                           'SCENstdDevList_Bern':SCENstdDevList_Bern,
                           'SCENstdDevList_MLE':SCENstdDevList_MLE,
                           'SCENstdDevList_MLEtr':SCENstdDevList_MLEtr,
-                          'SCENstdDevList_NUTS':SCENstdDevList_NUTS
+                          'SCENstdDevList_Post':SCENstdDevList_Post,
+                          'SCENstdDevList_Posttr':SCENstdDevList_Posttr
                           }
         scenDict[ind] = currOutputLine
         ind += 1
@@ -952,44 +1035,52 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     avgDevList_Bern_E = []
     avgDevList_MLE_E = []
     avgDevList_MLEtr_E = []
-    avgDevList_NUTS_E = []
+    avgDevList_Post_E = []
+    avgDevList_Posttr_E = []
     absDevList_Lin_E = []
     absDevList_Bern_E = []
     absDevList_MLE_E = []
     absDevList_MLEtr_E = []
-    absDevList_NUTS_E = []
+    absDevList_Post_E = []
+    absDevList_Posttr_E = []
     stdDevList_Lin_E = []
     stdDevList_Bern_E = []
     stdDevList_MLE_E = []
     stdDevList_MLEtr_E = [] 
-    stdDevList_NUTS_E = []
+    stdDevList_Post_E = []
+    stdDevList_Posttr_E = []
     
     # For binary classification of different methods, using the entered threshold
     truePos_Lin_E = []
     truePos_Bern_E = []
     truePos_MLE_E = []
     truePos_MLEtr_E = []
-    truePos_NUTS_E = []
+    truePos_Post_E = []
+    truePos_Posttr_E = []
     trueNeg_Lin_E = []
     trueNeg_Bern_E = []
     trueNeg_MLE_E = []
     trueNeg_MLEtr_E = []
-    trueNeg_NUTS_E = []
+    trueNeg_Post_E = []
+    trueNeg_Posttr_E = []
     falsePos_Lin_E = []
     falsePos_Bern_E = []
     falsePos_MLE_E = []
     falsePos_MLEtr_E = []
-    falsePos_NUTS_E = []
+    falsePos_Post_E = []
+    falsePos_Posttr_E = []
     falseNeg_Lin_E = []
     falseNeg_Bern_E = []
     falseNeg_MLE_E = []
     falseNeg_MLEtr_E = []
-    falseNeg_NUTS_E = []
+    falseNeg_Post_E = []
+    falseNeg_Posttr_E = []
     accuracy_Lin_E = []
     accuracy_Bern_E = []
     accuracy_MLE_E = []
     accuracy_MLEtr_E = []
-    accuracy_NUTS_E = []
+    accuracy_Post_E = []
+    accuracy_Posttr_E = []
     
     # For each output dictionary, generate deviation estimates of varying types
     for currDict in OPdicts:
@@ -999,43 +1090,50 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         currDict_avgDevList_Bern = []
         currDict_avgDevList_MLE = []
         currDict_avgDevList_MLEtr = []
-        currDict_avgDevList_NUTS = []
+        currDict_avgDevList_Post = []
+        currDict_avgDevList_Posttr = []
         currDict_absDevList_Lin = []
         currDict_absDevList_Bern = []
         currDict_absDevList_MLE = []
         currDict_absDevList_MLEtr = []
-        currDict_absDevList_NUTS = []
+        currDict_absDevList_Post = []
+        currDict_absDevList_Posttr = []
         currDict_stdDevList_Lin = []
         currDict_stdDevList_Bern = []
         currDict_stdDevList_MLE = []
         currDict_stdDevList_MLEtr = []
-        currDict_stdDevList_NUTS = []
+        currDict_stdDevList_Post = []
+        currDict_stdDevList_Posttr = []
         
         currDict_truePos_Lin = []
         currDict_truePos_Bern = []
         currDict_truePos_MLE = []
         currDict_truePos_MLEtr = []
-        currDict_truePos_NUTS = []
+        currDict_truePos_Post = []
+        currDict_truePos_Posttr = []
         currDict_trueNeg_Lin = []
         currDict_trueNeg_Bern = []
         currDict_trueNeg_MLE = []
         currDict_trueNeg_MLEtr = []
-        currDict_trueNeg_NUTS = []
+        currDict_trueNeg_Post = []
+        currDict_trueNeg_Posttr = []
         currDict_falsePos_Lin = []
         currDict_falsePos_Bern = []
         currDict_falsePos_MLE = []
         currDict_falsePos_MLEtr = []
-        currDict_falsePos_NUTS = []
+        currDict_falsePos_Post = []
+        currDict_falsePos_Posttr = []
         currDict_falseNeg_Lin = []
         currDict_falseNeg_Bern = []
         currDict_falseNeg_MLE = []
         currDict_falseNeg_MLEtr = []
-        currDict_falseNeg_NUTS = []
+        currDict_falseNeg_Post = []
+        currDict_falseNeg_Posttr = []
         currDict_accuracy_Lin = []
         currDict_accuracy_Bern = []
         currDict_accuracy_MLE = []
         currDict_accuracy_MLEtr = []
-        currDict_accuracy_NUTS = []
+        currDict_accuracy_Posttr = []
         
         for repNum in currDict.keys():
             numInts = len(currDict[repNum]['intSFTrueValues'])
@@ -1056,46 +1154,60 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                 currMLEtrProj = currDict[repNum]['endEstMLE_Tracked']
             else:
                 currMLEtrProj = [np.nan for i in range(len(currTrueSFVec))] 
-            currNUTSsamples = currDict[repNum]['postSamps_Untracked']
-            hasNUTS = True
-            if currNUTSsamples == []: # No NUTS samples included
-                hasNUTS = False
+            currPostsamples = currDict[repNum]['postSamps_Untracked']
+            currPosttrsamples = currDict[repNum]['postSamps_Tracked']
+            hasPost = True
+            hasPosttr = True
+            if currPostsamples == []: # No posterior samples included
+                hasPost = False
+            if currPosttrsamples == []: # No posterior samples included
+                hasPosttr = False
             
             currLinProjdevs = [currLinProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currLinProj[i])]
             currBernProjdevs = [currBernProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currBernProj[i])]
             currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEProj[i])]
             currMLEtrProjdevs = [currMLEtrProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEtrProj[i])]
-            if hasNUTS:
-                currNUTSdevs = [np.mean(invlogit(currNUTSsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            if hasPost:
+                currPostdevs = [np.mean(invlogit(currPostsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+            if hasPosttr:
+                currPosttrdevs = [np.mean(invlogit(currPosttrsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             
             currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currBernProjAbsdevs = [np.abs(currBernProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEtrProjAbsdevs = [np.abs(currMLEtrProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
-            if hasNUTS:
-                currNUTSAbsdevs = [np.abs(np.mean(invlogit(currNUTSsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            if hasPost:
+                currPostAbsdevs = [np.abs(np.mean(invlogit(currPostsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            if hasPosttr:
+                currPosttrAbsdevs = [np.abs(np.mean(invlogit(currPosttrsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             
             
             currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
             currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
             currDict_avgDevList_MLE.append(np.mean(currMLEProjdevs))
             currDict_avgDevList_MLEtr.append(np.mean(currMLEtrProjdevs))
-            if hasNUTS:
-                currDict_avgDevList_NUTS.append(np.mean(currNUTSdevs))
+            if hasPost:
+                currDict_avgDevList_Post.append(np.mean(currPostdevs))
+            if hasPosttr:
+                currDict_avgDevList_Posttr.append(np.mean(currPosttrdevs))
             
             currDict_absDevList_Lin.append(np.mean(currLinProjAbsdevs))
             currDict_absDevList_Bern.append(np.mean(currBernProjAbsdevs))
             currDict_absDevList_MLE.append(np.mean(currMLEProjAbsdevs))
             currDict_absDevList_MLEtr.append(np.mean(currMLEtrProjAbsdevs))
-            if hasNUTS:
-                currDict_absDevList_NUTS.append(np.mean(currNUTSAbsdevs))
+            if hasPost:
+                currDict_absDevList_Post.append(np.mean(currPostAbsdevs))
+            if hasPosttr:
+                currDict_absDevList_Posttr.append(np.mean(currPosttrAbsdevs))
             
             currDict_stdDevList_Lin.append(np.std(currLinProjdevs))
             currDict_stdDevList_Bern.append(np.std(currBernProjdevs))
             currDict_stdDevList_MLE.append(np.std(currMLEProjdevs))
             currDict_stdDevList_MLEtr.append(np.std(currMLEtrProjdevs))
-            if hasNUTS:
-                currDict_stdDevList_NUTS.append(np.std(currNUTSdevs))
+            if hasPost:
+                currDict_stdDevList_Post.append(np.std(currPostdevs))
+            if hasPosttr:
+                currDict_stdDevList_Posttr.append(np.std(currPosttrdevs))
             
             # Generate binary classifications using 'threshold'
             currTrueSFVec_Bin = [1 if currTrueSFVec[i] > threshold else 0 for i in range(len(currTrueSFVec))]
@@ -1103,7 +1215,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currBernProj_Bin = [1 if currBernProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEProj_Bin = [1 if currMLEProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEtrProj_Bin = [1 if currMLEtrProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
-            currNUTSProj_Bin = [1 if np.mean(invlogit(currNUTSsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPostProj_Bin = [1 if np.mean(invlogit(currPostsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPosttrProj_Bin = [1 if np.mean(invlogit(currPosttrsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
             # Generate true/false positives/negatives rates, plus accuracy
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])/\
@@ -1125,11 +1238,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                                             len([i for i in range(len(currMLEtrProj_Bin)) if (currMLEtrProj_Bin[i] == 1)]))
             else:
                 currDict_truePos_MLEtr.append(None)
-            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]) > 0:
-                currDict_truePos_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])/\
-                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1)]))
+            if len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Post.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1)]))
             else:
-                currDict_truePos_NUTS.append(None)
+                currDict_truePos_Post.append(None)
+            if len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1)]) > 0:
+                currDict_truePos_Posttr.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1) ])/\
+                                            len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1)]))
+            else:
+                currDict_truePos_Posttr.append(None)
+            
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]) > 0:
                 currDict_falseNeg_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])/\
                                             len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0)]))
@@ -1150,22 +1269,29 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                                             len([i for i in range(len(currMLEtrProj_Bin)) if (currMLEtrProj_Bin[i] == 0)]))
             else:
                 currDict_falseNeg_MLEtr.append(None)
-            if len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]) > 0:
-                currDict_falseNeg_NUTS.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])/\
-                                            len([i for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0)]))
+            if len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Post.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0)]))
             else:
-                currDict_falseNeg_NUTS.append(None)
+                currDict_falseNeg_Post.append(None)
+            if len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0)]) > 0:
+                currDict_falseNeg_Posttr.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0) ])/\
+                                            len([i for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0)]))
+            else:
+                currDict_falseNeg_Posttr.append(None)
              
             currDict_falsePos_Lin.append(1 - currDict_truePos_Lin[-1] if currDict_truePos_Lin[-1] is not None else None)
             currDict_falsePos_Bern.append(1 - currDict_truePos_Bern[-1] if currDict_truePos_Bern[-1] is not None else None)
             currDict_falsePos_MLE.append(1 - currDict_truePos_MLE[-1] if currDict_truePos_MLE[-1] is not None else None)
             currDict_falsePos_MLEtr.append(1 - currDict_truePos_MLEtr[-1] if currDict_truePos_MLEtr[-1] is not None else None)
-            currDict_falsePos_NUTS.append(1 - currDict_truePos_NUTS[-1] if currDict_truePos_NUTS[-1] is not None else None)
+            currDict_falsePos_Post.append(1 - currDict_truePos_Post[-1] if currDict_truePos_Post[-1] is not None else None)
+            currDict_falsePos_Posttr.append(1 - currDict_truePos_Posttr[-1] if currDict_truePos_Posttr[-1] is not None else None)
             currDict_trueNeg_Lin.append(1 - currDict_falseNeg_Lin[-1] if currDict_falseNeg_Lin[-1] is not None else None)
             currDict_trueNeg_Bern.append(1 - currDict_falseNeg_Bern[-1] if currDict_falseNeg_Bern[-1] is not None else None)
             currDict_trueNeg_MLE.append(1 - currDict_falseNeg_MLE[-1] if currDict_falseNeg_MLE[-1] is not None else None)
             currDict_trueNeg_MLEtr.append(1 - currDict_falseNeg_MLEtr[-1] if currDict_falseNeg_MLEtr[-1] is not None else None)
-            currDict_trueNeg_NUTS.append(1 - currDict_falseNeg_NUTS[-1] if currDict_falseNeg_NUTS[-1] is not None else None)
+            currDict_trueNeg_Post.append(1 - currDict_falseNeg_Post[-1] if currDict_falseNeg_Post[-1] is not None else None)
+            currDict_trueNeg_Posttr.append(1 - currDict_falseNeg_Posttr[-1] if currDict_falseNeg_Posttr[-1] is not None else None)
             currDict_accuracy_Lin.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])+ \
                                           np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 0) ])) \
                                           /len(currLinProj_Bin))
@@ -1178,56 +1304,70 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currDict_accuracy_MLEtr.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currMLEtrProj_Bin)) if (currMLEtrProj_Bin[i] == 1) ])+ \
                                           np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currMLEtrProj_Bin)) if (currMLEtrProj_Bin[i] == 0) ])) \
                                           /len(currMLEtrProj_Bin))
-            currDict_accuracy_NUTS.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 1) ])+ \
-                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currNUTSProj_Bin)) if (currNUTSProj_Bin[i] == 0) ])) \
-                                          /len(currNUTSProj_Bin))
+            currDict_accuracy_Post.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currPostProj_Bin)) if (currPostProj_Bin[i] == 0) ])) \
+                                          /len(currPostProj_Bin))
+            currDict_accuracy_Posttr.append((np.sum([currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 1) ])+ \
+                                          np.sum([1-currTrueSFVec_Bin[i] for i in range(len(currPosttrProj_Bin)) if (currPosttrProj_Bin[i] == 0) ])) \
+                                          /len(currPosttrProj_Bin))
         
         avgDevList_Lin_E.append(currDict_avgDevList_Lin)
         avgDevList_Bern_E.append(currDict_avgDevList_Bern)
         avgDevList_MLE_E.append(currDict_avgDevList_MLE)
         avgDevList_MLEtr_E.append(currDict_avgDevList_MLEtr)
-        if hasNUTS:
-            avgDevList_NUTS_E.append(currDict_avgDevList_NUTS)
+        if hasPost:
+            avgDevList_Post_E.append(currDict_avgDevList_Post)
+        if hasPosttr:
+            avgDevList_Posttr_E.append(currDict_avgDevList_Posttr)
         
         absDevList_Lin_E.append(currDict_absDevList_Lin) 
         absDevList_Bern_E.append(currDict_absDevList_Bern)
         absDevList_MLE_E.append(currDict_absDevList_MLE)
         absDevList_MLEtr_E.append(currDict_absDevList_MLEtr)
-        if hasNUTS:
-            absDevList_NUTS_E.append(currDict_absDevList_NUTS)
+        if hasPost:
+            absDevList_Post_E.append(currDict_absDevList_Post)
+        if hasPosttr:
+            absDevList_Posttr_E.append(currDict_absDevList_Posttr)
         
         stdDevList_Lin_E.append(currDict_stdDevList_Lin)
         stdDevList_Bern_E.append(currDict_stdDevList_Bern)
         stdDevList_MLE_E.append(currDict_stdDevList_MLE)
         stdDevList_MLEtr_E.append(currDict_stdDevList_MLEtr)
-        if hasNUTS:
-            stdDevList_NUTS_E.append(currDict_stdDevList_NUTS)
+        if hasPost:
+            stdDevList_Post_E.append(currDict_stdDevList_Post)
+        if hasPosttr:
+            stdDevList_Posttr_E.append(currDict_stdDevList_Posttr)
             
         truePos_Lin_E.append(currDict_truePos_Lin)
         truePos_Bern_E.append(currDict_truePos_Bern)
         truePos_MLE_E.append(currDict_truePos_MLE)
         truePos_MLEtr_E.append(currDict_truePos_MLEtr)
-        truePos_NUTS_E.append(currDict_truePos_NUTS)
+        truePos_Post_E.append(currDict_truePos_Post)
+        truePos_Posttr_E.append(currDict_truePos_Posttr)
         trueNeg_Lin_E.append(currDict_trueNeg_Lin)
         trueNeg_Bern_E.append(currDict_trueNeg_Bern)
         trueNeg_MLE_E.append(currDict_trueNeg_MLE)
         trueNeg_MLEtr_E.append(currDict_trueNeg_MLEtr)
-        trueNeg_NUTS_E.append(currDict_trueNeg_NUTS)
+        trueNeg_Post_E.append(currDict_trueNeg_Post)
+        trueNeg_Posttr_E.append(currDict_trueNeg_Posttr)
         falsePos_Lin_E.append(currDict_falsePos_Lin)
         falsePos_Bern_E.append(currDict_falsePos_Bern)
         falsePos_MLE_E.append(currDict_falsePos_MLE)
         falsePos_MLEtr_E.append(currDict_falsePos_MLEtr)
-        falsePos_NUTS_E.append(currDict_falsePos_NUTS)
+        falsePos_Post_E.append(currDict_falsePos_Post)
+        falsePos_Posttr_E.append(currDict_falsePos_Posttr)
         falseNeg_Lin_E.append(currDict_falseNeg_Lin)
         falseNeg_Bern_E.append(currDict_falseNeg_Bern)
         falseNeg_MLE_E.append(currDict_falseNeg_MLE)
         falseNeg_MLEtr_E.append(currDict_falseNeg_MLEtr)
-        falseNeg_NUTS_E.append(currDict_falseNeg_NUTS)
+        falseNeg_Post_E.append(currDict_falseNeg_Post)
+        falseNeg_Posttr_E.append(currDict_falseNeg_Posttr)
         accuracy_Lin_E.append(currDict_accuracy_Lin)
         accuracy_Bern_E.append(currDict_accuracy_Bern)
         accuracy_MLE_E.append(currDict_accuracy_MLE)
         accuracy_MLEtr_E.append(currDict_accuracy_MLEtr)
-        accuracy_NUTS_E.append(currDict_accuracy_NUTS)
+        accuracy_Post_E.append(currDict_accuracy_Post)
+        accuracy_Posttr_E.append(currDict_accuracy_Posttr)
     '''
     # Scenario-dependent looks at performance OUTLETS NEED TO BE APPROACHED DIFFERENTLY,
                     AS 'TRUE' UNDERLYING RATES ARE DEPENDENT ON SIMULATION CIRCUMSTANCES
@@ -1256,14 +1396,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           absDevList_Bern[dictInd]))
         '''
         block3 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked MLE']),\
+                          itertools.cycle(['Untracked MAP']),\
                           absDevList_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Untracked Posterior Sample Means']),\
-                          absDevList_NUTS[dictInd]))
+                          absDevList_Post[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked MLE']),\
+                          itertools.cycle(['Tracked MAP']),\
                           absDevList_MLEtr[dictInd]))
+        block6 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked Posterior Sample Means']),\
+                          absDevList_Posttr[dictInd]))
         for tup in block1:
             DFdata.append(tup)
         #for tup in block2:
@@ -1273,6 +1416,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for tup in block4:
             DFdata.append(tup)    
         for tup in block5:
+            DFdata.append(tup)
+        for tup in block6:
             DFdata.append(tup)
     
     AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
@@ -1300,14 +1445,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         #                  itertools.cycle(['Bernoulli Projection']),\
         #                  absDevList_Bern_E[dictInd]))
         block3 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked MLE']),\
+                          itertools.cycle(['Untracked MAP']),\
                           absDevList_MLE_E[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Untracked Posterior Sample Means']),\
-                          absDevList_NUTS_E[dictInd]))
+                          absDevList_Post_E[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked MLE']),\
+                          itertools.cycle(['Tracked MAP']),\
                           absDevList_MLEtr_E[dictInd]))
+        block6 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked Posterior Sample Means']),\
+                          absDevList_Posttr_E[dictInd]))
         for tup in block1:
             DFdata.append(tup)
         #for tup in block2:
@@ -1317,6 +1465,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for tup in block4:
             DFdata.append(tup)
         for tup in block5:
+            DFdata.append(tup)
+        for tup in block6:
             DFdata.append(tup)
     
     AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
@@ -1344,14 +1494,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         #                  itertools.cycle(['Bernoulli Projection']),\
         #                  avgDevList_Bern[dictInd]))
         block3 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked MLE']),\
+                          itertools.cycle(['Untracked MAP']),\
                           avgDevList_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Untracked Posterior Sample Means']),\
-                          avgDevList_NUTS[dictInd]))
+                          avgDevList_Post[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked MLE']),\
+                          itertools.cycle(['Tracked MAP']),\
                           avgDevList_MLEtr[dictInd]))
+        block6 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked Posterior Sample Means']),\
+                          avgDevList_Posttr[dictInd]))
         for tup in block1:
             DFdata.append(tup)
         #for tup in block2:
@@ -1361,6 +1514,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for tup in block4:
             DFdata.append(tup)
         for tup in block5:
+            DFdata.append(tup)
+        for tup in block6:
             DFdata.append(tup)
         
     AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
@@ -1391,8 +1546,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                           itertools.cycle(['MLE w/ nonlinear optimizer']),\
                           stdDevList_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['NUTS sample means']),\
-                          stdDevList_NUTS[dictInd]))
+                          itertools.cycle(['Posterior sample means']),\
+                          stdDevList_Post[dictInd]))
         for tup in block1:
             DFdata.append(tup)
         for tup in block2:
@@ -1425,13 +1580,15 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         #avgDevListBern_scen = currScenDict['SCENavgDevList_Bern']
         avgDevListMLE_scen = currScenDict['SCENavgDevList_MLE']
         avgDevListMLEtr_scen = currScenDict['SCENavgDevList_MLEtr']
-        avgDevListNUTS_scen = currScenDict['SCENavgDevList_NUTS']
+        avgDevListPost_scen = currScenDict['SCENavgDevList_Post']
+        avgDevListPosttr_scen = currScenDict['SCENavgDevList_Posttr']
     
         absDevListLin_scen = currScenDict['SCENabsDevList_Lin']
         #absDevListBern_scen = currScenDict['SCENabsDevList_Bern']
         absDevListMLE_scen = currScenDict['SCENabsDevList_MLE']
         absDevListMLEtr_scen = currScenDict['SCENabsDevList_MLEtr']
-        absDevListNUTS_scen = currScenDict['SCENabsDevList_NUTS']
+        absDevListPost_scen = currScenDict['SCENabsDevList_Post']
+        absDevListPosttr_scen = currScenDict['SCENabsDevList_Posttr']
         
         # Build plots
         # Average deviations
@@ -1444,14 +1601,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             #                  itertools.cycle(['Bernoulli Projection']),\
             #                  absDevListBern_scen[dictInd]))
             block3 = list(zip(itertools.cycle([currDict]),\
-                              itertools.cycle(['Untracked MLE']),\
+                              itertools.cycle(['Untracked MAP']),\
                               absDevListMLE_scen[dictInd]))
             block4 = list(zip(itertools.cycle([currDict]),\
                               itertools.cycle(['Untracked Posterior Sample Means']),\
-                              absDevListNUTS_scen[dictInd]))
+                              absDevListPost_scen[dictInd]))
             block5 = list(zip(itertools.cycle([currDict]),\
-                              itertools.cycle(['Tracked MLE']),\
+                              itertools.cycle(['Tracked MAP']),\
                               absDevListMLEtr_scen[dictInd]))
+            block6 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked Posterior Sample Means']),\
+                              absDevListPosttr_scen[dictInd]))
             for tup in block1:
                 DFdata.append(tup)
             #for tup in block2:
@@ -1461,6 +1621,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             for tup in block4:
                 DFdata.append(tup)
             for tup in block5:
+                DFdata.append(tup)
+            for tup in block6:
                 DFdata.append(tup)
             
         AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
@@ -1487,14 +1649,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             #                  itertools.cycle(['Bernoulli Projection']),\
             #                  avgDevListBern_scen[dictInd]))
             block3 = list(zip(itertools.cycle([currDict]),\
-                              itertools.cycle(['Untracked MLE']),\
+                              itertools.cycle(['Untracked MAP']),\
                               avgDevListMLE_scen[dictInd]))
             block4 = list(zip(itertools.cycle([currDict]),\
                               itertools.cycle(['Untracked Posterior Sample Means']),\
-                              avgDevListNUTS_scen[dictInd]))
+                              avgDevListPost_scen[dictInd]))
             block5 = list(zip(itertools.cycle([currDict]),\
-                              itertools.cycle(['Tracked MLE']),\
+                              itertools.cycle(['Tracked MAP']),\
                               avgDevListMLEtr_scen[dictInd]))
+            block6 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked Posterior Sample Means']),\
+                              avgDevListPosttr_scen[dictInd]))
             
             for tup in block1:
                 DFdata.append(tup)
@@ -1505,6 +1670,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             for tup in block4:
                 DFdata.append(tup)
             for tup in block5:
+                DFdata.append(tup)
+            for tup in block6:
                 DFdata.append(tup)
             
         AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
@@ -1533,14 +1700,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         #                  itertools.cycle(['Bernoulli Projection']),\
         #                  accuracy_Bern[dictInd]))
         block3 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked MLE']),\
+                          itertools.cycle(['Untracked MAP']),\
                           accuracy_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Untracked Posterior Sample Means']),\
-                          accuracy_NUTS[dictInd]))
+                          accuracy_Post[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked MLE']),\
+                          itertools.cycle(['Tracked MAP']),\
                           accuracy_MLEtr[dictInd]))
+        block6 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked Posterior Sample Means']),\
+                          accuracy_Posttr[dictInd]))
         for tup in block1:
             DFdata.append(tup)
         #for tup in block2:
@@ -1550,6 +1720,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for tup in block4:
             DFdata.append(tup)
         for tup in block5:
+            DFdata.append(tup)
+        for tup in block6:
             DFdata.append(tup)
         
     AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
@@ -1576,14 +1748,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         #                  itertools.cycle(['Bernoulli Projection']),\
         #                  truePos_Bern[dictInd]))
         block3 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked MLE']),\
+                          itertools.cycle(['Untracked MAP']),\
                           truePos_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Untracked Posterior Sample Means']),\
-                          truePos_NUTS[dictInd]))
+                          truePos_Post[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked MLE']),\
+                          itertools.cycle(['Tracked MAP']),\
                           truePos_MLEtr[dictInd]))
+        block6 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked Posterior Sample Means']),\
+                          truePos_Posttr[dictInd]))
         for tup in block1:
             DFdata.append(tup)
         #for tup in block2:
@@ -1593,7 +1768,9 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for tup in block4:
             DFdata.append(tup)
         for tup in block5:
-            DFdata.append(tup) 
+            DFdata.append(tup)
+        for tup in block6:
+            DFdata.append(tup)
         
     AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
     # Build boxplot
@@ -1619,14 +1796,17 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         #                  itertools.cycle(['Bernoulli Projection']),\
         #                  trueNeg_Bern[dictInd]))
         block3 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked MLE']),\
+                          itertools.cycle(['Untracked MAP']),\
                           trueNeg_MLE[dictInd]))
         block4 = list(zip(itertools.cycle([currDict]),\
                           itertools.cycle(['Untracked Posterior Sample Means']),\
-                          trueNeg_NUTS[dictInd]))
+                          trueNeg_Post[dictInd]))
         block5 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked MLE']),\
+                          itertools.cycle(['Tracked MAP']),\
                           trueNeg_MLEtr[dictInd]))
+        block6 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked Posterior Sample Means']),\
+                          trueNeg_Posttr[dictInd]))
         
         for tup in block1:
             DFdata.append(tup)
@@ -1637,6 +1817,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
         for tup in block4:
             DFdata.append(tup)   
         for tup in block5:
+            DFdata.append(tup)
+        for tup in block6:
             DFdata.append(tup)
         
     TrueNegDF = pd.DataFrame(DFdata,columns=headCol)
@@ -1743,7 +1925,7 @@ def invlogit_grad(beta):
 #### Likelihood estimate functions
 ###### BEGIN UNTRACKED FUNCTIONS ######
 def UNTRACKED_NegLogLikeFunc(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
-    # pVec should be [importers, outlets]
+    # betaVec should be [importers, outlets]
     n,m = transMat.shape
     th = betaVec[:m]
     py = betaVec[m:]
@@ -1756,7 +1938,7 @@ def UNTRACKED_NegLogLikeFunc(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
     return L*-1
 
 def UNTRACKED_NegLogLikeFunc_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
-    # pVec should be [importers, outlets]
+    # betaVec should be [importers, outlets]
     n,m = transMat.shape
     th = betaVec[:m]
     py = betaVec[m:]
@@ -1776,24 +1958,26 @@ def UNTRACKED_NegLogLikeFunc_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt
                         - RglrWt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
     
     retVal = np.concatenate((impPartials,outletPartials))*-1
-    #Scale by l2 norm to avoid issues with optimizer later
-    return retVal/np.linalg.norm(retVal)
+    
+    return retVal
 
-def UNTRACKED_LogPrior(pVec,numVec,posVec,sens,spec,transMat):
+def UNTRACKED_LogPrior(beta,numVec,posVec,sens,spec,transMat):
     '''
     Prior is a Laplace distribution with parameters: mu=-3, scale=4
     '''
-    return -0.25*np.sum(np.abs(pVec + 3))
+    return -0.25*np.sum(np.abs(beta + 3)) - 0.001 * np.sum((beta + 3) ** 2)
+
 
 def UNTRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec, A):
     '''
     Prior is a Laplace distribution with parameters: mu=-3, scale=4
     '''
-    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3))
+    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
 
-def UNTRACKED_LogPost(pVec,numVec,posVec,sens,spec,transMat):
-    return UNTRACKED_LogPrior(pVec,numVec,posVec,sens,spec,transMat)\
-           -UNTRACKED_NegLogLikeFunc(pVec,numVec,posVec,sens,spec,transMat,0)
+
+def UNTRACKED_LogPost(betaVec,numVec,posVec,sens,spec,transMat):
+    return UNTRACKED_LogPrior(betaVec,numVec,posVec,sens,spec,transMat)\
+           -UNTRACKED_NegLogLikeFunc(betaVec,numVec,posVec,sens,spec,transMat,0)
 
 def UNTRACKED_LogPost_Grad(beta, nsamp, ydata, sens, spec, A):
     return UNTRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec, A)\
@@ -1812,7 +1996,7 @@ def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,de
     
 ###### BEGIN UNTRACKED FUNCTIONS ######
 def TRACKED_NegLogLikeFunc(betaVec,numMat,posMat,sens,spec,RglrWt):
-    # pVec should be [importers, outlets]
+    # betaVec should be [importers, outlets]
     n,m = numMat.shape
     th = betaVec[:m]
     py = betaVec[m:]
@@ -1826,7 +2010,7 @@ def TRACKED_NegLogLikeFunc(betaVec,numMat,posMat,sens,spec,RglrWt):
     return L*-1
 
 def TRACKED_NegLogLikeFunc_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
-    # pVec should be [importers, outlets]
+    # betaVec should be [importers, outlets]
     n,m = numMat.shape
     th = betaVec[:m]
     py = betaVec[m:]
@@ -1841,27 +2025,97 @@ def TRACKED_NegLogLikeFunc_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
                      - (numMat-posMat)*invlogit_grad(th)*(sens+spec-1)*\
                      np.array([(1-invlogit(py))]*m).transpose()/(1-pMatTilde)\
                      ,axis=0)
-    outletPartials = np.sum(posMat*invlogit_grad(py)[:,None]*(sens+spec-1)*\
+    outletPartials = np.sum((sens+spec-1)*(posMat*invlogit_grad(py)[:,None]*\
                      np.array([(1-invlogit(th))]*n)/pMatTilde\
-                     - (numMat-posMat)*invlogit_grad(py)[:,None]*(sens+spec-1)*\
-                     np.array([(1-invlogit(th))]*n)/(1-pMatTilde)\
+                     - (numMat-posMat)*invlogit_grad(py)[:,None]*\
+                     np.array([(1-invlogit(th))]*n)/(1-pMatTilde))\
                      ,axis=1) - RglrWt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
        
     retVal = np.concatenate((impPartials,outletPartials))*-1
-    #Scale by l2 norm to avoid issues with optimizer
-    return retVal/np.linalg.norm(retVal)
+    
+    return retVal
+
+def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec,RglrWt):
+    # betaVec should be [importers, outlets]
+    n,m = numMat.shape
+    th = betaVec[:m]
+    py = betaVec[m:]
+    
+    pMat = np.array([invlogit(th)]*n)+np.array([(1-invlogit(th))]*n)*\
+            np.array([invlogit(py)]*m).transpose()
+    pMatTilde = sens*pMat+(1-spec)*(1-pMat)
+    
+    hess = np.zeros((n+m,n+m))
+    # get off-diagonal entries first
+    for triRow in range(n):
+        for triCol in range(m):
+            outBeta,impBeta = py[triRow],th[triCol]
+            outP,impP = invlogit(outBeta),invlogit(impBeta)
+            s,r=sens,spec
+            z = outP + impP - outP*impP
+            zTilde = s*z + (1-r)*(1-z)
+            yDat,nSam = posMat[triRow,triCol],numMat[triRow,triCol]
+            elem = (1-impP)*(outP - outP**2)*(yDat*((1-r-s)*(impP-impP**2)*(1-outP))/\
+                    zTilde**2-(nSam-yDat)*((s+r-1)*(impP-impP**2-outP*impP+outP*\
+                    (impP**2)))/(1-zTilde)**2)*\
+                    (r+s-1) + (yDat/zTilde - (nSam - yDat)/(1-zTilde ))\
+                    *(outP - outP**2)*(impP**2 -impP)*(r + s - 1)
+            hess[m+triRow,triCol] = elem
+            hess[triCol,m+triRow] = elem
+    
+    # importer diagonals next
+    impPartials = np.zeros(m)
+    for imp in range(m):
+        currPartial = 0
+        for outlet in range(n):
+            outBeta,impBeta = py[outlet],th[imp]
+            outP,impP = invlogit(outBeta),invlogit(impBeta)
+            s,r=sens,spec
+            z = outP + impP - outP*impP
+            zTilde = s*z + (1-r)*(1-z)
+            yDat,nSam = posMat[outlet,imp],numMat[outlet,imp]
+            currElem = (1-outP)*(s+r-1)*(yDat/zTilde-(nSam-yDat)/(1-zTilde))*\
+                        (impP - 3*(impP)**2 + 2*(impP)**3)+\
+                        (((1-outP)*(impP-impP**2)*(s+r-1))**2)*\
+                        (-yDat/zTilde**2-(nSam-yDat)/(1-zTilde)**2)
+            currPartial += currElem
+        impPartials[imp] = currPartial
+    
+    # outlet diagonals next
+    outletPartials = np.zeros(n)
+    for outlet in range(n):
+        currPartial = 0
+        for imp in range(m):
+            outBeta,impBeta = py[outlet],th[imp]
+            outP,impP = invlogit(outBeta),invlogit(impBeta)
+            s,r=sens,spec
+            z = outP + impP - outP*impP
+            zTilde = s*z + (1-r)*(1-z)
+            yDat,nSam = posMat[outlet,imp],numMat[outlet,imp]
+            currElem = (1 - impP)*(yDat/zTilde-(nSam-yDat)/(1-zTilde))*\
+                        (r+s-1)*(outP - 3*(outP**2) + 2*(outP**3)) +\
+                        (1-impP)*(outP - outP**2 )*(s+r-1)*(yDat*\
+                        ((1-r-s)*(outP-outP**2)*(1-impP) )/(zTilde**2) -\
+                        (nSam-yDat)*((s+r-1)*(outP-outP**2)*(1-impP))/(1-zTilde)**2)
+            currPartial += currElem
+        outletPartials[outlet] = currPartial
+    
+    diags = np.diag(np.concatenate((impPartials,outletPartials)))
+    
+    hess = (hess + diags)*-1    
+    return hess
 
 def TRACKED_LogPrior(beta, numVec, posVec, sens, spec):
     '''
     Prior is a Laplace distribution with parameters: mu=-3, scale=4
     '''
-    return -0.25*np.sum(np.abs(beta + 3))
+    return -0.25*np.sum(np.abs(beta + 3))- 0.001 * np.sum((beta + 3) ** 2)
 
 def TRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec):
     '''
     Prior is a Laplace distribution with parameters: mu=-3, scale=4
     '''
-    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3))
+    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
 
 def TRACKED_LogPost(beta,N,Y,sens,spec):
     return TRACKED_LogPrior(beta,N,Y,sens,spec)\
@@ -2019,7 +2273,7 @@ def find_reasonable_epsilon(theta0, grad0, logp0, f, epsilonLB = 0.005, epsilonU
         # acceptprob = np.exp(logpprime - logp0 - 0.5 * ( np.dot(rprime, rprime.T) - np.dot(r0, r0.T)))
         logacceptprob = logpprime-logp0-0.5*(np.dot(rprime, rprime)-np.dot(r0,r0))
 
-    print("find_reasonable_epsilon=", epsilon)
+    #print("find_reasonable_epsilon=", epsilon) EOW commented out
 
     return epsilon
 
@@ -2185,9 +2439,6 @@ def nuts6(f, M, Madapt, theta0, delta=0.25):
         j = 0  # initial heigth j = 0
         n = 1  # Initially the only valid point is the initial point.
         s = 1  # Main loop: will keep going until s == 0.
-        
-        if np.mod(m,1000)==0 or m==1:
-            print('Generating point '+str(m)) #EOW ADD
         
         while (s == 1):
             # Choose a direction. -1 = backwards, 1 = forwards.

@@ -64,13 +64,17 @@ diagnosticSpecificity = args.vars[1] # Tool specificity
 globalDemand = args.vars[4] #Level of global demand increase across all outlets, in mean demand/simulation day
 numReplications = 5
 
-
 alertIter = 100 # How frequently we're alerted of a set of replications being completed
 printOutput = False # Whether individual replication output should be displayed
 storeOutput = True # Do we store the output in an output dictionary file?
 intSFscenario_bool = True # Are we randomly generating some importer SF rates for scenario testing?
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
 saveTestResults = True # Store the testing results to the output dictionary? (Greatly increases file size if True)
+
+optRegularizationWeight = args.vars[6] # Regularization weight to use with the MLE nonlinear optimizer
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
+
 '''
 testPolicy should be one of: ['Static_Deterministic','Static_Random','Dyn_EpsGreedy',
               'Dyn_EpsExpDecay','Dyn_EpsFirst','Dyn_ThompSamp','Dyn_EveryOther',
@@ -105,10 +109,6 @@ endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
 ## REMOVE LATER
 currTrVec = []
 currStVec = []
-
-optRegularizationWeight = args.vars[6] # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
-lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
 burnInDays_Int = 10 # No intermediate demand until after this day
@@ -377,6 +377,8 @@ for rep in range(numReplications):
                     # END IF
                 if madeTest == False: # Report -1 if no sample procured due to stockout
                     DPRoot = -1
+                    List_TestingSchedule.append([today+1,int(np.floor(np.random.uniform(rootNum+intermediateNum,rootNum+intermediateNum+endNum)))]) #append a random node to be tested the next day
+                    List_TestingSchedule.sort()
                 # END IF
                 
                 # Conduct sensitivity and specificity filters
@@ -623,7 +625,7 @@ for rep in range(numReplications):
         estIntFalsePercList_Bern = output_Bern['intProj']
         estEndFalsePercList_Bern = output_Bern['endProj']
     except:
-        print("Couldn't generate the BERNOULLI MLE estimates")
+        #print("Couldn't generate the BERNOULLI MLE estimates")
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
         
@@ -656,7 +658,7 @@ for rep in range(numReplications):
     if lklhdBool == True:
         try:
             estFalsePerc_PostSampsTRACKED = simModules.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
-                                                                       diagnosticSpecificity,optRegularizationWeight,\
+                                                                       diagnosticSpecificity,optRegularizationWeight/intermediateNum,\
                                                                        lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
            
         except:
@@ -701,7 +703,7 @@ for rep in range(numReplications):
                                                    Nmat,Ymat,\
                                                    Sens=diagnosticSensitivity,\
                                                    Spec=diagnosticSpecificity,\
-                                                   RglrWt=optRegularizationWeight,\
+                                                   RglrWt=optRegularizationWeight/intermediateNum,\
                                                    beta0_List=randList)                          
                                                                                                       
     except:
@@ -935,10 +937,7 @@ if warmUpRun == False and storeOutput == True:
 #       ALSO POTENTIALLY TRIGGERED BY NUMBER OF DAYS STOCKED OUT
 #       ORDER AMOUNT IS REORDER POINT/2
 # 2.1) RECORD NUMBER OF TRIGGERS
-# 3) RUN MULTIPLE REPLICATIONS OVER LONG-RUN SIMULATIONS
-# 4) GENERATE BATCH FILES VARYING DIFFERENT PARAMETERS
 # 5) OUTPUT BATCH CONSUMPTION RATE
-# 6) STREAMLINE TESTING/SAMPLING PROCESS INTO A MODULE
 # 7) "SANDY" CHECKS TO ENSURE THINGS ARE RUNNING SMOOTHLY
 # 8) PUT WARM-UP LINES INTO A MODULE
 # 9) BUILD INVENTORY CHECK SUMMARIES TO HANDLE INTERMEDIATE NODES
