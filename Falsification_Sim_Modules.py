@@ -1980,9 +1980,7 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat,RglrW
             outBeta,impBeta = py[triRow],th[triCol]
             outP,impP = invlogit(outBeta),invlogit(impBeta)
             s,r=sens,spec
-            c1 = transMat[triRow,triCol]*(s+r-1)*invlogit_grad(impBeta)           
-            #z = outP + impP - outP*impP
-            #zTilde = zMatTilde[triRow,triCol]
+            c1 = transMat[triRow,triCol]*(s+r-1)*invlogit_grad(impBeta)
             yDat,nSam = posVec[triRow],numVec[triRow]
             elem = c1*(1-outP)*(yDat*( (s+r-1)*(-sumVec[triRow]*(outP**2-outP) - outP + outP**2) )\
                     /( s*(sumVec[triRow]*(1 - outP) + outP) +\
@@ -1993,7 +1991,6 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat,RglrW
                     c1*(yDat/(s*(sumVec[triRow]*(1 - outP) + outP) + (-r + 1)*(-sumVec[triRow]*(1 - outP) +\
                    1 - outP)) - (nSam - yDat)/( -s*(sumVec[triRow]*(1 - outP) +\
                    outP) - (-r + 1)*(-sumVec[triRow]*(1 - outP) + 1 - outP) + 1))*( outP**2 - outP)
-
             hess[m+triRow,triCol] = elem
             hess[triCol,m+triRow] = elem
     # get off-diagonals for importer-importer entries
@@ -2009,9 +2006,6 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat,RglrW
                 elem += nextPart        
             hess[triCol,triCol2] = elem
             hess[triCol2,triCol] = elem
-        
-        
-
     # importer diagonals next
     impPartials = np.zeros(m)
     for imp in range(m):
@@ -2019,34 +2013,35 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat,RglrW
         for outlet in range(n):
             outBeta,impBeta = py[outlet],th[imp]
             outP,impP = invlogit(outBeta),invlogit(impBeta)
-            s,r=sens,spec
-            z = outP + impP - outP*impP
-            zTilde = s*z + (1-r)*(1-z)
+            s,r=sens,spec                      
+            c1 = transMat[outlet,imp]*(s+r-1)*(1-outP)            
+            c3 = (1-outP)*transMat[outlet,imp]
             yDat,nSam = posVec[outlet],numVec[outlet]
-            currElem = (1-outP)*(s+r-1)*(yDat/zTilde-(nSam-yDat)/(1-zTilde))*\
-                        (impP - 3*(impP)**2 + 2*(impP)**3)+\
-                        (((1-outP)*(impP-impP**2)*(s+r-1))**2)*\
-                        (-yDat/zTilde**2-(nSam-yDat)/(1-zTilde)**2)
+            currElem = c1*(yDat/(zVecTilde[outlet]) - (nSam - yDat)/(1-zVecTilde[outlet]))\
+                       *(impP - 3*(impP**2) + 2*(impP**3)) +\
+                       c1*(impP - impP**2)*(yDat*((s+r-1)*c3*(\
+                       (impP**2)-impP) )/(zVecTilde[outlet])**2 -\
+                       (nSam - yDat)*((s+r-1)*(c3*impP - c3*(impP**2)))/\
+                       (1-zVecTilde[outlet])**2)
             currPartial += currElem
         impPartials[imp] = currPartial
     
     # outlet diagonals next
     outletPartials = np.zeros(n)
     for outlet in range(n):
-        currPartial = 0
-        for imp in range(m):
-            outBeta,impBeta = py[outlet],th[imp]
-            outP,impP = invlogit(outBeta),invlogit(impBeta)
-            s,r=sens,spec
-            z = outP + impP - outP*impP
-            zTilde = s*z + (1-r)*(1-z)
-            yDat,nSam = posVec[outlet],numVec[outlet]
-            currElem = (1 - impP)*(yDat/zTilde-(nSam-yDat)/(1-zTilde))*\
-                        (r+s-1)*(outP - 3*(outP**2) + 2*(outP**3)) +\
-                        (1-impP)*(outP - outP**2 )*(s+r-1)*(yDat*\
-                        ((1-r-s)*(outP-outP**2)*(1-impP) )/(zTilde**2) -\
-                        (nSam-yDat)*((s+r-1)*(outP-outP**2)*(1-impP))/(1-zTilde)**2)
-            currPartial += currElem
+        outBeta = py[outlet]
+        outP = invlogit(outBeta)
+        s,r=sens,spec
+        c1 = transMat[outlet] @ invlogit(th)
+        c2 = (r + s - 1)
+        yDat,nSam = posVec[outlet],numVec[outlet]
+        currPartial = (1-c1)*(yDat/(zVecTilde[outlet]) -\
+                    (nSam - yDat)/(1-zVecTilde[outlet]))*c2*(outP -\
+                    3*(outP**2) + 2*(outP**3)) + (1-c1)*(outP - outP**2 )*\
+                    (yDat*(   -c2*(c1*(-outP + outP**2 ) + outP - outP**2 ) )/\
+                    (zVecTilde[outlet])**2 - (nSam - yDat)*(c2*(c1*(-outP + outP**2) +\
+                     outP - outP**2 ))/( -s*(c1*(1 - outP) +\
+                     outP) - (1-r)*(1-c1*(1 - outP)  - outP) + 1 )**2)*c2
         outletPartials[outlet] = currPartial
     
     diags = np.diag(np.concatenate((impPartials,outletPartials)))

@@ -145,16 +145,17 @@ import Falsification_Sim_Modules as simModules
 #UNTRACKED
 #np.set_printoptions(suppress=True)
 #betaVec,numMat,posMat,sens,spec,RglrWt = beta0,N,Y,Sens,Spec,wt
+beta0 = beta0 + np.random.uniform(-1,1,m+n)
 dL0 = simModules.UNTRACKED_NegLogLikeFunc_Jac(beta0,N,Y,Sens,Spec,Q,wt)
 d2L0 = simModules.UNTRACKED_NegLogLikeFunc_Hess(beta0,N,Y,Sens,Spec,Q,wt)
 
-for k in range(m):
+for k in range(m+n):
     beta1 = 1*beta0[:]
     beta1[k] = beta1[k] + 10**(-7)
       
     dL1 = simModules.UNTRACKED_NegLogLikeFunc_Jac(beta1,N,Y,Sens, Spec,Q,wt)
-    print(((dL1-dL0) * (10 **(7)))[:m] )
-    print(d2L0[k][:m])
+    print(((dL1-dL0) * (10 **(7))) )
+    print(d2L0[k])
 
 
 

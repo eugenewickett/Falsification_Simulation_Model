@@ -108,9 +108,67 @@ partial = partial*-1
 print(partial)
 
 
+#for getting partials WRT betaB,betaB
+import Falsification_Sim_Modules as simMod
+betaA = sym.Symbol('betaA')
+s = sym.Symbol('s')
+r = sym.Symbol('r')
+betaB = sym.Symbol('betaB')
+y = sym.Symbol('y')
+nSam = sym.Symbol('n')
+th = sym.exp(betaB)/(sym.exp(betaB)+1)
+pi = sym.exp(betaA)/(sym.exp(betaA)+1)
+c1 = sym.Symbol('c1') #bunch of stuff indep. of betaB
+c2 = sym.Symbol('c2')
+c3 = sym.Symbol('c3') 
+z = c2 + c3*th
+pT = s*z + (1-r)*(1-z)
 
+l_jac_betaB = c1*sym.diff(th,betaB)*(y/pT - (nSam-y)/(1-pT))
 
+l_hess_betaB_betaB = sym.diff(l_jac_betaB,betaB)
 
+partial = 0
+for i in range(n):
+    bA,bB = beta0[i+m],beta0[0]
+    posits,numSamples = Y[i],N[i]
+    c1temp = Q[i,0]*(Sens+Spec-1)*(1-simMod.invlogit(beta0[i+m]))
+    c2temp = np.sum([Q[i,j]*simMod.invlogit(beta0[j])  for j in range(1,m)])*\
+                (1-simMod.invlogit(beta0[i+m])) + simMod.invlogit(beta0[i+m])
+    c3temp = (1-simMod.invlogit(beta0[i+m]))*Q[i,0]
+    repl = [(s,Sens),(r,Spec),(betaA,bA),(betaB,bB),(y,posits),(nSam,numSamples),\
+            (c1,c1temp),(c2,c2temp),(c3,c3temp)]
+    summand = l_hess_betaB_betaB.subs(repl)
+    partial += summand
+partial = partial*-1
+print(partial)
+
+#for getting partials WRT betaA,betaA
+import Falsification_Sim_Modules as simMod
+betaA = sym.Symbol('betaA')
+s = sym.Symbol('s')
+r = sym.Symbol('r')
+betaB = sym.Symbol('betaB')
+y = sym.Symbol('y')
+nSam = sym.Symbol('n')
+th = sym.exp(betaB)/(sym.exp(betaB)+1)
+pi = sym.exp(betaA)/(sym.exp(betaA)+1)
+c1 = sym.Symbol('c1') #summation of Q@theta
+z = pi+(1-pi)*c1
+pT = s*z + (1-r)*(1-z)
+
+l_jac_betaA = (s+r-1)*(1-c1)*sym.diff(pi,betaA)*(y/pT - (nSam-y)/(1-pT))
+
+l_hess_betaA_betaA = sym.diff(l_jac_betaA,betaA)
+
+for i in range(n):
+    bA = beta0[i+m]
+    posits,numSamples = Y[i],N[i]
+    c1temp = Q[i] @ simMod.invlogit(beta0[:m])
+    repl = [(s,Sens),(r,Spec),(betaA,bA),(betaB,bB),(y,posits),(nSam,numSamples),\
+            (c1,c1temp)]
+    summand = l_hess_betaA_betaA.subs(repl)
+    print(summand*-1)
 
 
 
