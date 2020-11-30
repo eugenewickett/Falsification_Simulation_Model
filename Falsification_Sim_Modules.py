@@ -1911,8 +1911,9 @@ def GenerateMatrixForTracked(sampleWiseData,numImp,numOut):
     Y = np.zeros(shape=(numOut,numImp))
     for samp in sampleWiseData:
         j,i,res = samp[0], samp[1], samp[2]
-        N[i,j] += 1
-        Y[i,j] += res
+        if res > -1:
+            N[i,j] += 1
+            Y[i,j] += res
     return N,Y
 
 def invlogit(beta):
@@ -1960,6 +1961,98 @@ def UNTRACKED_NegLogLikeFunc_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt
     retVal = np.concatenate((impPartials,outletPartials))*-1
     
     return retVal
+
+def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
+    # betaVec should be [importers, outlets]
+    n,m = transMat.shape
+    th = betaVec[:m]
+    py = betaVec[m:]
+    
+    zVec = invlogit(py)+(1-invlogit(py))*np.matmul(transMat,invlogit(th))
+    zVecTilde = sens*zVec+(1-spec)*(1-zVec)
+    sumVec = np.matmul(transMat,invlogit(th))
+    
+    #initialize a Hessian matrix
+    hess = np.zeros((n+m,n+m))
+    # get off-diagonal entries first; importer-outlet entries
+    for triRow in range(n):
+        for triCol in range(m):
+            outBeta,impBeta = py[triRow],th[triCol]
+            outP,impP = invlogit(outBeta),invlogit(impBeta)
+            s,r=sens,spec
+            c1 = transMat[triRow,triCol]*(s+r-1)*invlogit_grad(impBeta)           
+            #z = outP + impP - outP*impP
+            #zTilde = zMatTilde[triRow,triCol]
+            yDat,nSam = posVec[triRow],numVec[triRow]
+            elem = c1*(1-outP)*(yDat*( (s+r-1)*(-sumVec[triRow]*(outP**2-outP) - outP + outP**2) )\
+                    /( s*(sumVec[triRow]*(1 - outP) + outP) +\
+                   (-r + 1)*(-sumVec[triRow]*(1 - outP) + 1 - outP) )**2 -\
+                    (nSam - yDat)*((-r + 1-s)*(-sumVec[triRow]*(-outP + outP**2)-outP+outP**2))\
+                     /(-s*(sumVec[triRow]*(1 - outP) + outP) - (1-r)*(-sumVec[triRow]*(1 - outP) +\
+                   1 - outP) + 1)**2) +\
+                    c1*(yDat/(s*(sumVec[triRow]*(1 - outP) + outP) + (-r + 1)*(-sumVec[triRow]*(1 - outP) +\
+                   1 - outP)) - (nSam - yDat)/( -s*(sumVec[triRow]*(1 - outP) +\
+                   outP) - (-r + 1)*(-sumVec[triRow]*(1 - outP) + 1 - outP) + 1))*( outP**2 - outP)
+
+            hess[m+triRow,triCol] = elem
+            hess[triCol,m+triRow] = elem
+    # get off-diagonals for importer-importer entries
+    for triCol in range(m-1):
+        for triCol2 in range(triCol+1,m):
+            elem = 0
+            for i in range(n):
+                nextPart = (sens+spec-1)*transMat[i,triCol]*(1-invlogit(py[i]))*invlogit_grad(th[triCol])*\
+                (-posVec[i]*(sens+spec-1)*(1-invlogit(py[i]))*transMat[i,triCol2]*(invlogit(th[triCol2]) - invlogit(th[triCol2])**2)            /\
+                 (zVecTilde[i]**2)
+                - (numVec[i]-posVec[i])*(sens+spec-1)*(1-invlogit(py[i]))*transMat[i,triCol2]*(invlogit(th[triCol2]) - invlogit(th[triCol2])**2) /\
+                ((1-zVecTilde[i])**2) )
+                elem += nextPart        
+            hess[triCol,triCol2] = elem
+            hess[triCol2,triCol] = elem
+        
+        
+
+    # importer diagonals next
+    impPartials = np.zeros(m)
+    for imp in range(m):
+        currPartial = 0
+        for outlet in range(n):
+            outBeta,impBeta = py[outlet],th[imp]
+            outP,impP = invlogit(outBeta),invlogit(impBeta)
+            s,r=sens,spec
+            z = outP + impP - outP*impP
+            zTilde = s*z + (1-r)*(1-z)
+            yDat,nSam = posVec[outlet],numVec[outlet]
+            currElem = (1-outP)*(s+r-1)*(yDat/zTilde-(nSam-yDat)/(1-zTilde))*\
+                        (impP - 3*(impP)**2 + 2*(impP)**3)+\
+                        (((1-outP)*(impP-impP**2)*(s+r-1))**2)*\
+                        (-yDat/zTilde**2-(nSam-yDat)/(1-zTilde)**2)
+            currPartial += currElem
+        impPartials[imp] = currPartial
+    
+    # outlet diagonals next
+    outletPartials = np.zeros(n)
+    for outlet in range(n):
+        currPartial = 0
+        for imp in range(m):
+            outBeta,impBeta = py[outlet],th[imp]
+            outP,impP = invlogit(outBeta),invlogit(impBeta)
+            s,r=sens,spec
+            z = outP + impP - outP*impP
+            zTilde = s*z + (1-r)*(1-z)
+            yDat,nSam = posVec[outlet],numVec[outlet]
+            currElem = (1 - impP)*(yDat/zTilde-(nSam-yDat)/(1-zTilde))*\
+                        (r+s-1)*(outP - 3*(outP**2) + 2*(outP**3)) +\
+                        (1-impP)*(outP - outP**2 )*(s+r-1)*(yDat*\
+                        ((1-r-s)*(outP-outP**2)*(1-impP) )/(zTilde**2) -\
+                        (nSam-yDat)*((s+r-1)*(outP-outP**2)*(1-impP))/(1-zTilde)**2)
+            currPartial += currElem
+        outletPartials[outlet] = currPartial
+    
+    diags = np.diag(np.concatenate((impPartials,outletPartials)))
+    
+    hess = (hess + diags)*-1    
+    return hess
 
 def UNTRACKED_LogPrior(beta,numVec,posVec,sens,spec,transMat):
     '''
@@ -2041,9 +2134,9 @@ def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec,RglrWt):
     th = betaVec[:m]
     py = betaVec[m:]
     
-    pMat = np.array([invlogit(th)]*n)+np.array([(1-invlogit(th))]*n)*\
+    zMat = np.array([invlogit(th)]*n)+np.array([(1-invlogit(th))]*n)*\
             np.array([invlogit(py)]*m).transpose()
-    pMatTilde = sens*pMat+(1-spec)*(1-pMat)
+    zMatTilde = sens*zMat+(1-spec)*(1-zMat)
     
     hess = np.zeros((n+m,n+m))
     # get off-diagonal entries first
@@ -2053,7 +2146,7 @@ def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec,RglrWt):
             outP,impP = invlogit(outBeta),invlogit(impBeta)
             s,r=sens,spec
             z = outP + impP - outP*impP
-            zTilde = s*z + (1-r)*(1-z)
+            zTilde = zMatTilde[triRow,triCol]
             yDat,nSam = posMat[triRow,triCol],numMat[triRow,triCol]
             elem = (1-impP)*(outP - outP**2)*(yDat*((1-r-s)*(impP-impP**2)*(1-outP))/\
                     zTilde**2-(nSam-yDat)*((s+r-1)*(impP-impP**2-outP*impP+outP*\

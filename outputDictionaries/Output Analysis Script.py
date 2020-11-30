@@ -16,7 +16,7 @@ os.chdir('C:\\Users\\eugen\\OneDrive\\Documents\\EAGER Project\\Simulator\\Falsi
 import Falsification_Sim_Modules as simModules
 
 directory = r'C:\Users\eugen\OneDrive\Documents\EAGER Project\Simulator'+\
-         '\Sim Model Files TOO BIG FOR REPO\TWENTYSEVENNOV_RUNS\Consolidated Files'
+         '\Sim Model Files TOO BIG FOR REPO\TWENTYSEVENNOV_RUNS_PT2\Consolidated Files'
          
 OPFileNames = os.listdir(directory)
 '''

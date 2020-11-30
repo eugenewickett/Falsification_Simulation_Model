@@ -320,8 +320,10 @@ for rep in range(numReplications):
                                         if List_TestResults[currNodeIndex][4] !=  np.zeros(intermediateNum,np.int8).tolist():
                                             normedVec = List_TestResults[currNodeIndex][4]/np.sum(List_TestResults[currNodeIndex][4])
                                             DPImpID = rootNum + np.random.choice(range(intermediateNum),p=normedVec)
-                                        else: # just pick a random importer
-                                            DPImpID = rootNum + np.random.choice(range(intermediateNum))
+                                        else: # just pick a random importer from the outlet's preference list
+                                            currPrefList = currNode.PreferenceList[:-1]
+                                            DPImpID = np.random.choice(currPrefList)
+                                            #DPImpID = currPrefList[0]
                                                                                      
                             currNode.InventoryLevel[invPile] -= 1 # "Buy" the sample
                             currNode.demandResults[0] += 1 # "Satisifed" demand

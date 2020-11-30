@@ -102,7 +102,7 @@ Q = np.array([[0.5,0.2,0.3],
               [0.1,0.6,0.3],
               [0.2,0.2,0.6],
               [0.3,0.4,0.3],
-              [0.3,0.2,0.5],])
+              [0.3,0.2,0.5]])
 realproby = (1-pOut) * np.array((Q @ pImp)) + pOut #optimal testing
 realprobz = realproby * Sens + (1-realproby) * (1-Spec) #real testing
 N = (1000 * np.ones(Q.shape[0])).astype('int')
@@ -139,8 +139,27 @@ postSamps_untr = simModules.GeneratePostSamps_UNTRACKED(N,Y,Q,Sens,Spec,wt,\
 
 
 
+
 import Falsification_Sim_Modules as simModules
 #CHECKING THE HESSIAN
+#UNTRACKED
+#np.set_printoptions(suppress=True)
+#betaVec,numMat,posMat,sens,spec,RglrWt = beta0,N,Y,Sens,Spec,wt
+dL0 = simModules.UNTRACKED_NegLogLikeFunc_Jac(beta0,N,Y,Sens,Spec,Q,wt)
+d2L0 = simModules.UNTRACKED_NegLogLikeFunc_Hess(beta0,N,Y,Sens,Spec,Q,wt)
+
+for k in range(m):
+    beta1 = 1*beta0[:]
+    beta1[k] = beta1[k] + 10**(-7)
+      
+    dL1 = simModules.UNTRACKED_NegLogLikeFunc_Jac(beta1,N,Y,Sens, Spec,Q,wt)
+    print(((dL1-dL0) * (10 **(7)))[:m] )
+    print(d2L0[k][:m])
+
+
+
+
+
 #TRACKED
 #np.set_printoptions(suppress=True)
 #betaVec,numMat,posMat,sens,spec,RglrWt = beta0,N,Y,Sens,Spec,wt
