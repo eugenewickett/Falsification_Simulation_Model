@@ -1962,7 +1962,7 @@ def UNTRACKED_NegLogLikeFunc_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt
     
     return retVal
 
-def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
+def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat):
     # betaVec should be [importers, outlets]
     n,m = transMat.shape
     th = betaVec[:m]
@@ -2123,7 +2123,7 @@ def TRACKED_NegLogLikeFunc_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
     
     return retVal
 
-def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec,RglrWt):
+def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec):
     # betaVec should be [importers, outlets]
     n,m = numMat.shape
     th = betaVec[:m]

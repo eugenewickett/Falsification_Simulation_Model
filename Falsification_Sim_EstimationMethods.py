@@ -203,6 +203,7 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     log-likelihood of different SF rates for a given set of UNTRACKED testing
     data in addition to diagnostic capabilities
     '''
+    outDict = {} # Output dictionary
     PosData = np.array(PosData)
     NumSamples = np.array(NumSamples)
     numOut = A.shape[0]
@@ -226,7 +227,32 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
         solsList.append(opVal.x)
     best_x = solsList[np.argmin(likelihoodsList)]
     
-    return simModules.invlogit(best_x)[0:numImp].tolist(), simModules.invlogit(best_x)[numImp:].tolist()
+    #Generate confidence intervals
+    #First we need to generate the information matrix
+    #Expected positives vector at the outlets
+    pi_hat = simModules.invlogit(best_x[numImp:])
+    theta_hat = simModules.invlogit(best_x[:numImp])
+    y_Expec = (1-Spec) + (Sens+Spec-1) *(pi_hat + (1-pi_hat)*(A @ theta_hat))
+    #Insert it into our hessian
+    hess = simModules.UNTRACKED_NegLogLikeFunc_Hess(best_x,np.ones(numOut),y_Expec,\
+                                                       Sens,Spec,A)
+    '''
+    outDict['90upper_int']
+    outDict['90lower_int']
+    outDict['95upper_int']
+    
+    z90 = spstat.norm.ppf(0.95)
+    z95 = spstat.norm.ppf(0.975)
+    z99 = spstat.norm.ppf(0.995)
+    '''
+    outDict['intProj'] = theta_hat
+    outDict['endProj'] = pi_hat
+    outDict['hess'] = hess
+    
+    
+    
+    return outDict
+#simModules.invlogit(best_x)[0:numImp].tolist(), simModules.invlogit(best_x)[numImp:].tolist()
 
 def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_List=[]):
     '''
@@ -236,6 +262,7 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
     log-likelihood of different SF rates for a given set of testing data and 
     diagnostic capabilities
     '''
+    outDict = {}
     (numOut,numImp) = N.shape  
     if beta0_List == []: # We do not have any initial points to test; generate a generic initial point
         beta0_List.append(-6 * np.ones(numImp+numOut) + np.random.uniform(-1,1,numImp+numOut))
@@ -256,7 +283,31 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
         solsList.append(opVal.x)
     best_x = solsList[np.argmin(likelihoodsList)]
     
-    return simModules.invlogit(best_x)[0:numImp].tolist(), simModules.invlogit(best_x)[numImp:].tolist()
+    #Generate confidence intervals
+    #First we need to generate the information matrix
+    #Expected positives vector at the outlets
+    pi_hat = simModules.invlogit(best_x[numImp:])
+    theta_hat = simModules.invlogit(best_x[:numImp])
+    y_Expec = (1-Spec) + (Sens+Spec-1) *(np.array([theta_hat]*numOut)+np.array([1-theta_hat]*numOut)*\
+            np.array([pi_hat]*numImp).transpose())
+    #Insert it into our hessian
+    hess = simModules.TRACKED_NegLogLikeFunc_Hess(best_x,np.ones((numOut,numImp)),y_Expec,\
+                                                       Sens,Spec)
+    '''
+    outDict['90upper_int']
+    outDict['90lower_int']
+    outDict['95upper_int']
+    
+    z90 = spstat.norm.ppf(0.95)
+    z95 = spstat.norm.ppf(0.975)
+    z99 = spstat.norm.ppf(0.995)
+    '''
+    outDict['intProj'] = theta_hat
+    outDict['endProj'] = pi_hat
+    outDict['hess'] = hess
+    
+    
+    return outDict
     
 
 def Est_PostSamps_Untracked(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4):
