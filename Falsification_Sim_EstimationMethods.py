@@ -293,19 +293,34 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
     #Insert it into our hessian
     hess = simModules.TRACKED_NegLogLikeFunc_Hess(best_x,np.ones((numOut,numImp)),y_Expec,\
                                                        Sens,Spec)
-    '''
-    outDict['90upper_int']
-    outDict['90lower_int']
-    outDict['95upper_int']
-    
+    hess_invs = 1/np.diag(hess)
     z90 = spstat.norm.ppf(0.95)
     z95 = spstat.norm.ppf(0.975)
     z99 = spstat.norm.ppf(0.995)
-    '''
+    imp_Interval90 = z90/(np.sqrt(np.sum(N,axis=0))*hess_invs[:numImp])
+    imp_Interval95 = z95/(np.sqrt(np.sum(N,axis=0))*hess_invs[:numImp])
+    imp_Interval99 = z99/(np.sqrt(np.sum(N,axis=0))*hess_invs[:numImp])
+    out_Interval90 = z90/(np.sqrt(np.sum(N,axis=1))*hess_invs[numImp:])
+    out_Interval95 = z95/(np.sqrt(np.sum(N,axis=1))*hess_invs[numImp:])
+    out_Interval99 = z99/(np.sqrt(np.sum(N,axis=1))*hess_invs[numImp:])
+    
+    outDict['90upper_int'] = theta_hat + imp_Interval90
+    outDict['90lower_int'] = theta_hat - imp_Interval90
+    outDict['95upper_int'] = theta_hat + imp_Interval95
+    outDict['95lower_int'] = theta_hat - imp_Interval95
+    outDict['99upper_int'] = theta_hat + imp_Interval99
+    outDict['99lower_int'] = theta_hat - imp_Interval99
+    outDict['90upper_end'] = pi_hat + out_Interval90
+    outDict['90lower_end'] = pi_hat - out_Interval90
+    outDict['95upper_end'] = pi_hat + out_Interval95
+    outDict['95lower_end'] = pi_hat - out_Interval95
+    outDict['99upper_end'] = pi_hat + out_Interval99
+    outDict['99lower_end'] = pi_hat - out_Interval99
+    
     outDict['intProj'] = theta_hat
     outDict['endProj'] = pi_hat
     outDict['hess'] = hess
-    
+    outDict['90upper_int']
     
     return outDict
     

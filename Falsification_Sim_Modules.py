@@ -2046,7 +2046,7 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat):
     
     diags = np.diag(np.concatenate((impPartials,outletPartials)))
     
-    hess = (hess + diags)*-1    
+    hess = (hess + diags)*-1 - 0.002 # include prior term   
     return hess
 
 def UNTRACKED_LogPrior(beta,numVec,posVec,sens,spec,transMat):
@@ -2190,7 +2190,7 @@ def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec):
     
     diags = np.diag(np.concatenate((impPartials,outletPartials)))
     
-    hess = (hess + diags)*-1    
+    hess = (hess + diags)*-1 - 0.002 # include prior term
     return hess
 
 def TRACKED_LogPrior(beta, numVec, posVec, sens, spec):

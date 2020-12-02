@@ -7,6 +7,7 @@ Created on Tue Dec  1 20:40:09 2020
 import numpy as np
 import Falsification_Sim_Modules as simMod
 import Falsification_Sim_EstimationMethods as simEst
+import scipy.stats as spstat
 #CREATING MAP CONFIDENCE INTERVALS
 #UNTRACKED
 Sens,Spec,wt = 0.95,0.95,0.1
@@ -53,11 +54,24 @@ estimDict = simEst.Est_TrackedMLE(N,Y,Sens,Spec)
 
 hess = estimDict['hess']
 
+print(estimDict['90upper_int'])
 print(estimDict['intProj'])
+print(estimDict['90lower_int'])
+
+print(estimDict['90upper_end'])
 print(estimDict['endProj'])
+print(estimDict['90lower_end'])
+
 print(np.linalg.det(hess))
 for k in range(n+m):
     print(hess[k,k])
+
+z90 = spstat.norm.ppf(0.95)
+hess_invs = 1/np.diag(hess)
+out_Interval90 = z90/(np.sqrt(np.sum(N,axis=1))*hess_invs[m:])
+
+# take a look at the spectrum
+print(np.linalg.eigh(hess-0.005)[0])
 
 
 
