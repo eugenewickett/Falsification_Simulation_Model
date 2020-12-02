@@ -31,9 +31,16 @@ estimDict = simEst.Est_UntrackedMLE(Q,Y,N,Sens,Spec,wt)
 
 hess = estimDict['hess']
 
+print(estimDict['90upper_int'])
 print(estimDict['intProj'])
+print(estimDict['90lower_int'])
+
+print(estimDict['90upper_end'])
 print(estimDict['endProj'])
-print(np.linalg.det(hess))
+print(estimDict['90lower_end'])
+
+# take a look at the spectrum
+print(np.linalg.eigh(hess-0.005)[0])
 
 #TRACKED
 Sens,Spec,wt = 0.95,0.95,0.1
@@ -66,9 +73,7 @@ print(np.linalg.det(hess))
 for k in range(n+m):
     print(hess[k,k])
 
-z90 = spstat.norm.ppf(0.95)
-hess_invs = 1/np.diag(hess)
-out_Interval90 = z90/(np.sqrt(np.sum(N,axis=1))*hess_invs[m:])
+
 
 # take a look at the spectrum
 print(np.linalg.eigh(hess-0.005)[0])
