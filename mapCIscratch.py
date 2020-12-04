@@ -30,6 +30,7 @@ beta0 = -4.5*np.ones(n+m)
 estimDict = simEst.Est_UntrackedMLE(Q,Y,N,Sens,Spec,wt)
 
 hess = estimDict['hess']
+np.sqrt(np.diag(np.linalg.inv(hess)))
 
 print(estimDict['90upper_int'])
 print(estimDict['intProj'])
@@ -40,7 +41,7 @@ print(estimDict['endProj'])
 print(estimDict['90lower_end'])
 
 # take a look at the spectrum
-print(np.linalg.eigh(hess-0.005)[0])
+print(np.linalg.eigh(hess)[0])
 
 #TRACKED
 Sens,Spec,wt = 0.95,0.95,0.1
@@ -60,7 +61,7 @@ beta0 = -4.5*np.ones(n+m)
 estimDict = simEst.Est_TrackedMLE(N,Y,Sens,Spec)
 
 hess = estimDict['hess']
-
+np.sqrt(np.diag(np.linalg.inv(hess)))
 print(estimDict['90upper_int'])
 print(estimDict['intProj'])
 print(estimDict['90lower_int'])
@@ -76,7 +77,7 @@ for k in range(n+m):
 
 
 # take a look at the spectrum
-print(np.linalg.eigh(hess-0.005)[0])
+print(np.linalg.eigh(hess)[0])
 
 
 
