@@ -24,7 +24,7 @@ realprobz = realproby * Sens + (1-realproby) * (1-Spec) #real testing
 (n,m) = Q.shape
 beta0 = -4.5*np.ones(n+m)
 N = (1000 * np.ones(n)).astype('int')
-np.random.seed(6) # Seeds 6, 8, 16, 18, 27 give negative Hessian diagonals
+np.random.seed(90) # Seeds 6, 8, 16, 18, 27 give negative Hessian diagonals
 Y = np.random.binomial(N,realprobz)
 estimDict = simEst.Est_UntrackedMLE(Q,Y,N,Sens,Spec,wt)
 print(np.diag(estimDict['hess']))

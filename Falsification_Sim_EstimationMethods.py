@@ -237,7 +237,7 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     hess = simModules.UNTRACKED_NegLogLikeFunc_Hess(best_x,NumSamples,PosData,\
                                                        Sens,Spec,A)
     
-    hess_invs = np.abs(1/np.diag(hess))
+    hess_invs = [i if i >= 0 else np.nan for i in 1/np.diag(hess)]
     z90 = spstat.norm.ppf(0.95)
     z95 = spstat.norm.ppf(0.975)
     z99 = spstat.norm.ppf(0.995)
@@ -306,7 +306,7 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
     #Insert it into our hessian
     hess = simModules.TRACKED_NegLogLikeFunc_Hess(best_x,N,Y,Sens,Spec)
     
-    hess_invs = np.abs(1/np.diag(hess))
+    hess_invs = [i if i >= 0 else np.nan for i in 1/np.diag(hess)]
     z90 = spstat.norm.ppf(0.95)
     z95 = spstat.norm.ppf(0.975)
     z99 = spstat.norm.ppf(0.995)
