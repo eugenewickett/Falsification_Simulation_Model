@@ -304,7 +304,7 @@ def invlogit_grad(beta):
 
 def UNTRACKED_Post(beta,N,Y,sens,spec,Q,regwt=0.):
     #prior distribution
-    prior = -0.25*np.sum(np.abs(beta + 3))- 0.001 * np.sum((beta + 3) ** 2)
+    prior = - 0.1 * np.sum((beta + 3) ** 2)# -0.25*np.sum(np.abs(beta + 3))
     
     n,m = Q.shape
     th = beta[:m]
@@ -320,7 +320,7 @@ def UNTRACKED_Post(beta,N,Y,sens,spec,Q,regwt=0.):
 
 def UNTRACKED_Post_Grad(beta,N,Y,sens,spec,Q,regwt=0.):
     #prior gradient
-    prior_grad = -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
+    prior_grad = -0.2 * np.sum(beta + 3)
     
     n,m = Q.shape
     th = beta[:m]
@@ -432,7 +432,7 @@ def UNTRACKED_Post_Hess(beta,N,Y,sens,spec,Q):
 
 def TRACKED_Post(beta, N, Y, sens, spec, regwt=0.):
     #prior distribution
-    prior = -0.25*np.sum(np.abs(beta + 3))- 0.001 * np.sum((beta + 3) ** 2)
+    prior = - 0.1 * np.sum((beta + 3) ** 2)# -0.25*np.sum(np.abs(beta + 3))
     
     #likelihood
     n,m = N.shape
@@ -448,7 +448,7 @@ def TRACKED_Post(beta, N, Y, sens, spec, regwt=0.):
 
 def TRACKED_Post_Grad(beta, N, Y, sens, spec, regwt=0.):
     #prior gradient
-    prior_grad = -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
+    prior_grad = -0.2 * np.sum(beta + 3)
     
     #likelihood Jacobian
     n,m = N.shape
@@ -638,6 +638,6 @@ n, bins, patches = ax4.hist(invlogit(TR_samps[:,3:])) #outlets
 
 
 
-
+print(np.quantile(invlogit(TR_samps[:,]),(0.05,0.95) ,0).T)
 
 
