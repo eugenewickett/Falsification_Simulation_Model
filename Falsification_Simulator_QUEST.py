@@ -614,6 +614,7 @@ for rep in range(numReplications):
         estEndFalsePercList = output_Lin['endProj']
     except:
         print("Couldn't generate the LINEAR PROJECTION estimates")
+        output_Lin = {}
         estIntFalsePercList = []
         estEndFalsePercList = []
     
@@ -627,6 +628,7 @@ for rep in range(numReplications):
         estEndFalsePercList_Bern = output_Bern['endProj']
     except:
         #print("Couldn't generate the BERNOULLI MLE estimates")
+        output_Bern = {}
         estIntFalsePercList_Bern = []
         estEndFalsePercList_Bern = []
         
@@ -679,14 +681,17 @@ for rep in range(numReplications):
         else:
             randList = []
             
-        estIntMLE_Untracked , estEndMLE_Untracked = simEstMethods.Est_UntrackedMLE(\
-                                                   A,PosData=ydata,NumSamples=numSamples,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity,\
-                                                   RglrWt=optRegularizationWeight,\
-                                                   beta0_List=randList)
+        output_Untracked = simEstMethods.Est_UntrackedMLE(\
+                                   A,PosData=ydata,NumSamples=numSamples,\
+                                   Sens=diagnosticSensitivity,\
+                                   Spec=diagnosticSpecificity,\
+                                   RglrWt=optRegularizationWeight,\
+                                   beta0_List=randList)
+        estIntMLE_Untracked = output_Untracked['intProj']
+        estEndMLE_Untracked = output_Untracked['endProj']
     except:
         print("Couldn't generate the UNTRACKED MLE estimates")
+        output_Untracked = {}
         estIntMLE_Untracked = []
         estEndMLE_Untracked = []
     ### END UNTRACKED MLE ###
@@ -700,15 +705,17 @@ for rep in range(numReplications):
         else:
             randList = []
             
-        estIntMLE_Tracked , estEndMLE_Tracked = simEstMethods.Est_TrackedMLE(\
-                                                   Nmat,Ymat,\
-                                                   Sens=diagnosticSensitivity,\
-                                                   Spec=diagnosticSpecificity,\
-                                                   RglrWt=optRegularizationWeight,\
-                                                   beta0_List=randList)                          
-                                                                                                      
+        output_Tracked = simEstMethods.Est_TrackedMLE(\
+                                   Nmat,Ymat,\
+                                   Sens=diagnosticSensitivity,\
+                                   Spec=diagnosticSpecificity,\
+                                   RglrWt=optRegularizationWeight,\
+                                   beta0_List=randList)                         
+        estIntMLE_Tracked = output_Tracked['intProj']
+        estEndMLE_Tracked = output_Tracked['endProj']
     except:
         print("Couldn't generate the TRACKED MLE estimates")
+        output_Tracked = {}
         estIntMLE_Tracked = []
         estEndMLE_Tracked = []
     ### END TRACKED MLE ###
@@ -903,6 +910,8 @@ for rep in range(numReplications):
                           'endEstMLE_Tracked':estEndMLE_Tracked,
                           'postSamps_Untracked':estFalsePerc_PostSampsUNTRACKED,
                           'postSamps_Tracked':estFalsePerc_PostSampsTRACKED,
+                          'estDict_Lin':output_Lin, 'estDict_Bern':output_Bern,
+                          'estDict_Untracked':output_Untracked,'estDict_Tracked':output_Tracked,
                           'intSFTrueValues':intSFVec,'endSFTrueValues':endSFVecCombo,
                           'simStartTime':startTime,
                           'simRunTime':totalRunTime
