@@ -320,6 +320,7 @@ def UNTRACKED_Post(beta,N,Y,sens,spec,Q,regwt=0.):
 
 def UNTRACKED_Post_Grad(beta,N,Y,sens,spec,Q,regwt=0.):
     #prior gradient
+    #prior_grad = -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
     prior_grad = -0.2 * np.sum(beta + 3)
     
     n,m = Q.shape
@@ -438,23 +439,24 @@ def TRACKED_Post(beta, N, Y, sens, spec, regwt=0.):
     n,m = N.shape
     th = beta[:m]
     py = beta[m:]
-    betaInitial = -6*np.ones(m+n)
+    #betaInitial = -6*np.ones(m+n)
     pMat = np.array([invlogit(th)]*n)+np.array([(1-invlogit(th))]*n)*\
             np.array([invlogit(py)]*m).transpose()
     pMatTilde = sens*pMat+(1-spec)*(1-pMat)
     L = np.sum(np.multiply(Y,np.log(pMatTilde))+np.multiply(np.subtract(N,Y),\
-               np.log(1-pMatTilde))) - regwt*np.sum(np.abs(py-betaInitial[m:]))
+               np.log(1-pMatTilde))) #- regwt*np.sum(np.abs(py-betaInitial[m:]))
     return prior + L
 
 def TRACKED_Post_Grad(beta, N, Y, sens, spec, regwt=0.):
     #prior gradient
+    #prior_grad = -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
     prior_grad = -0.2 * np.sum(beta + 3)
     
     #likelihood Jacobian
     n,m = N.shape
     th = beta[:m]
     py = beta[m:]
-    betaInitial = -6*np.ones(m+n)
+    #betaInitial = -6*np.ones(m+n)
     pMat = np.array([invlogit(th)]*n)+np.array([(1-invlogit(th))]*n)*\
             np.array([invlogit(py)]*m).transpose()
     pMatTilde = sens*pMat+(1-spec)*(1-pMat)
@@ -469,7 +471,7 @@ def TRACKED_Post_Grad(beta, N, Y, sens, spec, regwt=0.):
                      np.array([(1-invlogit(th))]*n)/pMatTilde\
                      - (N-Y)*invlogit_grad(py)[:,None]*\
                      np.array([(1-invlogit(th))]*n)/(1-pMatTilde))\
-                     ,axis=1) - regwt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
+                     ,axis=1) #- regwt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
        
     like_jac = np.concatenate((impPartials,outletPartials))
     
@@ -551,8 +553,8 @@ SAMPLER CALL FUNCTIONS
 '''
 def GeneratePostSamps_UNTRACKED(N,Y,Q,sens,spec,regWt,M,Madapt,delta):
     def UNTRACKEDtargetForNUTS(beta):
-        return UNTRACKED_Post(beta,N,Y,sens,spec,Q,regWt),\
-               UNTRACKED_Post_Grad(beta,N,Y,sens,spec,Q,regWt)
+        return UNTRACKED_Post(beta,N,Y,sens,spec,Q),\
+               UNTRACKED_Post_Grad(beta,N,Y,sens,spec,Q)
 
     beta0 = -4.5 * np.ones(Q.shape[1] + Q.shape[0])
     samples, lnprob, epsilon = nuts6(UNTRACKEDtargetForNUTS,M,Madapt,beta0,delta)
@@ -561,10 +563,10 @@ def GeneratePostSamps_UNTRACKED(N,Y,Q,sens,spec,regWt,M,Madapt,delta):
 
 def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta):
     def TRACKEDtargetForNUTS(beta):
-        return TRACKED_Post(beta,N,Y,sens,spec,regWt),\
-               TRACKED_Post_Grad(beta,N,Y,sens,spec,regWt)
+        return TRACKED_Post(beta,N,Y,sens,spec),\
+               TRACKED_Post_Grad(beta,N,Y,sens,spec)
 
-    beta0 = -2 * np.ones(N.shape[1] + N.shape[0])
+    beta0 = -4.5 * np.ones(N.shape[1] + N.shape[0])
     samples, lnprob, epsilon = nuts6(TRACKEDtargetForNUTS,M,Madapt,beta0,delta)
     
     return samples
@@ -591,7 +593,6 @@ Q = np.array([[0.5,0.2,0.3],
 realproby_untr = (1-pOut_untr) * np.array((Q @ pImp_untr)) + pOut_untr #optimal testing
 realprobz_untr = realproby_untr * Sens + (1-realproby_untr) * (1-Spec) #real testing
 (n,m) = Q.shape
-beta0Tr = -4.5*np.ones(n+m)
 N_untr = (1000 * np.ones(n)).astype('int')
 #np.random.seed(90) # Seeds 6, 8, 16, 18, 27 give negative Hessian diagonals
 Y_untr = np.random.binomial(N_untr,realprobz_untr)
@@ -604,8 +605,7 @@ m = len(pImp_tr)
 trackP = np.array([pImp_tr]*n)+np.array([1-pImp_tr]*n)*\
             np.array([pOut_tr]*m).transpose()
 trackPtildes = Sens*trackP + (1-Spec)*(1-trackP)
-beta0 = -4.5*np.ones(n+m)
-numSamps = 300
+numSamps = 333
 N_tr = np.zeros(shape=(n,m))+numSamps
 #np.random.seed(16) 
 Y_tr = np.random.binomial(numSamps,trackPtildes)
@@ -618,23 +618,28 @@ UNTR_samps = GeneratePostSamps_UNTRACKED(N_untr,Y_untr,Q,Sens,Spec,wt,M,Madapt,d
 
 fig1=plt.figure()
 ax1 = fig1.add_subplot(1, 1, 1)
-n, bins, patches = ax1.hist(invlogit(UNTR_samps[:,:3])) #importers
+h, bins, patches = ax1.hist(invlogit(UNTR_samps[:,:3])) #importers
 
 fig2=plt.figure()
 ax2 = fig2.add_subplot(1, 1, 1)
-n, bins, patches = ax2.hist(invlogit(UNTR_samps[:,3:])) #outlets
+h, bins, patches = ax2.hist(invlogit(UNTR_samps[:,3:])) #outlets
+
+print(np.quantile(invlogit(UNTR_samps[:,]),(0.05,0.95) ,0).T)
 
 # TRACKED samples
 TR_samps = GeneratePostSamps_TRACKED(N_tr,Y_tr,Sens,Spec,wt,M,Madapt,delta)
+TR_hess = TRACKED_Post_Hess(TR_samps[0],N_tr,Y_tr,Sens,Spec)
+#print(np.diag(TR_hess))
 
 fig3=plt.figure()
 ax3 = fig3.add_subplot(1, 1, 1)
-n, bins, patches = ax3.hist(invlogit(TR_samps[:,:3])) #importers
+h, bins, patches = ax3.hist(invlogit(TR_samps[:,:3])) #importers
 
 fig4=plt.figure()
 ax4 = fig4.add_subplot(1, 1, 1)
-n, bins, patches = ax4.hist(invlogit(TR_samps[:,3:])) #outlets
+h, bins, patches = ax4.hist(invlogit(TR_samps[:,3:])) #outlets
 
+print(np.quantile(invlogit(TR_samps[:,]),(0.05,0.95) ,0).T)
 
 
 
