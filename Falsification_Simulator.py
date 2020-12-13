@@ -65,8 +65,9 @@ testPolicyParam = [[200,300,400],0.30] # Set testing policy parameter list here
 intLTvar = 0. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
 endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
 
+usePrior = 1. #If not 1., will use regularization instead
 optRegularizationWeight = 0.2 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -591,7 +592,7 @@ for rep in range(numReplications):
         try:
             estFalsePerc_PostSampsUNTRACKED = simEstMethods.GeneratePostSamps_UNTRACKED(numSamples,ydata,A,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight,\
-                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta,usePrior)
                        
         except:
             print("Couldn't generate the UNTRACKED POSTERIOR SAMPLES")
@@ -606,7 +607,7 @@ for rep in range(numReplications):
         try:
             estFalsePerc_PostSampsTRACKED = simEstMethods.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight,\
-                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta,usePrior)
            
         except:
             print("Couldn't generate the TRACKED POSTERIOR SAMPLES")
@@ -630,7 +631,8 @@ for rep in range(numReplications):
                                    Sens=diagnosticSensitivity,\
                                    Spec=diagnosticSpecificity,\
                                    RglrWt=optRegularizationWeight,\
-                                   beta0_List=randList)
+                                   beta0_List=randList,
+                                   usePrior=usePrior)
         estIntMLE_Untracked = output_Untracked['intProj']
         estEndMLE_Untracked = output_Untracked['endProj']
     except:
@@ -650,11 +652,12 @@ for rep in range(numReplications):
             randList = []
             
         output_Tracked = simEstMethods.Est_TrackedMLE(\
-                                   Nmat,Ymat,\
+                                   N=Nmat,Y=Ymat,\
                                    Sens=diagnosticSensitivity,\
                                    Spec=diagnosticSpecificity,\
                                    RglrWt=optRegularizationWeight,\
-                                   beta0_List=randList)
+                                   beta0_List=randList,
+                                   usePrior=usePrior)
         estIntMLE_Tracked = output_Tracked['intProj']
         estEndMLE_Tracked = output_Tracked['endProj']
     except:

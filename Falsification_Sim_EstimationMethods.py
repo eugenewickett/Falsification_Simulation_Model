@@ -163,13 +163,13 @@ def UNTRACKED_NegLogLike_Hess(betaVec,numVec,posVec,sens,spec,transMat):
 
 def UNTRACKED_LogPrior(beta,numVec,posVec,sens,spec,transMat):
     #-0.25*np.sum(np.abs(beta + 3)) - 0.001 * np.sum((beta + 3) ** 2)
-    return - 0.05 * np.sum((beta-(sps.logit(0.1)))**2)
+    return - 0.1 * np.sum((beta-(sps.logit(0.1)))**2)
 def UNTRACKED_LogPrior_Grad(beta,numVec,posVec,sens,spec,transMat):
     #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
-    return -0.1 * (beta - sps.logit(0.1))
+    return -0.2 * (beta - sps.logit(0.1))
 def UNTRACKED_LogPrior_Hess(beta,numVec,posVec,sens,spec,transMat):
     #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
-    return -0.1 * np.diag(beta)
+    return -0.2 * np.diag(beta)
 
 def UNTRACKED_LogPost(betaVec,numVec,posVec,sens,spec,transMat):
     return UNTRACKED_LogPrior(betaVec,numVec,posVec,sens,spec,transMat)\
@@ -188,11 +188,16 @@ def UNTRACKED_NegLogPost_Grad(beta, nsamp, ydata, sens, spec, A):
 def UNTRACKED_NegLogPost_Hess(beta, nsamp, ydata, sens, spec, A):
     return -1*UNTRACKED_LogPost_Hess(beta, nsamp, ydata, sens, spec, A)
 
-def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,delta):
-    def UNTRACKEDtargetForNUTS(beta):
-        return UNTRACKED_LogPost(beta,numSamples,posData,sens,spec,A),\
-               UNTRACKED_LogPost_Grad(beta,numSamples,posData,sens,spec,A)
-
+def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,delta,usePrior=1.):
+    if usePrior==1.:
+        def UNTRACKEDtargetForNUTS(beta):
+            return UNTRACKED_LogPost(beta,numSamples,posData,sens,spec,A),\
+                   UNTRACKED_LogPost_Grad(beta,numSamples,posData,sens,spec,A)
+    else:
+        def UNTRACKEDtargetForNUTS(beta):
+            return UNTRACKED_LogLike(beta,numSamples,posData,sens,spec,A,regWt),\
+                   UNTRACKED_LogLike_Jac(beta,numSamples,posData,sens,spec,A,regWt)
+    
     beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
     samples, lnprob, epsilon = simModules.nuts6(UNTRACKEDtargetForNUTS,M,Madapt,beta0,delta)
     
@@ -426,13 +431,13 @@ def TRACKED_NegLogLike_Hess(betaVec,numMat,posMat,sens,spec):
 ##### TRACKED PRIOR FUNCTIONS #####
 def TRACKED_LogPrior(beta, numVec, posVec, sens, spec):
     #-0.25*np.sum(np.abs(beta + 3)) - 0.001 * np.sum((beta + 3) ** 2)
-    return -0.05 * np.sum((beta-sps.logit(0.1))**2)
+    return -0.1 * np.sum((beta - sps.logit(0.1))**2)
 def TRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec):
     #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
-    return -0.1 * (beta - sps.logit(0.1))
+    return -0.2 * (beta - sps.logit(0.1))
 def TRACKED_LogPrior_Hess(beta, nsamp, ydata, sens, spec):
     #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
-    return -0.1 * np.diag(beta)
+    return -0.2 * np.diag(beta)
 
 ##### TRACKED POSTERIOR FUNCTIONS #####
 def TRACKED_LogPost(beta,N,Y,sens,spec):
@@ -452,10 +457,15 @@ def TRACKED_NegLogPost_Grad(beta, N, Y, sens, spec):
 def TRACKED_NegLogPost_Hess(beta,N,Y,sens,spec):
     return -1*TRACKED_LogPost_Hess(beta,N,Y,sens,spec)
 
-def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta):
-    def TRACKEDtargetForNUTS(beta):
-        return TRACKED_LogPost(beta,N,Y,sens,spec),\
-               TRACKED_LogPost_Grad(beta,N,Y,sens,spec)
+def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta,usePriors=1.):
+    if usePriors==1.:
+        def TRACKEDtargetForNUTS(beta):
+            return TRACKED_LogPost(beta,N,Y,sens,spec),\
+                   TRACKED_LogPost_Grad(beta,N,Y,sens,spec)
+    else:
+        def TRACKEDtargetForNUTS(beta):
+            return TRACKED_LogLike(beta,N,Y,sens,spec,regWt),\
+                   TRACKED_LogLike_Jac(beta,N,Y,sens,spec,regWt)
 
     beta0 = -2 * np.ones(N.shape[1] + N.shape[0])
     samples, lnprob, epsilon = simModules.nuts6(TRACKEDtargetForNUTS,M,Madapt,beta0,delta)
@@ -718,7 +728,7 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     return outDict
 
 def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
-                      Madapt=5000,delta=0.4,beta0_List=[]):
+                      Madapt=5000,delta=0.4,beta0_List=[],usePrior=1.):
     '''
     Uses the L-BFGS-B method of the SciPy Optimizer to maximize the
     log-likelihood of different SF rates for a given set of UNTRACKED testing
@@ -732,20 +742,36 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     if beta0_List == []: # We do not have any initial points to test; generate a generic initial point
         beta0_List.append(-6 * np.ones(numImp+numOut) + np.random.uniform(-1,1,numImp+numOut))
     
-    #Loop through each possible initial point and store the optimal solution likelihood values
-    likelihoodsList = []
-    solsList = []
-    bds = spo.Bounds(np.zeros(numImp+numOut)-8, np.zeros(numImp+numOut)+8)
-    for curr_beta0 in beta0_List:
-        opVal = spo.minimize(UNTRACKED_NegLogPost,
-                             curr_beta0,
-                             args=(NumSamples,PosData,Sens,Spec,A),
-                             method='L-BFGS-B',
-                             jac = UNTRACKED_NegLogPost_Grad,
-                             options={'disp': False},
-                             bounds=bds)
-        likelihoodsList.append(opVal.fun)
-        solsList.append(opVal.x)
+    if usePrior==1.: # Use prior
+        #Loop through each possible initial point and store the optimal solution likelihood values
+        likelihoodsList = []
+        solsList = []
+        bds = spo.Bounds(np.zeros(numImp+numOut)-8, np.zeros(numImp+numOut)+8)
+        for curr_beta0 in beta0_List:
+            opVal = spo.minimize(UNTRACKED_NegLogPost,
+                                 curr_beta0,
+                                 args=(NumSamples,PosData,Sens,Spec,A),
+                                 method='L-BFGS-B',
+                                 jac = UNTRACKED_NegLogPost_Grad,
+                                 options={'disp': False},
+                                 bounds=bds)
+            likelihoodsList.append(opVal.fun)
+            solsList.append(opVal.x)
+    else: # Use regularization
+        likelihoodsList = []
+        solsList = []
+        bds = spo.Bounds(np.zeros(numImp+numOut)-8, np.zeros(numImp+numOut)+8)
+        for curr_beta0 in beta0_List:
+            opVal = spo.minimize(UNTRACKED_NegLogLike,
+                                 curr_beta0,
+                                 args=(NumSamples,PosData,Sens,Spec,A,RglrWt),
+                                 method='L-BFGS-B',
+                                 jac = UNTRACKED_NegLogLike_Jac,
+                                 options={'disp': False},
+                                 bounds=bds)
+            likelihoodsList.append(opVal.fun)
+            solsList.append(opVal.x)
+    
     best_x = solsList[np.argmin(likelihoodsList)]
     
     #Generate confidence intervals
@@ -761,7 +787,6 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     #Insert it into our hessian
     hess = UNTRACKED_LogPost_Hess(best_x,NumSamples,PosData,\
                                                        Sens,Spec,A)
-    
     hess_invs = [i if i >= 0 else np.nan for i in 1/np.diag(hess)] # Return 'nan' values if the diagonal is less than 0
     
     imp_Interval90 = z90*np.sqrt(hess_invs[:numImp])
@@ -785,7 +810,7 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     
     #Generate intervals based on the non-transformed probabilities as well
     hess_Probs = UNTRACKED_LogPost_Probs_Hess(sps.expit(best_x),NumSamples,\
-                                                    PosData,Sens,Spec,A)
+                                                    PosData,Sens,Spec,A)*-1
     hess_invs_Probs = [i if i >= 0 else np.nan for i in 1/np.diag(hess_Probs)] # Return 'nan' values if the diagonal is less than 0
     
     imp_Interval90_Probs = z90*np.sqrt(hess_invs_Probs[:numImp])
@@ -794,18 +819,18 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     out_Interval90_Probs = z90*np.sqrt(hess_invs_Probs[numImp:])
     out_Interval95_Probs = z95*np.sqrt(hess_invs_Probs[numImp:])
     out_Interval99_Probs = z99*np.sqrt(hess_invs_Probs[numImp:])
-    outDict['90upper_int_Probs'] = theta_hat + imp_Interval90_Probs
-    outDict['90lower_int_Probs'] = theta_hat - imp_Interval90_Probs
-    outDict['95upper_int_Probs'] = theta_hat + imp_Interval95_Probs
-    outDict['95lower_int_Probs'] = theta_hat - imp_Interval95_Probs
-    outDict['99upper_int_Probs'] = theta_hat + imp_Interval99_Probs
-    outDict['99lower_int_Probs'] = theta_hat - imp_Interval99_Probs
-    outDict['90upper_end_Probs'] = pi_hat + out_Interval90_Probs
-    outDict['90lower_end_Probs'] = pi_hat - out_Interval90_Probs
-    outDict['95upper_end_Probs'] = pi_hat + out_Interval95_Probs
-    outDict['95lower_end_Probs'] = pi_hat - out_Interval95_Probs
-    outDict['99upper_end_Probs'] = pi_hat + out_Interval99_Probs
-    outDict['99lower_end_Probs'] = pi_hat - out_Interval99_Probs
+    outDict['90upper_int_Probs'] = [min(theta_hat[i] + imp_Interval90_Probs[i],1.) for i in range(numImp)]
+    outDict['90lower_int_Probs'] = [max(theta_hat[i] - imp_Interval90_Probs[i],0.) for i in range(numImp)]
+    outDict['95upper_int_Probs'] = [min(theta_hat[i] + imp_Interval95_Probs[i],1.) for i in range(numImp)]
+    outDict['95lower_int_Probs'] = [max(theta_hat[i] - imp_Interval95_Probs[i],0.) for i in range(numImp)]
+    outDict['99upper_int_Probs'] = [min(theta_hat[i] + imp_Interval99_Probs[i],1.) for i in range(numImp)]
+    outDict['99lower_int_Probs'] = [max(theta_hat[i] - imp_Interval99_Probs[i],0.) for i in range(numImp)]
+    outDict['90upper_end_Probs'] = [min(pi_hat[i] + out_Interval90_Probs[i],1.) for i in range(numOut)]
+    outDict['90lower_end_Probs'] = [max(pi_hat[i] - out_Interval90_Probs[i],0.) for i in range(numOut)]
+    outDict['95upper_end_Probs'] = [min(pi_hat[i] + out_Interval95_Probs[i],1.) for i in range(numOut)]
+    outDict['95lower_end_Probs'] = [max(pi_hat[i] - out_Interval95_Probs[i],0.) for i in range(numOut)]
+    outDict['99upper_end_Probs'] = [min(pi_hat[i] + out_Interval99_Probs[i],1.) for i in range(numOut)]
+    outDict['99lower_end_Probs'] = [max(pi_hat[i] - out_Interval99_Probs[i],0.) for i in range(numOut)]
     
     outDict['intProj'] = theta_hat
     outDict['endProj'] = pi_hat
@@ -814,7 +839,7 @@ def Est_UntrackedMLE(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     return outDict
 #sps.expit(best_x)[0:numImp].tolist(), sps.expit(best_x)[numImp:].tolist()
 
-def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_List=[]):
+def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_List=[],usePrior=1.):
     '''
     Forms MLE sample-wise - DOES NOT use A, but instead matrices N and Y,
     which record the positives and number of tests for each (outlet,importer) combination.
@@ -827,20 +852,36 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
     if beta0_List == []: # We do not have any initial points to test; generate a generic initial point
         beta0_List.append(-6 * np.ones(numImp+numOut) + np.random.uniform(-1,1,numImp+numOut))
     
-    #Loop through each possible initial point and store the optimal solution likelihood values
-    likelihoodsList = []
-    solsList = []
-    bds = spo.Bounds(np.zeros(numImp+numOut)-8, np.zeros(numImp+numOut)+8)
-    for curr_beta0 in beta0_List:
-        opVal = spo.minimize(TRACKED_NegLogPost,
-                             curr_beta0,
-                             args=(N,Y,Sens,Spec),
-                             method='L-BFGS-B',
-                             jac = TRACKED_NegLogPost_Grad,
-                             options={'disp': False},
-                             bounds=bds)
-        likelihoodsList.append(opVal.fun)
-        solsList.append(opVal.x)
+    if usePrior==1.: # Use prior
+        #Loop through each possible initial point and store the optimal solution likelihood values
+        likelihoodsList = []
+        solsList = []
+        bds = spo.Bounds(np.zeros(numImp+numOut)-8, np.zeros(numImp+numOut)+8)
+        for curr_beta0 in beta0_List:
+            opVal = spo.minimize(TRACKED_NegLogPost,
+                                 curr_beta0,
+                                 args=(N,Y,Sens,Spec),
+                                 method='L-BFGS-B',
+                                 jac = TRACKED_NegLogPost_Grad,
+                                 options={'disp': False},
+                                 bounds=bds)
+            likelihoodsList.append(opVal.fun)
+            solsList.append(opVal.x)
+    else: #Use regularization
+        likelihoodsList = []
+        solsList = []
+        bds = spo.Bounds(np.zeros(numImp+numOut)-8, np.zeros(numImp+numOut)+8)
+        for curr_beta0 in beta0_List:
+            opVal = spo.minimize(TRACKED_NegLogLike,
+                                 curr_beta0,
+                                 args=(N,Y,Sens,Spec,RglrWt),
+                                 method='L-BFGS-B',
+                                 jac = TRACKED_NegLogLike_Jac,
+                                 options={'disp': False},
+                                 bounds=bds)
+            likelihoodsList.append(opVal.fun)
+            solsList.append(opVal.x)
+    
     best_x = solsList[np.argmin(likelihoodsList)]
     
     #Generate confidence intervals
@@ -851,7 +892,6 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
     #y_Expec = (1-Spec) + (Sens+Spec-1) *(np.array([theta_hat]*numOut)+np.array([1-theta_hat]*numOut)*np.array([pi_hat]*numImp).transpose())
     #Insert it into our hessian
     hess = TRACKED_LogPost_Hess(best_x,N,Y,Sens,Spec)
-    
     hess_invs = [i if i >= 0 else np.nan for i in 1/np.diag(hess)] # Return 'nan' values if the diagonal is less than 0
     z90 = spstat.norm.ppf(0.95)
     z95 = spstat.norm.ppf(0.975)
@@ -878,7 +918,7 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
     outDict['99lower_end'] = sps.expit(best_x[numImp:] - out_Interval99)
     
     #Generate intervals based on the non-transformed probabilities as well
-    hess_Probs = TRACKED_LogPost_Probs_Hess(sps.expit(best_x),N,Y,Sens,Spec)
+    hess_Probs = TRACKED_LogPost_Probs_Hess(sps.expit(best_x),N,Y,Sens,Spec)*-1
     hess_invs_Probs = [i if i >= 0 else np.nan for i in 1/np.diag(hess_Probs)] # Return 'nan' values if the diagonal is less than 0
     
     imp_Interval90_Probs = z90*np.sqrt(hess_invs_Probs[:numImp])
@@ -887,18 +927,18 @@ def Est_TrackedMLE(N,Y,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta=0.4,beta0_Li
     out_Interval90_Probs = z90*np.sqrt(hess_invs_Probs[numImp:])
     out_Interval95_Probs = z95*np.sqrt(hess_invs_Probs[numImp:])
     out_Interval99_Probs = z99*np.sqrt(hess_invs_Probs[numImp:])
-    outDict['90upper_int_Probs'] = theta_hat + imp_Interval90_Probs
-    outDict['90lower_int_Probs'] = theta_hat - imp_Interval90_Probs
-    outDict['95upper_int_Probs'] = theta_hat + imp_Interval95_Probs
-    outDict['95lower_int_Probs'] = theta_hat - imp_Interval95_Probs
-    outDict['99upper_int_Probs'] = theta_hat + imp_Interval99_Probs
-    outDict['99lower_int_Probs'] = theta_hat - imp_Interval99_Probs
-    outDict['90upper_end_Probs'] = pi_hat + out_Interval90_Probs
-    outDict['90lower_end_Probs'] = pi_hat - out_Interval90_Probs
-    outDict['95upper_end_Probs'] = pi_hat + out_Interval95_Probs
-    outDict['95lower_end_Probs'] = pi_hat - out_Interval95_Probs
-    outDict['99upper_end_Probs'] = pi_hat + out_Interval99_Probs
-    outDict['99lower_end_Probs'] = pi_hat - out_Interval99_Probs
+    outDict['90upper_int_Probs'] = [min(theta_hat[i] + imp_Interval90_Probs[i],1.) for i in range(numImp)]
+    outDict['90lower_int_Probs'] = [max(theta_hat[i] - imp_Interval90_Probs[i],0.) for i in range(numImp)]
+    outDict['95upper_int_Probs'] = [min(theta_hat[i] + imp_Interval95_Probs[i],1.) for i in range(numImp)]
+    outDict['95lower_int_Probs'] = [max(theta_hat[i] - imp_Interval95_Probs[i],0.) for i in range(numImp)]
+    outDict['99upper_int_Probs'] = [min(theta_hat[i] + imp_Interval99_Probs[i],1.) for i in range(numImp)]
+    outDict['99lower_int_Probs'] = [max(theta_hat[i] - imp_Interval99_Probs[i],0.) for i in range(numImp)]
+    outDict['90upper_end_Probs'] = [min(pi_hat[i] + out_Interval90_Probs[i],1.) for i in range(numOut)]
+    outDict['90lower_end_Probs'] = [max(pi_hat[i] - out_Interval90_Probs[i],0.) for i in range(numOut)]
+    outDict['95upper_end_Probs'] = [min(pi_hat[i] + out_Interval95_Probs[i],1.) for i in range(numOut)]
+    outDict['95lower_end_Probs'] = [max(pi_hat[i] - out_Interval95_Probs[i],0.) for i in range(numOut)]
+    outDict['99upper_end_Probs'] = [min(pi_hat[i] + out_Interval99_Probs[i],1.) for i in range(numOut)]
+    outDict['99lower_end_Probs'] = [max(pi_hat[i] - out_Interval99_Probs[i],0.) for i in range(numOut)]
     
     outDict['intProj'] = theta_hat
     outDict['endProj'] = pi_hat

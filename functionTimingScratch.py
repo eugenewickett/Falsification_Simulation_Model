@@ -7,7 +7,7 @@ Created on Sun Nov 22 16:24:25 2020
 
 
 #import time
-import Falsification_Sim_Modules as simModules
+import Falsification_Sim_EstimationMethods as simModules
 import scipy.optimize as spo
 import scipy.special as sps
 import numpy as np
@@ -37,10 +37,11 @@ p0 = sps.expit(beta0)
 
 '''
 #TRACKED
-import Falsification_Sim_Modules as simModules
+import Falsification_Sim_EstimationMethods as simModules
+p0=best_x
 L0 = simModules.TRACKED_LogLike_Probs(p0,N,Y,Sens,Spec,0)
 dL0 = simModules.TRACKED_LogLike_Probs_Jac(p0,N,Y,Sens,Spec,0)
-for k in range(m+n):
+for k in range(106+10):
     p1 = 1*p0[:]
     p1[k] = p1[k] + 10**(-7)
     L1 = simModules.TRACKED_LogLike_Probs(p1,N,Y,Sens, Spec,0)

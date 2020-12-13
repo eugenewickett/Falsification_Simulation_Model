@@ -36,7 +36,7 @@ def parse_commandline():
     '''
     diag_sens, diag_spec, multSample_days, sim_days, glob_dem, testPolicy, optRglrWt
     '''
-    parser.add_argument('vars',type=float,nargs='+',default=[0.95,0.98,5.,600.,0.,0.,0.1])
+    parser.add_argument('vars',type=float,nargs='+',default=[0.95,0.98,5.,600.,0.,0.,0.1,1.])
     args = parser.parse_args()
 
     return args
@@ -63,7 +63,7 @@ samplingBudget = round(args.vars[2]*NumSimDays)
 diagnosticSensitivity = args.vars[0] # Tool sensitivity
 diagnosticSpecificity = args.vars[1] # Tool specificity
 globalDemand = args.vars[4] #Level of global demand increase across all outlets, in mean demand/simulation day
-numReplications = 5
+numReplications = 10
 
 alertIter = 100 # How frequently we're alerted of a set of replications being completed
 printOutput = False # Whether individual replication output should be displayed
@@ -72,6 +72,7 @@ intSFscenario_bool = True # Are we randomly generating some importer SF rates fo
 endSFscenario_bool = True # Are we randomly generating some outlet SF rates for scenario testing?
 saveTestResults = True # Store the testing results to the output dictionary? (Greatly increases file size if True)
 
+usePrior = args.vars[7] #If not 1., will use regularization instead
 optRegularizationWeight = args.vars[6] # Regularization weight to use with the MLE nonlinear optimizer
 lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
@@ -638,7 +639,7 @@ for rep in range(numReplications):
         try:
             estFalsePerc_PostSampsUNTRACKED = simEstMethods.GeneratePostSamps_UNTRACKED(numSamples,ydata,A,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight,\
-                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta,usePrior)
             '''
             Commented out, as we want to store the actual samples, but don't want to run the NUTS
             algorithm twice (getting samples one time, mean estimates another time).
@@ -663,7 +664,7 @@ for rep in range(numReplications):
         try:
             estFalsePerc_PostSampsTRACKED = simEstMethods.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight/intermediateNum,\
-                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
+                                                                       lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta,usePrior)
            
         except:
             print("Couldn't generate the TRACKED POSTERIOR SAMPLES")
@@ -687,7 +688,8 @@ for rep in range(numReplications):
                                    Sens=diagnosticSensitivity,\
                                    Spec=diagnosticSpecificity,\
                                    RglrWt=optRegularizationWeight,\
-                                   beta0_List=randList)
+                                   beta0_List=randList,
+                                   usePrior=usePrior)
         estIntMLE_Untracked = output_Untracked['intProj']
         estEndMLE_Untracked = output_Untracked['endProj']
     except:
@@ -711,7 +713,8 @@ for rep in range(numReplications):
                                    Sens=diagnosticSensitivity,\
                                    Spec=diagnosticSpecificity,\
                                    RglrWt=optRegularizationWeight,\
-                                   beta0_List=randList)                         
+                                   beta0_List=randList,
+                                   usePrior=usePrior)                         
         estIntMLE_Tracked = output_Tracked['intProj']
         estEndMLE_Tracked = output_Tracked['endProj']
     except:
