@@ -27,7 +27,9 @@ And outputs a single list, sampleSchedule, with the following elements in each e
 import numpy as np
 import random
 from scipy.stats import beta
-import Falsification_Sim_Modules as simModules
+import scipy.special as sps
+import Falsification_Sim_Modules as simMod 
+import Falsification_Sim_EstimationMethods as simEst
 
 def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
@@ -412,15 +414,15 @@ def Pol_Dyn_TSwithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         for rw in resultsList:
             ydata.append(rw[2])
             nSamp.append(rw[1])
-        A = simModules.GenerateTransitionMatrix(resultsList)      
+        A = simEst.GenerateTransitionMatrix(resultsList)      
         sens, spec, M, Madapt, delta = policyParamList[1:]
-        NUTSsamples = simModules.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+        NUTSsamples = simEst.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
         # Now pick from these samples to generate projections
         for currDay in range(numDaysToSched):
             numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
                         min((numBudgetRemain-usedBudgetSoFar) % (numDaysRemain-currDay),1) # How many samples to conduct in the next day
             for testInd in range(numToTest):    
-                currSample = simModules.invlogit(NUTSsamples[random.randrange(len(NUTSsamples))])
+                currSample = sps.expit(NUTSsamples[random.randrange(len(NUTSsamples))])
                 probs = currSample[A.shape[1]:] + np.matmul(A,currSample[:A.shape[1]])
                 # Normalize? Or just pick largest value
                 highInd = [i for i,j in enumerate(probs) if j == max(probs)]
@@ -474,13 +476,13 @@ def Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         for rw in resultsList:
             ydata.append(rw[2])
             nSamp.append(rw[1])
-        A = simModules.GenerateTransitionMatrix(resultsList)      
+        A = simMod.GenerateTransitionMatrix(resultsList)      
         sens, spec, M, Madapt, delta = policyParamList[1:]
-        NUTSsamples = simModules.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+        NUTSsamples = simEst.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
         # Store sample variances for intermediate nodes
         NUTSintVars = []
         for intNode in range(A.shape[1]):
-            currVar = np.var(simModules.invlogit(NUTSsamples[:,intNode]))
+            currVar = np.var(sps.expit(NUTSsamples[:,intNode]))
             NUTSintVars.append(currVar)
         # Normalize sum of all variances to 1
         NUTSintVars = NUTSintVars/np.sum(NUTSintVars)
@@ -566,13 +568,13 @@ def Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         for rw in resultsList:
             ydata.append(rw[2])
             nSamp.append(rw[1])
-        A = simModules.GenerateTransitionMatrix(resultsList)      
+        A = simMod.GenerateTransitionMatrix(resultsList)      
         sens, spec, M, Madapt, delta = policyParamList[1:]
-        NUTSsamples = simModules.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+        NUTSsamples = simEst.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
         # Store sample variances for intermediate nodes
         NUTSintVars = []
         for intNode in range(A.shape[1]):
-            currVar = np.var(simModules.invlogit(NUTSsamples[:,intNode]))
+            currVar = np.var(sps.expit(NUTSsamples[:,intNode]))
             NUTSintVars.append(currVar)
         # Normalize sum of all variances to 1
         NUTSintVars = NUTSintVars/np.sum(NUTSintVars)
@@ -671,15 +673,15 @@ def Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         for rw in resultsList:
             ydata.append(rw[2])
             nSamp.append(rw[1])
-        A = simModules.GenerateTransitionMatrix(resultsList)      
+        A = simMod.GenerateTransitionMatrix(resultsList)      
         sens, spec, M, Madapt, delta = policyParamList[2:]
-        NUTSsamples = simModules.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
+        NUTSsamples = simEst.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
         
         # Store inverse of median distance from the threshold for intermediate nodes
         NUTSintWts = []
         for intNode in range(A.shape[1]):
             # Use scipy.stats to fit beta distributions for the NUTS samples
-            currData = simModules.invlogit(NUTSsamples[:,intNode])
+            currData = sps.expit(NUTSsamples[:,intNode])
             # Need to remove 1/0 values for beta fit
             currData = [max(min(dat,1-(1e-5)),1e-5) for dat in currData]
             a1, b1, loc1, scale1 = beta.fit(currData, floc=0, fscale=1) # (CHANGE TO LAPLACE?)

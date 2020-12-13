@@ -16,6 +16,7 @@ import time # for time tracking
 import os # for directories
 #from tabulate import tabulate # for making outputs
 import pickle # for saving/loading objects in Python
+import scipy.special as sps
 
 #import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules # module for the simulation
@@ -635,7 +636,7 @@ for rep in range(numReplications):
     #UNTRACKED POSTERIOR SAMPLING
     if lklhdBool == True:
         try:
-            estFalsePerc_PostSampsUNTRACKED = simModules.GeneratePostSamps_UNTRACKED(numSamples,ydata,A,diagnosticSensitivity,\
+            estFalsePerc_PostSampsUNTRACKED = simEstMethods.GeneratePostSamps_UNTRACKED(numSamples,ydata,A,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight,\
                                                                        lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
             '''
@@ -660,7 +661,7 @@ for rep in range(numReplications):
     #TRACKED POSTERIOR SAMPLING
     if lklhdBool == True:
         try:
-            estFalsePerc_PostSampsTRACKED = simModules.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
+            estFalsePerc_PostSampsTRACKED = simEstMethods.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight/intermediateNum,\
                                                                        lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
            
@@ -846,18 +847,18 @@ for rep in range(numReplications):
             ax.set_xlabel('Intermediate Node',fontsize=16)
             ax.set_ylabel('Est. model parameter distribution',fontsize=16)
             for i in range(intermediateNum):
-                plt.hist(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,i]))
+                plt.hist(sps.expit(estFalsePerc_PostSampsUNTRACKED[:,i]))
             
             fig = plt.figure()
             ax = fig.add_axes([0,0,2,1])
             ax.set_xlabel('End Node',fontsize=16)
             ax.set_ylabel('Est. model parameter distribution',fontsize=16)
             for i in range(endNum):
-                plt.hist(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,intermediateNum+i]))
+                plt.hist(sps.expit(estFalsePerc_PostSampsUNTRACKED[:,intermediateNum+i]))
             
             meanSampVec = []
             for i in range(intermediateNum):
-                meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,i])))
+                meanSampVec.append(np.mean(sps.expit(estFalsePerc_PostSampsUNTRACKED[:,i])))
             meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
                                  
         

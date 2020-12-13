@@ -16,6 +16,7 @@ import time # for time tracking
 import os # for directories
 from tabulate import tabulate # for making outputs
 import pickle # for saving/loading objects in Python
+import scipy.special as sps
 
 #import Falsification_Sim_Classes as simClasses # our class objects and methods
 import Falsification_Sim_Modules as simModules # module for the simulation
@@ -39,7 +40,7 @@ NumSimDays = 600
 samplingBudget = NumSimDays*1
 diagnosticSensitivity = 0.95 # Tool sensitivity
 diagnosticSpecificity = 0.98 # Tool specificity
-globalDemand = 120. #Level of global demand increase across all outlets, in mean demand/simulation day
+globalDemand = 0. #Level of global demand increase across all outlets, in mean demand/simulation day
 numReplications = 1
 
 alertIter = 7 # How frequently we're alerted of a set of replications being completed
@@ -63,12 +64,9 @@ testPolicyParam = [[200,300,400],0.30] # Set testing policy parameter list here
 # affecting importer stockouts
 intLTvar = 0. # Values other than 0. are interpreted as the variance of a log-normal distribution with mean as listed in the imported LT arc list
 endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
-## REMOVE LATER
-currTrVec = []
-currStVec = []
 
-optRegularizationWeight = 0.1 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
+optRegularizationWeight = 0.2 # Regularization weight to use with the MLE nonlinear optimizer
+lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -591,7 +589,7 @@ for rep in range(numReplications):
     #UNTRACKED POSTERIOR SAMPLING
     if lklhdBool == True:
         try:
-            estFalsePerc_PostSampsUNTRACKED = simModules.GeneratePostSamps_UNTRACKED(numSamples,ydata,A,diagnosticSensitivity,\
+            estFalsePerc_PostSampsUNTRACKED = simEstMethods.GeneratePostSamps_UNTRACKED(numSamples,ydata,A,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight,\
                                                                        lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
                        
@@ -606,7 +604,7 @@ for rep in range(numReplications):
     #TRACKED POSTERIOR SAMPLING
     if lklhdBool == True:
         try:
-            estFalsePerc_PostSampsTRACKED = simModules.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
+            estFalsePerc_PostSampsTRACKED = simEstMethods.GeneratePostSamps_TRACKED(Nmat,Ymat,diagnosticSensitivity,\
                                                                        diagnosticSpecificity,optRegularizationWeight,\
                                                                        lklhdEst_M,lklhdEst_Madapt,lklhdEst_delta)
            
@@ -795,18 +793,18 @@ for rep in range(numReplications):
             ax.set_xlabel('Intermediate Node',fontsize=16)
             ax.set_ylabel('UNTRACKED posterior distribution',fontsize=16)
             for i in range(intermediateNum):
-                plt.hist(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,i]))
+                plt.hist(sps.expit(estFalsePerc_PostSampsUNTRACKED[:,i]))
 
             fig = plt.figure()
             ax = fig.add_axes([0,0,2,1])
             ax.set_xlabel('End Node',fontsize=16)
             ax.set_ylabel('UNTRACKED posterior distribution',fontsize=16)
             for i in range(endNum):
-                plt.hist(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,intermediateNum+i]))
+                plt.hist(sps.expit(estFalsePerc_PostSampsUNTRACKED[:,intermediateNum+i]))
 
             meanSampVec = []
             for i in range(intermediateNum):
-                meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_PostSampsUNTRACKED[:,i])))
+                meanSampVec.append(np.mean(sps.expit(estFalsePerc_PostSampsUNTRACKED[:,i])))
             meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
             
             #TRACKED POSTERIOR SAMPLES
@@ -815,18 +813,18 @@ for rep in range(numReplications):
             ax.set_xlabel('Intermediate Node',fontsize=16)
             ax.set_ylabel('TRACKED posterior distribution',fontsize=16)
             for i in range(intermediateNum):
-                plt.hist(simModules.invlogit(estFalsePerc_PostSampsTRACKED[:,i]))
+                plt.hist(sps.expit(estFalsePerc_PostSampsTRACKED[:,i]))
 
             fig = plt.figure()
             ax = fig.add_axes([0,0,2,1])
             ax.set_xlabel('End Node',fontsize=16)
             ax.set_ylabel('TRACKED posterior distribution',fontsize=16)
             for i in range(endNum):
-                plt.hist(simModules.invlogit(estFalsePerc_PostSampsTRACKED[:,intermediateNum+i]))
+                plt.hist(sps.expit(estFalsePerc_PostSampsTRACKED[:,intermediateNum+i]))
 
             meanSampVec = []
             for i in range(intermediateNum):
-                meanSampVec.append(np.mean(simModules.invlogit(estFalsePerc_PostSampsTRACKED[:,i])))
+                meanSampVec.append(np.mean(sps.expit(estFalsePerc_PostSampsTRACKED[:,i])))
             meanSampVec = [round(meanSampVec[i],3) for i in range(len(meanSampVec))]
             
             

@@ -653,18 +653,18 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEProj[i])]
             currMLEtrProjdevs = [currMLEtrProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEtrProj[i])]
             if hasPost:
-                currPostdevs = [np.mean(invlogit(currPostsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+                currPostdevs = [np.mean(sps.expit(currPostsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             if hasPosttr:
-                currPosttrdevs = [np.mean(invlogit(currPosttrsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+                currPosttrdevs = [np.mean(sps.expit(currPosttrsamples[:,i]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             
             currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currBernProjAbsdevs = [np.abs(currBernProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEtrProjAbsdevs = [np.abs(currMLEtrProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             if hasPost:
-                currPostAbsdevs = [np.abs(np.mean(invlogit(currPostsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+                currPostAbsdevs = [np.abs(np.mean(sps.expit(currPostsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             if hasPosttr:
-                currPosttrAbsdevs = [np.abs(np.mean(invlogit(currPosttrsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+                currPosttrAbsdevs = [np.abs(np.mean(sps.expit(currPosttrsamples[:,i]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
                     
             currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
             currDict_avgDevList_Bern.append(np.mean(currBernProjdevs))
@@ -699,8 +699,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currBernProj_Bin = [1 if currBernProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEProj_Bin = [1 if currMLEProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEtrProj_Bin = [1 if currMLEtrProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
-            currPostProj_Bin = [1 if np.mean(invlogit(currPostsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
-            currPosttrProj_Bin = [1 if np.mean(invlogit(currPosttrsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPostProj_Bin = [1 if np.mean(sps.expit(currPostsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPosttrProj_Bin = [1 if np.mean(sps.expit(currPosttrsamples[:,i])) > threshold else 0 for i in range(len(currTrueSFVec))]
             # Generate true/false positives/negatives rates, plus accuracy
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])/\
@@ -943,18 +943,18 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
                     currScenMLEProjdevs = [currScenMLEProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currScenMLEProj[i])]
                     currScenMLEtrProjdevs = [currScenMLEtrProj[i]-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec)) if not np.isnan(currScenMLEtrProj[i])]
                     if hasPost:
-                        currScenPostdevs = [np.mean(invlogit(currPostsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                        currScenPostdevs = [np.mean(sps.expit(currPostsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
                     if hasPosttr:
-                        currScenPosttrdevs = [np.mean(invlogit(currPosttrsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
+                        currScenPosttrdevs = [np.mean(sps.expit(currPosttrsamples[:,currScenInds[i]]))-currScenTrueSFVec[i] for i in range(len(currScenTrueSFVec))]
                     
                     currScenLinProjAbsdevs = [np.abs(currScenLinProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     currScenBernProjAbsdevs = [np.abs(currScenBernProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     currScenMLEProjAbsdevs = [np.abs(currScenMLEProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     currScenMLEtrProjAbsdevs = [np.abs(currScenMLEtrProj[i]-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]  
                     if hasPost:
-                        currScenPostAbsdevs = [np.abs(np.mean(invlogit(currPostsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
+                        currScenPostAbsdevs = [np.abs(np.mean(sps.expit(currPostsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     if hasPosttr:
-                        currScenPosttrAbsdevs = [np.abs(np.mean(invlogit(currPosttrsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
+                        currScenPosttrAbsdevs = [np.abs(np.mean(sps.expit(currPosttrsamples[:,currScenInds[i]]))-currScenTrueSFVec[i]) for i in range(len(currScenTrueSFVec))]
                     
                     
                     currScenDict_avgDevList_Lin.append(np.mean(currScenLinProjdevs))
@@ -1168,18 +1168,18 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currMLEProjdevs = [currMLEProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEProj[i])]
             currMLEtrProjdevs = [currMLEtrProj[i]-currTrueSFVec[i] for i in range(len(currTrueSFVec)) if not np.isnan(currMLEtrProj[i])]
             if hasPost:
-                currPostdevs = [np.mean(invlogit(currPostsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+                currPostdevs = [np.mean(sps.expit(currPostsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             if hasPosttr:
-                currPosttrdevs = [np.mean(invlogit(currPosttrsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
+                currPosttrdevs = [np.mean(sps.expit(currPosttrsamples[:,i+numInts]))-currTrueSFVec[i] for i in range(len(currTrueSFVec))]
             
             currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currBernProjAbsdevs = [np.abs(currBernProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEProjAbsdevs = [np.abs(currMLEProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             currMLEtrProjAbsdevs = [np.abs(currMLEtrProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             if hasPost:
-                currPostAbsdevs = [np.abs(np.mean(invlogit(currPostsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+                currPostAbsdevs = [np.abs(np.mean(sps.expit(currPostsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             if hasPosttr:
-                currPosttrAbsdevs = [np.abs(np.mean(invlogit(currPosttrsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+                currPosttrAbsdevs = [np.abs(np.mean(sps.expit(currPosttrsamples[:,i+numInts]))-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
             
             
             currDict_avgDevList_Lin.append(np.mean(currLinProjdevs))
@@ -1215,8 +1215,8 @@ def SimSFEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
             currBernProj_Bin = [1 if currBernProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEProj_Bin = [1 if currMLEProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
             currMLEtrProj_Bin = [1 if currMLEtrProj[i] > threshold else 0 for i in range(len(currTrueSFVec))]
-            currPostProj_Bin = [1 if np.mean(invlogit(currPostsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
-            currPosttrProj_Bin = [1 if np.mean(invlogit(currPosttrsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPostProj_Bin = [1 if np.mean(sps.expit(currPostsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
+            currPosttrProj_Bin = [1 if np.mean(sps.expit(currPosttrsamples[:,i+numInts])) > threshold else 0 for i in range(len(currTrueSFVec))]
             # Generate true/false positives/negatives rates, plus accuracy
             if len([i for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1)]) > 0:
                 currDict_truePos_Lin.append(np.sum([currTrueSFVec_Bin[i] for i in range(len(currLinProj_Bin)) if (currLinProj_Bin[i] == 1) ])/\
@@ -1888,6 +1888,10 @@ def setWarmUp(useWarmUpFileBool = False, warmUpRunBool = False, numReps = 1,
 
 #### Some useful functions 
 def GenerateTransitionMatrix(dynamicResultsList):
+    '''
+    Converts the dynamic sampling results list into a transition matrix between
+    outlets and importers
+    '''
     # Results list should be in form 
     #   [Node ID, Num Samples, Num Positive, Positive Rate, [IntNodeSourceCounts]]
     rowNum = len(dynamicResultsList)
@@ -1907,6 +1911,9 @@ def GenerateTransitionMatrix(dynamicResultsList):
     return A
 
 def GenerateMatrixForTracked(sampleWiseData,numImp,numOut):
+    '''
+    Converts sample-wise data into matrices for use in the Tracked methods
+    '''
     N = np.zeros(shape=(numOut,numImp))
     Y = np.zeros(shape=(numOut,numImp))
     for samp in sampleWiseData:
@@ -1916,16 +1923,39 @@ def GenerateMatrixForTracked(sampleWiseData,numImp,numOut):
             Y[i,j] += res
     return N,Y
 
+def GetUsableSampleVectors(A,PosData,NumSamples):
+    '''
+    Takes in vectors of sample amounts, sample positives, and a transition
+    matrix A, and returns the same items but suitable for manipulation. Also
+    returns a list of two lists containing the [rows],[cols] of removed indices.    
+    '''
+    n = len(NumSamples)
+    m = len(A[0])
+    # Grab the zeros lists first
+    zeroInds = [[],[]]
+    zeroInds[0] = [i for i in range(n) if (NumSamples[i]==0)]
+    zeroInds[1] = [i for i in range(m) if (np.sum(A[:,i])==0)]
+    
+    #Adjust the vectors, doing NumSamples last
+    idx = np.argwhere(np.all(A[..., :] == 0, axis=0))
+    adjA = np.delete(A, idx, axis=1)
+    adjA = np.delete(adjA,zeroInds[0],0)
+    adjPosData = [PosData[i] for i in range(n) if (NumSamples[i] > 0)]
+    adjNumSamples = [NumSamples[i] for i in range(n) if (NumSamples[i] > 0)]
+    
+    return adjA, adjPosData, adjNumSamples, zeroInds
+
+
 def invlogit(beta):
     return sps.expit(beta)
     
 def invlogit_grad(beta):
     return (np.exp(beta)/((np.exp(beta)+1) ** 2))
 
-
+'''
 #### Likelihood estimate functions
 ###### BEGIN UNTRACKED FUNCTIONS ######
-def UNTRACKED_NegLogLikeFunc(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
+def UNTRACKED_LogLike(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
     # betaVec should be [importers, outlets]
     n,m = transMat.shape
     th = betaVec[:m]
@@ -1936,9 +1966,9 @@ def UNTRACKED_NegLogLikeFunc(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
     
     L = np.sum(np.multiply(posVec,np.log(pVecTilde))+np.multiply(np.subtract(numVec,posVec),\
                np.log(1-pVecTilde))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
-    return L*-1
+    return L
 
-def UNTRACKED_NegLogLikeFunc_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
+def UNTRACKED_LogLike_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
     # betaVec should be [importers, outlets]
     n,m = transMat.shape
     th = betaVec[:m]
@@ -1948,21 +1978,19 @@ def UNTRACKED_NegLogLikeFunc_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt
     pVecTilde = sens*pVec + (1-spec)*(1-pVec)
     
     #Grab importers partials first, then outlets
-    impPartials = np.sum(posVec[:,None]*transMat*invlogit_grad(th)*(sens+spec-1)*\
+    impPartials = np.sum(posVec[:,None]*transMat*(sps.expit(th)-sps.expit(th)**2)*(sens+spec-1)*\
                      np.array([(1-invlogit(py))]*m).transpose()/pVecTilde[:,None]\
-                     - (numVec-posVec)[:,None]*transMat*invlogit_grad(th)*(sens+spec-1)*\
+                     - (numVec-posVec)[:,None]*transMat*(sps.expit(th)-sps.expit(th)**2)*(sens+spec-1)*\
                      np.array([(1-invlogit(py))]*m).transpose()/(1-pVecTilde)[:,None]\
                      ,axis=0)
-    outletPartials = posVec*(1-np.matmul(transMat,invlogit(th)))*invlogit_grad(py)*\
-                        (sens+spec-1)/pVecTilde - (numVec-posVec)*invlogit_grad(py)*\
+    outletPartials = posVec*(1-np.matmul(transMat,invlogit(th)))*(sps.expit(py)-sps.expit(py)**2)*\
+                        (sens+spec-1)/pVecTilde - (numVec-posVec)*(sps.expit(py)-sps.expit(py)**2)*\
                         (sens+spec-1)*(1-np.matmul(transMat,invlogit(th)))/(1-pVecTilde)\
                         - RglrWt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
-    
-    retVal = np.concatenate((impPartials,outletPartials))*-1
-    
-    return retVal
 
-def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat):
+    return np.concatenate((impPartials,outletPartials))
+
+def UNTRACKED_LogLike_Hess(betaVec,numVec,posVec,sens,spec,transMat):
     # betaVec should be [importers, outlets]
     n,m = transMat.shape
     th = betaVec[:m]
@@ -1984,13 +2012,13 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat):
             yDat,nSam = posVec[triRow],numVec[triRow]
             elem = c1*(1-outP)*(yDat*( (s+r-1)*(-sumVec[triRow]*(outP**2-outP) - outP + outP**2) )\
                     /( s*(sumVec[triRow]*(1 - outP) + outP) +\
-                   (-r + 1)*(-sumVec[triRow]*(1 - outP) + 1 - outP) )**2 -\
+                   (1-r)*(-sumVec[triRow]*(1 - outP) + 1 - outP) )**2 -\
                     (nSam - yDat)*((-r + 1-s)*(-sumVec[triRow]*(-outP + outP**2)-outP+outP**2))\
                      /(-s*(sumVec[triRow]*(1 - outP) + outP) - (1-r)*(-sumVec[triRow]*(1 - outP) +\
                    1 - outP) + 1)**2) +\
                     c1*(yDat/(s*(sumVec[triRow]*(1 - outP) + outP) + (-r + 1)*(-sumVec[triRow]*(1 - outP) +\
                    1 - outP)) - (nSam - yDat)/( -s*(sumVec[triRow]*(1 - outP) +\
-                   outP) - (-r + 1)*(-sumVec[triRow]*(1 - outP) + 1 - outP) + 1))*( outP**2 - outP)
+                   outP) - (1-r)*(-sumVec[triRow]*(1 - outP) + 1 - outP) + 1))*( outP**2 - outP)
             hess[m+triRow,triCol] = elem
             hess[triCol,m+triRow] = elem
     # get off-diagonals for importer-importer entries
@@ -2003,7 +2031,8 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat):
                  (zVecTilde[i]**2)
                 - (numVec[i]-posVec[i])*(sens+spec-1)*(1-invlogit(py[i]))*transMat[i,triCol2]*(invlogit(th[triCol2]) - invlogit(th[triCol2])**2) /\
                 ((1-zVecTilde[i])**2) )
-                elem += nextPart        
+                
+                elem += nextPart
             hess[triCol,triCol2] = elem
             hess[triCol2,triCol] = elem
     # importer diagonals next
@@ -2032,13 +2061,13 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat):
         outBeta = py[outlet]
         outP = invlogit(outBeta)
         s,r=sens,spec
-        c1 = transMat[outlet] @ invlogit(th)
+        c1 = sumVec[outlet]
         c2 = (r + s - 1)
         yDat,nSam = posVec[outlet],numVec[outlet]
         currPartial = (1-c1)*(yDat/(zVecTilde[outlet]) -\
                     (nSam - yDat)/(1-zVecTilde[outlet]))*c2*(outP -\
-                    3*(outP**2) + 2*(outP**3)) + (1-c1)*(outP - outP**2 )*\
-                    (yDat*(   -c2*(c1*(-outP + outP**2 ) + outP - outP**2 ) )/\
+                    3*(outP**2) + 2*(outP**3)) + \
+                      (1-c1)*(outP - outP**2 )*(yDat*(-c2*(c1*(-outP + outP**2 )+ outP -outP**2 ) )/\
                     (zVecTilde[outlet])**2 - (nSam - yDat)*(c2*(c1*(-outP + outP**2) +\
                      outP - outP**2 ))/( -s*(c1*(1 - outP) +\
                      outP) - (1-r)*(1-c1*(1 - outP)  - outP) + 1 )**2)*c2
@@ -2046,30 +2075,43 @@ def UNTRACKED_NegLogLikeFunc_Hess(betaVec,numVec,posVec,sens,spec,transMat):
     
     diags = np.diag(np.concatenate((impPartials,outletPartials)))
     
-    hess = (hess + diags)*-1 + 0.002 * np.eye(hess.shape[0]) # include prior term   
+    hess = (hess + diags)
     return hess
 
+def UNTRACKED_NegLogLike(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
+    return -1*UNTRACKED_LogLike(betaVec,numVec,posVec,sens,spec,transMat,RglrWt)
+def UNTRACKED_NegLogLike_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt):
+    return -1*UNTRACKED_LogLike_Jac(betaVec,numVec,posVec,sens,spec,transMat,RglrWt)
+def UNTRACKED_NegLogLike_Hess(betaVec,numVec,posVec,sens,spec,transMat):
+    return -1*UNTRACKED_LogLike_Hess(betaVec,numVec,posVec,sens,spec,transMat)
+
 def UNTRACKED_LogPrior(beta,numVec,posVec,sens,spec,transMat):
-    '''
-    Prior is a Laplace distribution with parameters: mu=-3, scale=4
-    '''
-    return -0.25*np.sum(np.abs(beta + 3)) - 0.001 * np.sum((beta + 3) ** 2)
-
-
-def UNTRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec, A):
-    '''
-    Prior is a Laplace distribution with parameters: mu=-3, scale=4
-    '''
-    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
-
+    #-0.25*np.sum(np.abs(beta + 3)) - 0.001 * np.sum((beta + 3) ** 2)
+    return - 0.05 * np.sum((beta+3)**2)
+def UNTRACKED_LogPrior_Grad(beta,numVec,posVec,sens,spec,transMat):
+    #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
+    return -0.1 * (beta + 3)
+def UNTRACKED_LogPrior_Hess(beta,numVec,posVec,sens,spec,transMat):
+    #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
+    return -0.1 * np.diag(beta)
 
 def UNTRACKED_LogPost(betaVec,numVec,posVec,sens,spec,transMat):
     return UNTRACKED_LogPrior(betaVec,numVec,posVec,sens,spec,transMat)\
-           -UNTRACKED_NegLogLikeFunc(betaVec,numVec,posVec,sens,spec,transMat,0)
-
+           +UNTRACKED_LogLike(betaVec,numVec,posVec,sens,spec,transMat,0)
 def UNTRACKED_LogPost_Grad(beta, nsamp, ydata, sens, spec, A):
     return UNTRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec, A)\
-           -UNTRACKED_NegLogLikeFunc_Jac(beta,nsamp,ydata,sens,spec,A,0)
+           +UNTRACKED_LogLike_Jac(beta,nsamp,ydata,sens,spec,A,0)
+def UNTRACKED_LogPost_Hess(beta, nsamp, ydata, sens, spec, A):
+    return UNTRACKED_LogPrior_Hess(beta, nsamp, ydata, sens, spec, A)\
+           +UNTRACKED_LogLike_Hess(beta,nsamp,ydata,sens,spec,A,0)           
+
+def UNTRACKED_NegLogPost(betaVec,numVec,posVec,sens,spec,transMat):
+    return -1*UNTRACKED_LogPost(betaVec,numVec,posVec,sens,spec,transMat)
+def UNTRACKED_NegLogPost_Grad(beta, nsamp, ydata, sens, spec, A):
+    return -1*UNTRACKED_LogPost_Grad(beta, nsamp, ydata, sens, spec, A)
+def UNTRACKED_NegLogPost_Hess(beta, nsamp, ydata, sens, spec, A):
+    return -1*UNTRACKED_LogPost_Hess(beta, nsamp, ydata, sens, spec, A)
+
 
 def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,delta):
     def UNTRACKEDtargetForNUTS(beta):
@@ -2080,10 +2122,112 @@ def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,de
     samples, lnprob, epsilon = nuts6(UNTRACKEDtargetForNUTS,M,Madapt,beta0,delta)
     
     return samples
+
+##### LIKELIHOOD FUNCTIONS ON NON-EXPIT PROBABILITIES
+def UNTRACKED_LogLike_Probs(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
+    # pVec should be [importers, outlets] probabilities
+    n,m = transMat.shape
+    th = np.array(pVec[:m])
+    py = np.array(pVec[m:])
+    pInitial = 0.05*np.ones(m+n)
+    zVec = py+(1-py)*np.matmul(transMat,th)
+    zVecTilde = sens*zVec + (1-spec)*(1-zVec)
+    
+    L = np.sum(np.multiply(posVec,np.log(zVecTilde))+np.multiply(np.subtract(numVec,posVec),\
+               np.log(1-zVecTilde))) - RglrWt*np.sum(np.abs(py-pInitial[m:]))
+    return L
+
+def UNTRACKED_LogLike_Probs_Jac(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
+    ### Jacobian for log-likelihood using probabilities
+    # betaVec should be [importers, outlets]
+    n,m = transMat.shape
+    th = np.array(pVec[:m])
+    py = np.array(pVec[m:])
+    pInitial = 0.05*np.ones(m+n)
+    zVec = py+(1-py)*np.matmul(transMat,th)
+    zVecTilde = sens*zVec + (1-spec)*(1-zVec)
+    
+    #Grab importers partials first, then outlets
+    impPartials = np.sum(posVec[:,None]*transMat*(sens+spec-1)*\
+                     np.array([(1-py)]*m).transpose()/zVecTilde[:,None]\
+                     - (numVec-posVec)[:,None]*transMat*(sens+spec-1)*\
+                     np.array([(1-py)]*m).transpose()/(1-zVecTilde)[:,None]\
+                     ,axis=0)
+    outletPartials = posVec*(1-np.matmul(transMat,th))*(sens+spec-1)/zVecTilde\
+                        - (numVec-posVec)*(sens+spec-1)*(1-np.matmul(transMat,th))/(1-zVecTilde)\
+                        - RglrWt*np.squeeze(1*(py >= pInitial[m:]) - 1*(py <= pInitial[m:]))
+
+    retVal = np.concatenate((impPartials,outletPartials))    
+    return retVal
+
+def UNTRACKED_LogLike_Probs_Hess(pVec,numVec,posVec,sens,spec,transMat):
+    ### Hessian for log-likelihood using probabilities
+    # betaVec should be [importers, outlets]
+    n,m = transMat.shape
+    s,r=sens,spec
+    th, py = np.array(pVec[:m]), np.array(pVec[m:])
+    zVec = py+(1-py)*np.matmul(transMat,th)
+    zVecTilde = sens*zVec+(1-spec)*(1-zVec)
+    sumVec = np.matmul(transMat,th)
+    
+    #initialize a Hessian matrix
+    hess = np.zeros((n+m,n+m))
+    # get off-diagonal entries first; importer-outlet entries
+    for outlet in range(n):
+        for imp in range(m):
+            yDat,nSam = posVec[outlet],numVec[outlet]
+            elem = transMat[outlet,imp]*((s+r-1)**2)*(1-py[outlet])*(1-sumVec[outlet])*\
+                    (-yDat/(zVecTilde[outlet]**2) - (nSam - yDat)/(1-zVecTilde[outlet])**2) -\
+                    transMat[outlet,imp]*(s+r-1)*(yDat/(zVecTilde[outlet]) -\
+                    (nSam - yDat)/(1-zVecTilde[outlet]))
+            hess[m+outlet,imp] = elem
+            hess[imp,m+outlet] = elem
+    # get off-diagonals for importer-importer entries
+    for triCol in range(m-1):
+        for triCol2 in range(triCol+1,m):
+            elem = 0
+            for outlet in range(n):
+                nextPart = ((sens+spec-1)**2)*transMat[outlet,triCol]*transMat[outlet,triCol2]*((1-py[outlet])**2)*\
+                (-posVec[outlet]/(zVecTilde[outlet]**2) - (numVec[outlet]-posVec[outlet])/((1-zVecTilde[outlet])**2))
+                elem += nextPart
+            hess[triCol,triCol2] = elem
+            hess[triCol2,triCol] = elem
+    # importer diagonals next
+    impPartials = np.zeros(m)
+    for imp in range(m):
+        currPartial = 0
+        for outlet in range(n):
+            outP = py[outlet]
+            yDat,nSam = posVec[outlet],numVec[outlet]
+            currElem = ((transMat[outlet,imp]*(s+r-1)*(1-outP))**2)*\
+                (-yDat/(zVecTilde[outlet])**2 - (nSam-yDat)/(1-zVecTilde[outlet])**2)
+            currPartial += currElem
+        impPartials[imp] = currPartial
+    
+    # outlet diagonals next
+    outletPartials = np.zeros(n)
+    for outlet in range(n):
+        outP = py[outlet]
+        yDat,nSam = posVec[outlet],numVec[outlet]
+        currPartial = ((1-sumVec[outlet])**2)*((s+r-1)**2)*(-yDat/(zVecTilde[outlet])**2\
+                       - (nSam - yDat)/(1-zVecTilde[outlet])**2)
+        outletPartials[outlet] = currPartial
+    
+    diags = np.diag(np.concatenate((impPartials,outletPartials)))
+    hess = hess + diags   
+    return hess
+
+def UNTRACKED_NegLogLike_Probs(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
+    return -1*UNTRACKED_LogLike_Probs(pVec,numVec,posVec,sens,spec,transMat,RglrWt)
+def UNTRACKED_NegLogLike_Probs_Jac(pVec,numVec,posVec,sens,spec,transMat,RglrWt):
+    return -1*UNTRACKED_LogLike_Probs_Jac(pVec,numVec,posVec,sens,spec,transMat,RglrWt)
+def UNTRACKED_NegLogLike_Probs_Hess(pVec,numVec,posVec,sens,spec,transMat):
+    return -1*UNTRACKED_LogLike_Probs_Hess(pVec,numVec,posVec,sens,spec,transMat)
+
 ###### END UNTRACKED FUNCTIONS ######
     
 ###### BEGIN UNTRACKED FUNCTIONS ######
-def TRACKED_NegLogLikeFunc(betaVec,numMat,posMat,sens,spec,RglrWt):
+def TRACKED_LogLike(betaVec,numMat,posMat,sens,spec,RglrWt):
     # betaVec should be [importers, outlets]
     n,m = numMat.shape
     th = betaVec[:m]
@@ -2095,9 +2239,9 @@ def TRACKED_NegLogLikeFunc(betaVec,numMat,posMat,sens,spec,RglrWt):
     
     L = np.sum(np.multiply(posMat,np.log(pMatTilde))+np.multiply(np.subtract(numMat,posMat),\
                np.log(1-pMatTilde))) - RglrWt*np.sum(np.abs(py-betaInitial[m:]))
-    return L*-1
+    return L
 
-def TRACKED_NegLogLikeFunc_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
+def TRACKED_LogLike_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
     # betaVec should be [importers, outlets]
     n,m = numMat.shape
     th = betaVec[:m]
@@ -2119,11 +2263,11 @@ def TRACKED_NegLogLikeFunc_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
                      np.array([(1-invlogit(th))]*n)/(1-pMatTilde))\
                      ,axis=1) - RglrWt*np.squeeze(1*(py >= betaInitial[m:]) - 1*(py <= betaInitial[m:]))
        
-    retVal = np.concatenate((impPartials,outletPartials))*-1
+    retVal = np.concatenate((impPartials,outletPartials))
     
     return retVal
 
-def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec):
+def TRACKED_LogLike_Hess(betaVec,numMat,posMat,sens,spec):
     # betaVec should be [importers, outlets]
     n,m = numMat.shape
     th = betaVec[:m]
@@ -2182,36 +2326,54 @@ def TRACKED_NegLogLikeFunc_Hess(betaVec,numMat,posMat,sens,spec):
             yDat,nSam = posMat[outlet,imp],numMat[outlet,imp]
             currElem = (1 - impP)*(yDat/zTilde-(nSam-yDat)/(1-zTilde))*\
                         (r+s-1)*(outP - 3*(outP**2) + 2*(outP**3)) +\
-                        (1-impP)*(outP - outP**2 )*(s+r-1)*(yDat*\
-                        ((1-r-s)*(outP-outP**2)*(1-impP) )/(zTilde**2) -\
+                        (1-impP)*(outP - outP**2 )*(s+r-1)*\
+                        (yDat*((1-r-s)*(outP-outP**2)*(1-impP) )/(zTilde**2) -\
                         (nSam-yDat)*((s+r-1)*(outP-outP**2)*(1-impP))/(1-zTilde)**2)
             currPartial += currElem
         outletPartials[outlet] = currPartial
     
     diags = np.diag(np.concatenate((impPartials,outletPartials)))
-    
-    hess = (hess + diags)*-1 + 0.002 * np.eye(hess.shape[0]) # include prior term
-    return hess
+     
+    return hess + diags
 
+def TRACKED_NegLogLike(betaVec,numMat,posMat,sens,spec,RglrWt):
+    return -1*TRACKED_LogLike(betaVec,numMat,posMat,sens,spec,RglrWt)
+def TRACKED_NegLogLike_Jac(betaVec,numMat,posMat,sens,spec,RglrWt):
+    return -1*TRACKED_LogLike_Jac(betaVec,numMat,posMat,sens,spec,RglrWt)
+def TRACKED_NegLogLike_Hess(betaVec,numMat,posMat,sens,spec):
+    return -1*TRACKED_LogLike_Hess(betaVec,numMat,posMat,sens,spec)
+
+##### TRACKED PRIOR FUNCTIONS #####
 def TRACKED_LogPrior(beta, numVec, posVec, sens, spec):
-    '''
-    Prior is a Laplace distribution with parameters: mu=-3, scale=4
-    '''
-    return -0.25*np.sum(np.abs(beta + 3))- 0.001 * np.sum((beta + 3) ** 2)
+    #-0.25*np.sum(np.abs(beta + 3)) - 0.001 * np.sum((beta + 3) ** 2)
+    return - 0.05 * np.sum((beta+3)**2)
 
 def TRACKED_LogPrior_Grad(beta, nsamp, ydata, sens, spec):
-    '''
-    Prior is a Laplace distribution with parameters: mu=-3, scale=4
-    '''
-    return -0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
+    #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
+    return -0.1 * (beta + 3)
 
+def TRACKED_LogPrior_Hess(beta, nsamp, ydata, sens, spec):
+    #-0.25*np.squeeze(1*(beta >= -3) - 1*(beta <= -3)) - 0.002 * np.sum(beta + 3)
+    return -0.1 * np.diag(beta)
+
+##### TRACKED POSTERIOR FUNCTIONS #####
 def TRACKED_LogPost(beta,N,Y,sens,spec):
     return TRACKED_LogPrior(beta,N,Y,sens,spec)\
-           -TRACKED_NegLogLikeFunc(beta,N,Y,sens,spec,0)
-
+           +TRACKED_LogLike(beta,N,Y,sens,spec,0)
 def TRACKED_LogPost_Grad(beta, N, Y, sens, spec):
     return TRACKED_LogPrior_Grad(beta, N, Y, sens, spec)\
-           -TRACKED_NegLogLikeFunc_Jac(beta,N,Y,sens,spec,0)
+           +TRACKED_LogLike_Jac(beta,N,Y,sens,spec,0)
+def TRACKED_LogPost_Hess(beta, N, Y, sens, spec):
+    return TRACKED_LogPrior_Hess(beta, N, Y, sens, spec)\
+           +TRACKED_LogLike_Hess(beta,N,Y,sens,spec)
+           
+def TRACKED_NegLogPost(beta,N,Y,sens,spec):
+    return -1*TRACKED_LogPost(beta,N,Y,sens,spec)
+def TRACKED_NegLogPost_Grad(beta, N, Y, sens, spec):
+    return -1*TRACKED_LogPost_Grad(beta, N, Y, sens, spec)
+def TRACKED_NegLogPost_Hess(beta,N,Y,sens,spec):
+    return -1*TRACKED_LogPost_Hess(beta,N,Y,sens,spec)
+
 def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta):
     def TRACKEDtargetForNUTS(beta):
         return TRACKED_LogPost(beta,N,Y,sens,spec),\
@@ -2221,15 +2383,106 @@ def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta):
     samples, lnprob, epsilon = nuts6(TRACKEDtargetForNUTS,M,Madapt,beta0,delta)
     
     return samples
+
+##### LIKELIHOOD FUNCTIONS ON NON-EXPIT PROBABILITIES
+def TRACKED_LogLike_Probs(pVec,numMat,posMat,sens,spec,RglrWt):
+    # betaVec should be [importers, outlets]
+    n,m = numMat.shape
+    th = np.array(pVec[:m])
+    py = np.array(pVec[m:])
+    pInitial = 0.05*np.ones(m+n)
+    zMat = np.array([th]*n)+np.array([1-th]*n)*\
+            np.array([py]*m).transpose()
+    zMatTilde = sens*zMat+(1-spec)*(1-zMat)
+    
+    L = np.sum(np.multiply(posMat,np.log(zMatTilde))+np.multiply(np.subtract(numMat,posMat),\
+               np.log(1-zMatTilde))) - RglrWt*np.sum(np.abs(py-pInitial[m:]))
+    return L
+
+def TRACKED_LogLike_Probs_Jac(pVec,numMat,posMat,sens,spec,RglrWt):
+    # betaVec should be [importers, outlets]
+    n,m = numMat.shape
+    th = np.array(pVec[:m])
+    py = np.array(pVec[m:])
+    pInitial = 0.05*np.ones(m+n)
+    zMat = np.array([th]*n)+np.array([1-th]*n)*\
+            np.array([py]*m).transpose()
+    zMatTilde = sens*zMat+(1-spec)*(1-zMat)
+    
+    #Grab importers partials first, then outlets
+    impPartials = (sens+spec-1)*np.sum(posMat*np.array([1-py]*m).transpose()/zMatTilde\
+                     -(numMat-posMat)*np.array([1-py]*m).transpose()/(1-zMatTilde),axis=0)
+    outletPartials = (sens+spec-1)*np.sum((posMat*np.array([1-th]*n)/zMatTilde\
+                     - (numMat-posMat)*np.array([1-th]*n)/(1-zMatTilde)),axis=1)\
+                     - RglrWt*np.squeeze(1*(py >= pInitial[m:]) - 1*(py <= pInitial[m:]))
+       
+    retVal = np.concatenate((impPartials,outletPartials))
+    return retVal
+
+def TRACKED_LogLike_Probs_Hess(pVec,numMat,posMat,sens,spec):
+    # betaVec should be [importers, outlets]
+    n,m = numMat.shape
+    th = np.array(pVec[:m])
+    py = np.array(pVec[m:])
+    zMat = np.array([th]*n)+np.array([1-th]*n)*np.array([py]*m).transpose()
+    zMatTilde = sens*zMat+(1-spec)*(1-zMat)
+    
+    hess = np.zeros((n+m,n+m))
+    # get off-diagonal entries first
+    for outlet in range(n):
+        for imp in range(m):            
+            outP, impP = py[outlet], th[imp]
+            s, r=sens, spec
+            z = outP + impP - outP*impP
+            zTilde = zMatTilde[outlet,imp]
+            yDat, nSam = posMat[outlet,imp], numMat[outlet,imp]
+            elem = (1-impP)*(1-outP)*((s+r-1)**2)*(-yDat/(zTilde**2)-(nSam-yDat)/((1-zTilde)**2))\
+                    -(s+r-1)*(yDat/zTilde - (nSam - yDat)/(1-zTilde))
+            hess[m+outlet,imp] = elem
+            hess[imp,m+outlet] = elem
+    
+    # importer diagonals next
+    impPartials = np.zeros(m)
+    for imp in range(m):
+        currPartial = 0
+        for outlet in range(n):        
+            outP,impP = py[outlet],th[imp]
+            s,r=sens,spec
+            z = outP + impP - outP*impP
+            zTilde = s*z + (1-r)*(1-z)
+            yDat,nSam = posMat[outlet,imp],numMat[outlet,imp]
+            currElem = (((1-outP)*(s+r-1))**2)*(-yDat/zTilde**2-(nSam-yDat)/(1-zTilde)**2)
+            currPartial += currElem
+        impPartials[imp] = currPartial
+    
+    # outlet diagonals next
+    outletPartials = np.zeros(n)
+    for outlet in range(n):
+        currPartial = 0
+        for imp in range(m):
+            outP,impP = py[outlet],th[imp]
+            s, r = sens, spec
+            z = outP + impP - outP*impP
+            zTilde = s*z + (1-r)*(1-z)
+            yDat,nSam = posMat[outlet,imp],numMat[outlet,imp]
+            currElem = (((1-impP)*(s+r-1))**2)*(-yDat/(zTilde**2)-(nSam-yDat)/(1-zTilde)**2)
+            currPartial += currElem
+        outletPartials[outlet] = currPartial
+    
+    diags = np.diag(np.concatenate((impPartials,outletPartials)))
+    return hess + diags
+
+def TRACKED_NegLogLike_Probs(pVec,numMat,posMat,sens,spec,RglrWt):
+    return -1*TRACKED_LogLike_Probs(pVec,numMat,posMat,sens,spec,RglrWt)
+def TRACKED_NegLogLike_Probs_Jac(pVec,numMat,posMat,sens,spec,RglrWt):
+    return -1*TRACKED_LogLike_Probs_Jac(pVec,numMat,posMat,sens,spec,RglrWt)
+def TRACKED_NegLogLike_Probs_Hess(pVec,numMat,posMat,sens,spec):
+    return -1*TRACKED_LogLike_Probs_Hess(pVec,numMat,posMat,sens,spec)
+'''
 ###### END TRACKED FUNCTIONS ######
 
 
-
-
-
-
-
-#### Necessary NUTS module ####
+#### Necessary NUTS functions ####
 """
 This package implements the No-U-Turn Sampler (NUTS) algorithm 6 from the NUTS
 paper (Hoffman & Gelman, 2011).

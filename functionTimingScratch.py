@@ -9,6 +9,7 @@ Created on Sun Nov 22 16:24:25 2020
 #import time
 import Falsification_Sim_Modules as simModules
 import scipy.optimize as spo
+import scipy.special as sps
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -32,10 +33,34 @@ for i in range(n):
         Y[i,j] += np.random.binomial(numSamps,trackPtildes[i,j])
 
 beta0 = -4.5*np.ones(n+m)
+p0 = sps.expit(beta0)
 
 '''
 #TRACKED
-L0 = simModules.TRACKED_NegLogLikeFunc(beta0,N,Y,Sens,Spec,wt)
+import Falsification_Sim_Modules as simModules
+L0 = simModules.TRACKED_LogLike_Probs(p0,N,Y,Sens,Spec,0)
+dL0 = simModules.TRACKED_LogLike_Probs_Jac(p0,N,Y,Sens,Spec,0)
+for k in range(m+n):
+    p1 = 1*p0[:]
+    p1[k] = p1[k] + 10**(-7)
+    L1 = simModules.TRACKED_LogLike_Probs(p1,N,Y,Sens, Spec,0)
+    print((L1-L0) * (10 **(7)))
+    print(dL0[k])
+
+bds = spo.Bounds(beta0-8, beta0+8)
+opval = spo.minimize(simModules.UNTRACKED_NegLogLikeFunc, beta0,
+                     args=(N,Y,Sens,Spec,Q,wt),
+                     method='L-BFGS-B',
+                     jac=simModules.UNTRACKED_NegLogLikeFunc_Jac,
+                     options={'disp': False},
+                     bounds=bds)
+print(simModules.invlogit(opval.x))
+print(pImp)
+print(pOut)
+
+
+
+L0 = simModules.TRACKED_NegLogLikeFunc(beta0,N,Y,Sens,Spec,0)
 dL0 = np.array(simModules.TRACKED_NegLogLikeFunc_Jac(beta0,N,Y,Sens,Spec,wt))
 
 for k in range(m+n):
@@ -109,9 +134,33 @@ N = (1000 * np.ones(Q.shape[0])).astype('int')
 Y = np.random.binomial(N,realprobz)
 (n,m) = Q.shape
 beta0 = -4.5*np.ones(n+m)
+p0 = sps.expit(beta0)
 
 '''
-L0 = simModules.UNTRACKED_NegLogLikeFunc(beta0,N,Y,Sens,Spec,Q,wt)
+import Falsification_Sim_Modules as simModules
+L0 = simModules.UNTRACKED_LogLike_Probs(p0,N,Y,Sens,Spec,Q,0)
+dL0 = simModules.UNTRACKED_LogLike_Probs_Jac(p0,N,Y,Sens,Spec,Q,0)
+for k in range(m+n):
+    p1 = 1*p0[:]
+    p1[k] = p1[k] + 10**(-7)
+    L1 = simModules.UNTRACKED_LogLike_Probs(p1,N,Y,Sens, Spec,Q,0)
+    print((L1-L0) * (10 **(7)))
+    print(dL0[k])
+
+bds = spo.Bounds(beta0-8, beta0+8)
+opval = spo.minimize(simModules.UNTRACKED_NegLogLikeFunc, beta0,
+                     args=(N,Y,Sens,Spec,Q,wt),
+                     method='L-BFGS-B',
+                     jac=simModules.UNTRACKED_NegLogLikeFunc_Jac,
+                     options={'disp': False},
+                     bounds=bds)
+print(simModules.invlogit(opval.x))
+print(pImp)
+print(pOut)
+
+
+
+L0 = simModules.UNTRACKED_NegLogLikeFunc(beta0,N,Y,Sens,Spec,Q,0)
 dL0 = simModules.UNTRACKED_NegLogLikeFunc_Jac(beta0,N,Y,Sens,Spec,Q,wt)
 for k in range(m+n):
     beta1 = 1*beta0[:]
@@ -155,8 +204,18 @@ for k in range(m+n):
       
     dL1 = simModules.UNTRACKED_LogPost_Grad(beta1,N,Y,Sens, Spec,Q)
     print(((dL1-dL0) * (10 **(7))) )
-    print(d2L0[k])
+    print(-d2L0[k])
 
+p0 = p0 + np.random.uniform(-0.001,0.001,m+n)
+dL0 = simModules.UNTRACKED_LogLike_Probs_Jac(p0,N,Y,Sens,Spec,Q,0)
+d2L0 = simModules.UNTRACKED_LogLike_Probs_Hess(p0,N,Y,Sens,Spec,Q)
+
+for k in range(m+n):
+    p1 = 1*p0[:]
+    p1[k] = p1[k] + 10**(-7)
+    dL1 = simModules.UNTRACKED_LogLike_Probs_Jac(p1,N,Y,Sens,Spec,Q,0)
+    print(((dL1-dL0) * (10 **(7))) )
+    print(d2L0[k])
 
 
 
@@ -175,8 +234,16 @@ for k in range(m+n):
     print(((dL1-dL0) * (10 **(7))) )
     print(d2L0[k])
     
-    
-    
+import Falsification_Sim_Modules as simModules
+p0 = p0 + np.random.uniform(-0.001,0.001,m+n)
+dL0 = simModules.TRACKED_LogLike_Probs_Jac(p0,N,Y,Sens,Spec,0)
+d2L0 = simModules.TRACKED_LogLike_Probs_Hess(p0,N,Y,Sens,Spec)
+for k in range(m+n):
+    p1 = 1*p0[:]
+    p1[k] = p1[k] + 10**(-7)
+    dL1 = simModules.TRACKED_LogLike_Probs_Jac(p1,N,Y,Sens,Spec,0)
+    print(((dL1-dL0) * (10 **(7))) )
+    print(d2L0[k])    
     
 
 
