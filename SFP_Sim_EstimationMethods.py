@@ -22,7 +22,8 @@ import numpy as np
 import scipy.optimize as spo
 import scipy.stats as spstat
 import scipy.special as sps
-import Falsification_Sim_Modules as simModules
+import SFP_Sim_Helpers as simHelpers
+#simModules
 
 '''
 First we define necessary prior, likelihood, and posterior functions. Then we
@@ -199,7 +200,7 @@ def GeneratePostSamps_UNTRACKED(numSamples,posData,A,sens,spec,regWt,M,Madapt,de
                    UNTRACKED_LogLike_Jac(beta,numSamples,posData,sens,spec,A,regWt)
     
     beta0 = -2 * np.ones(A.shape[1] + A.shape[0])
-    samples, lnprob, epsilon = simModules.nuts6(UNTRACKEDtargetForNUTS,M,Madapt,beta0,delta)
+    samples, lnprob, epsilon = simHelpers.nuts6(UNTRACKEDtargetForNUTS,M,Madapt,beta0,delta)
     
     return samples
 
@@ -468,7 +469,7 @@ def GeneratePostSamps_TRACKED(N,Y,sens,spec,regWt,M,Madapt,delta,usePriors=1.):
                    TRACKED_LogLike_Jac(beta,N,Y,sens,spec,regWt)
 
     beta0 = -2 * np.ones(N.shape[1] + N.shape[0])
-    samples, lnprob, epsilon = simModules.nuts6(TRACKEDtargetForNUTS,M,Madapt,beta0,delta)
+    samples, lnprob, epsilon = simHelpers.nuts6(TRACKEDtargetForNUTS,M,Madapt,beta0,delta)
     
     return samples
 
@@ -588,7 +589,7 @@ def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     # Initialize output dictionary
     outDict = {}
     # Grab 'usable' data
-    adjA, adjPosData, adjNumSamples, zeroInds = simModules.GetUsableSampleVectors(A,PosData\
+    adjA, adjPosData, adjNumSamples, zeroInds = simHelpers.GetUsableSampleVectors(A,PosData\
                                                                        ,NumSamples)
 
     X = np.array([adjPosData[i]/adjNumSamples[i] for i in range(len(adjNumSamples))])
@@ -665,7 +666,7 @@ def Est_BernoulliProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     
     # Grab 'usable' data
     big_m = A.shape[1]
-    adjA, adjPosData, adjNumSamples, zeroInds = simModules.GetUsableSampleVectors(A,PosData\
+    adjA, adjPosData, adjNumSamples, zeroInds = simHelpers.GetUsableSampleVectors(A,PosData\
                                                                        ,NumSamples)
     
     A = np.array(adjA)
@@ -952,7 +953,7 @@ def Est_PostSamps_Untracked(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,Mada
     Returns the mean estimate of M NUTS samples, using the Madapt and delta
     parameters and given testing data
     '''
-    samples = simModules.GeneratePostSamps_UNTRACKED(NumSamples,PosData,A,Sens,Spec,RglrWt,M,Madapt,delta)
+    samples = simHelpers.GeneratePostSamps_UNTRACKED(NumSamples,PosData,A,Sens,Spec,RglrWt,M,Madapt,delta)
     intMeans = [sps.expit(np.mean(samples[:,i])) for i in range(A.shape[1])]
     endMeans = [sps.expit(np.mean(samples[:,A.shape[1]+i])) for i in range(A.shape[0])]
     return intMeans, endMeans
@@ -962,7 +963,7 @@ def Est_PostSamps_Tracked(Nmat,Ymat,Sens,Spec,RglrWt=0.1,M=500,Madapt=5000,delta
     Returns the mean estimate of M NUTS samples, using the Madapt and delta
     parameters and given testing data
     '''
-    samples = simModules.GeneratePostSamps_TRACKED(Nmat,Ymat,Sens,Spec,RglrWt,M,Madapt,delta)
+    samples = simHelpers.GeneratePostSamps_TRACKED(Nmat,Ymat,Sens,Spec,RglrWt,M,Madapt,delta)
     intMeans = [sps.expit(np.mean(samples[:,i])) for i in range(Nmat.shape[1])]
     endMeans = [sps.expit(np.mean(samples[:,Nmat.shape[1]+i])) for i in range(Nmat.shape[0])]
     return intMeans, endMeans

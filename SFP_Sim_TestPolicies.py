@@ -28,8 +28,8 @@ import numpy as np
 import random
 from scipy.stats import beta
 import scipy.special as sps
-import Falsification_Sim_Modules as simMod 
-import Falsification_Sim_EstimationMethods as simEst
+import SFP_Sim_Helpers as simHelpers
+import SFP_Sim_EstimationMethods as simEst
 
 def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
                       totalBudget=1000,numBudgetRemain=1000,policyParamList=[0],startDay=0):
@@ -81,8 +81,6 @@ def testPolicyHandler(polType,resultsList,totalSimDays=1000,numDaysRemain=1000,\
         sampleSchedule = Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays,numDaysRemain,\
                                             totalBudget,numBudgetRemain,policyParamList,startDay)
     return sampleSchedule
-    
-    
     
     
 
@@ -476,7 +474,7 @@ def Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         for rw in resultsList:
             ydata.append(rw[2])
             nSamp.append(rw[1])
-        A = simMod.GenerateTransitionMatrix(resultsList)      
+        A = simHelpers.GenerateTransitionMatrix(resultsList)      
         sens, spec, M, Madapt, delta = policyParamList[1:]
         NUTSsamples = simEst.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
         # Store sample variances for intermediate nodes
@@ -487,7 +485,7 @@ def Pol_Dyn_ExploreWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         # Normalize sum of all variances to 1
         NUTSintVars = NUTSintVars/np.sum(NUTSintVars)
         
-          
+        
         # Now pick from these samples to generate projections
         for currDay in range(numDaysToSched):
             numToTest = int(np.floor((numBudgetRemain-usedBudgetSoFar) / (numDaysRemain-currDay))) +\
@@ -568,7 +566,7 @@ def Pol_Dyn_ExploreWithNUTS2(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         for rw in resultsList:
             ydata.append(rw[2])
             nSamp.append(rw[1])
-        A = simMod.GenerateTransitionMatrix(resultsList)      
+        A = simHelpers.GenerateTransitionMatrix(resultsList)      
         sens, spec, M, Madapt, delta = policyParamList[1:]
         NUTSsamples = simEst.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
         # Store sample variances for intermediate nodes
@@ -673,7 +671,7 @@ def Pol_Dyn_ThresholdWithNUTS(resultsList,totalSimDays=1000,numDaysRemain=1000,\
         for rw in resultsList:
             ydata.append(rw[2])
             nSamp.append(rw[1])
-        A = simMod.GenerateTransitionMatrix(resultsList)      
+        A = simHelpers.GenerateTransitionMatrix(resultsList)      
         sens, spec, M, Madapt, delta = policyParamList[2:]
         NUTSsamples = simEst.GenerateNUTSsamples(ydata,nSamp,A,sens,spec,M,Madapt,delta)
         
