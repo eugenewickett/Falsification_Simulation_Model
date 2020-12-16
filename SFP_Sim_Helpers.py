@@ -1150,6 +1150,7 @@ def SFPSim_EvaluateIntervals(OPdicts,dictNamesVec=[]):
         
         ### END OF OUTPUT DICTIONARY LOOP
     
+    ######### TRUE VALUE CONTAINMENT PERCENTAGES #########
     # Create master lists that we can loop through later
     imp90_master = [List_Lin_percContain_imp_90,List_MAPuntr_percContain_imp_90,List_MAPtr_percContain_imp_90,List_MAPuntrProb_percContain_imp_90,\
                     List_MAPtrProb_percContain_imp_90,List_POSTuntr_percContain_imp_90,List_POSTtr_percContain_imp_90]
@@ -1238,98 +1239,186 @@ def SFPSim_EvaluateIntervals(OPdicts,dictNamesVec=[]):
             
         ### END PLOTTING OF ITEMS IN MASTER LIST
     
+    ######### INTERVAL LENGTHS #########
+    # Create master lists that we can loop through later
+    imp90_master = [List_Lin_intervalLen_imp_90,List_MAPuntr_intervalLen_imp_90,List_MAPtr_intervalLen_imp_90,List_MAPuntrProb_intervalLen_imp_90,\
+                    List_MAPtrProb_intervalLen_imp_90,List_POSTuntr_intervalLen_imp_90,List_POSTtr_intervalLen_imp_90]
+    imp95_master = [List_Lin_intervalLen_imp_95,List_MAPuntr_intervalLen_imp_95,List_MAPtr_intervalLen_imp_95,List_MAPuntrProb_intervalLen_imp_95,\
+                    List_MAPtrProb_intervalLen_imp_95,List_POSTuntr_intervalLen_imp_95,List_POSTtr_intervalLen_imp_95]
+    imp99_master = [List_Lin_intervalLen_imp_99,List_MAPuntr_intervalLen_imp_99,List_MAPtr_intervalLen_imp_99,List_MAPuntrProb_intervalLen_imp_99,\
+                    List_MAPtrProb_intervalLen_imp_99,List_POSTuntr_intervalLen_imp_99,List_POSTtr_intervalLen_imp_99]
+    out90_master = [List_Lin_intervalLen_out_90,List_MAPuntr_intervalLen_out_90,List_MAPtr_intervalLen_out_90,List_MAPuntrProb_intervalLen_out_90,\
+                    List_MAPtrProb_intervalLen_out_90,List_POSTuntr_intervalLen_out_90,List_POSTtr_intervalLen_out_90]
+    out95_master = [List_Lin_intervalLen_out_95,List_MAPuntr_intervalLen_out_95,List_MAPtr_intervalLen_out_95,List_MAPuntrProb_intervalLen_out_95,\
+                    List_MAPtrProb_intervalLen_out_95,List_POSTuntr_intervalLen_out_95,List_POSTtr_intervalLen_out_95]
+    out99_master = [List_Lin_intervalLen_out_99,List_MAPuntr_intervalLen_out_99,List_MAPtr_intervalLen_out_99,List_MAPuntrProb_intervalLen_out_99,\
+                    List_MAPtrProb_intervalLen_out_99,List_POSTuntr_intervalLen_out_99,List_POSTtr_intervalLen_out_99]
     
-    
-    
-    
-    
-    
-    
-    
-    
-    '''
-    absDevList_Lin = []
-    absDevList_MLE = []
-    absDevList_MLEtr = []
-    absDevList_Post = []
-    absDevList_Posttr = []
-    
-    for currDict in OPdicts:
-        currDict_absDevList_Lin = []
-        for repNum in currDict.keys():
-            currTrueSFPVec_imp = currDict[repNum]['intSFTrueValues']
-            if not currDict[repNum]['intFalseEstimates'] == []:
-                currLinProj = currDict[repNum]['intFalseEstimates']
-            else:
-                currLinProj = [np.nan for i in range(len(currTrueSFVec))]
-            currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
-            
-        
-            currDict_absDevList_Lin.append(np.mean(currLinProjAbsdevs))
-        
-        absDevList_Lin.append(currDict_absDevList_Lin) 
-    
+    #Create master list to loop through each CI,outlet/importer combination
+    MasterList = [imp90_master,imp95_master,imp99_master,\
+                  out90_master,out95_master,out99_master]
+    MasterStrings = ['IMPORTERS, 90% CI','IMPORTERS, 95% CI','IMPORTERS, 99% CI',
+                     'OUTLETS, 90% CI','OUTLETS, 95% CI','OUTLETS, 99% CI']
     
     ############# PLOTTING #############
     xTickLabels = [] # For plot x ticks
-    # How many replications?
+    # How many replications? For plot x ticks
     for dictNum in range(len(dictNamesVec)):
-        nCurr = len(absDevList_Lin[dictNum])
+        nCurr = len(List_Lin_intervalLen_imp_90[dictNum])
         xTickLabels.append(str(dictNamesVec[dictNum])+' \n n=%i' % nCurr)
-    # For plot x ticks
-    
-    
     # Build pandas dataframes for seaborn plots
-    headCol = ['dict','calcMethod','devVal']
-    # Absolute deviations - importers
-    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
-    for dictInd,currDict in enumerate(dictNamesVec):
-        block1 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Linear Projection']),\
-                          absDevList_Lin[dictInd]))
-       
-        block3 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked MAP']),\
-                          absDevList_MLE[dictInd]))
-        block4 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Untracked Posterior Sample Medians']),\
-                          absDevList_Post[dictInd]))
-        block5 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked MAP']),\
-                          absDevList_MLEtr[dictInd]))
-        block6 = list(zip(itertools.cycle([currDict]),\
-                          itertools.cycle(['Tracked Posterior Sample Medians']),\
-                          absDevList_Posttr[dictInd]))
-        for tup in block1:
-            DFdata.append(tup)
-        #for tup in block2:
-        #    DFdata.append(tup)
-        for tup in block3:
-            DFdata.append(tup)
-        for tup in block4:
-            DFdata.append(tup)    
-        for tup in block5:
-            DFdata.append(tup)
-        for tup in block6:
-            DFdata.append(tup)
+    headCol = ['dict','calcMethod','value']
     
-    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    for masterInd, currMaster in enumerate(MasterList):    
+        DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+        for dictInd,currDict in enumerate(dictNamesVec):
+            block1 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Linear Projection']),\
+                              currMaster[0][dictInd]))       
+            block2 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked MAP']),\
+                              currMaster[1][dictInd]))
+            block3 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked MAP']),\
+                              currMaster[2][dictInd]))
+            block4 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked MAP (no transform)']),\
+                              currMaster[3][dictInd]))
+            block5 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked MAP (no transform)']),\
+                              currMaster[4][dictInd]))
+            block6 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked Posterior Sample']),\
+                              currMaster[5][dictInd]))        
+            block7 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked Posterior Sample']),\
+                              currMaster[6][dictInd]))
+            for tup in block1:
+                DFdata.append(tup)
+            for tup in block2:
+                DFdata.append(tup)
+            for tup in block3:
+                DFdata.append(tup)
+            for tup in block4:
+                DFdata.append(tup)    
+            for tup in block5:
+                DFdata.append(tup)
+            for tup in block6:
+                DFdata.append(tup)
+            for tup in block7:
+                DFdata.append(tup)
+        
+        pandaDF = pd.DataFrame(DFdata,columns=headCol)
+        
+        # Build boxplot
+        plt.figure(figsize=(13,7))
+        plt.suptitle('Interval length - '+MasterStrings[masterInd],fontsize=18)
+        plt.ylim(0,1.05)
+        ax = sns.boxplot(y='value',x='dict',data=pandaDF,palette='bright',\
+                          hue='calcMethod')
+        ax.set_xlabel('Output Dictionary',fontsize=16)
+        ax.set_ylabel('Interval length',fontsize=16)
+        ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=10)
+        ax.tick_params(axis='y', which='major', labelsize=16)
+        yticks = ax.get_yticks()
+        #ax.set_yticklabels(['{:,.0%}'.format(x) for x in yticks])
+        plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+        plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+        plt.show()      
+            
+        ### END PLOTTING OF ITEMS IN MASTER LIST
     
-    # Build boxplot
-    plt.figure(figsize=(13,7))
-    plt.suptitle('Absolute Estimate Deviations - IMPORTERS',fontsize=18)
-    plt.ylim(0,0.4)
-    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
-                      hue='calcMethod')
-    ax.set_xlabel('Output Dictionary',fontsize=16)
-    ax.set_ylabel('Absolute Deviation',fontsize=16)
-    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
-    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
-    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
-    plt.show()
+    ######### GNEITING LOSS #########
+    # Create master lists that we can loop through later
+    imp90_master = [List_Lin_GneitingLoss_imp_90,List_MAPuntr_GneitingLoss_imp_90,List_MAPtr_GneitingLoss_imp_90,List_MAPuntrProb_GneitingLoss_imp_90,\
+                    List_MAPtrProb_GneitingLoss_imp_90,List_POSTuntr_GneitingLoss_imp_90,List_POSTtr_GneitingLoss_imp_90]
+    imp95_master = [List_Lin_GneitingLoss_imp_95,List_MAPuntr_GneitingLoss_imp_95,List_MAPtr_GneitingLoss_imp_95,List_MAPuntrProb_GneitingLoss_imp_95,\
+                    List_MAPtrProb_GneitingLoss_imp_95,List_POSTuntr_GneitingLoss_imp_95,List_POSTtr_GneitingLoss_imp_95]
+    imp99_master = [List_Lin_GneitingLoss_imp_99,List_MAPuntr_GneitingLoss_imp_99,List_MAPtr_GneitingLoss_imp_99,List_MAPuntrProb_GneitingLoss_imp_99,\
+                    List_MAPtrProb_GneitingLoss_imp_99,List_POSTuntr_GneitingLoss_imp_99,List_POSTtr_GneitingLoss_imp_99]
+    out90_master = [List_Lin_GneitingLoss_out_90,List_MAPuntr_GneitingLoss_out_90,List_MAPtr_GneitingLoss_out_90,List_MAPuntrProb_GneitingLoss_out_90,\
+                    List_MAPtrProb_GneitingLoss_out_90,List_POSTuntr_GneitingLoss_out_90,List_POSTtr_GneitingLoss_out_90]
+    out95_master = [List_Lin_GneitingLoss_out_95,List_MAPuntr_GneitingLoss_out_95,List_MAPtr_GneitingLoss_out_95,List_MAPuntrProb_GneitingLoss_out_95,\
+                    List_MAPtrProb_GneitingLoss_out_95,List_POSTuntr_GneitingLoss_out_95,List_POSTtr_GneitingLoss_out_95]
+    out99_master = [List_Lin_GneitingLoss_out_99,List_MAPuntr_GneitingLoss_out_99,List_MAPtr_GneitingLoss_out_99,List_MAPuntrProb_GneitingLoss_out_99,\
+                    List_MAPtrProb_GneitingLoss_out_99,List_POSTuntr_GneitingLoss_out_99,List_POSTtr_GneitingLoss_out_99]
     
-    '''
-
+    #Create master list to loop through each CI,outlet/importer combination
+    MasterList = [imp90_master,imp95_master,imp99_master,\
+                  out90_master,out95_master,out99_master]
+    MasterStrings = ['IMPORTERS, 90% CI','IMPORTERS, 95% CI','IMPORTERS, 99% CI',
+                     'OUTLETS, 90% CI','OUTLETS, 95% CI','OUTLETS, 99% CI']
+    
+    ############# PLOTTING #############
+    xTickLabels = [] # For plot x ticks
+    # How many replications? For plot x ticks
+    for dictNum in range(len(dictNamesVec)):
+        nCurr = len(List_Lin_intervalLen_imp_90[dictNum])
+        xTickLabels.append(str(dictNamesVec[dictNum])+' \n n=%i' % nCurr)
+    # Build pandas dataframes for seaborn plots
+    headCol = ['dict','calcMethod','value']
+    
+    for masterInd, currMaster in enumerate(MasterList):    
+        DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+        for dictInd,currDict in enumerate(dictNamesVec):
+            block1 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Linear Projection']),\
+                              currMaster[0][dictInd]))       
+            block2 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked MAP']),\
+                              currMaster[1][dictInd]))
+            block3 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked MAP']),\
+                              currMaster[2][dictInd]))
+            block4 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked MAP (no transform)']),\
+                              currMaster[3][dictInd]))
+            block5 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked MAP (no transform)']),\
+                              currMaster[4][dictInd]))
+            block6 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked Posterior Sample']),\
+                              currMaster[5][dictInd]))        
+            block7 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked Posterior Sample']),\
+                              currMaster[6][dictInd]))
+            for tup in block1:
+                DFdata.append(tup)
+            for tup in block2:
+                DFdata.append(tup)
+            for tup in block3:
+                DFdata.append(tup)
+            for tup in block4:
+                DFdata.append(tup)    
+            for tup in block5:
+                DFdata.append(tup)
+            for tup in block6:
+                DFdata.append(tup)
+            for tup in block7:
+                DFdata.append(tup)
+        
+        pandaDF = pd.DataFrame(DFdata,columns=headCol)
+        
+        # Build boxplot
+        plt.figure(figsize=(13,7))
+        plt.suptitle('Gneiting loss - '+MasterStrings[masterInd],fontsize=18)
+        plt.ylim(0,2.05)
+        ax = sns.boxplot(y='value',x='dict',data=pandaDF,palette='bright',\
+                          hue='calcMethod')
+        ax.set_xlabel('Output Dictionary',fontsize=16)
+        ax.set_ylabel('Gneiting loss',fontsize=16)
+        ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=10)
+        ax.tick_params(axis='y', which='major', labelsize=16)
+        ax.legend(loc=1)
+        yticks = ax.get_yticks()
+        #ax.set_yticklabels(['{:,.0%}'.format(x) for x in yticks])
+        plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+        plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+        plt.show()      
+            
+        ### END PLOTTING OF ITEMS IN MASTER LIST
+    
+    
 def SimSFPEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     '''
     Generates comparison tables and plots for a LIST of output dictionaries.
