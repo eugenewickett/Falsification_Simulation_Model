@@ -226,7 +226,7 @@ for rep in range(numReplications):
     intSFVec = []
     if intSFscenario_bool == True:
         for indEnd in range(2):
-            intSFVec.append(0.0)
+            intSFVec.append(0.01)
         for indEnd in range(2):
             intSFVec.append(0.1)
         for indEnd in range(2):

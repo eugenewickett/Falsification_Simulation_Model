@@ -607,18 +607,18 @@ def Est_LinearProjection(A,PosData,NumSamples,Sens,Spec,RglrWt=0.1,M=500,\
     t90 = spstat.t.ppf(0.95,adjA.shape[0]-adjA.shape[1])
     t95 = spstat.t.ppf(0.975,adjA.shape[0]-adjA.shape[1])
     t99 = spstat.t.ppf(0.995,adjA.shape[0]-adjA.shape[1])
-    int90upper = [intProj[i]+t90*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
-    int90lower = [intProj[i]-t90*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
-    int95upper = [intProj[i]+t95*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
-    int95lower = [intProj[i]-t95*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
-    int99upper = [intProj[i]+t99*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
-    int99lower = [intProj[i]-t99*np.sqrt(covarInt_diag[i]) for i in range(len(intProj))]
-    end90upper = [endProj[i]+t90*np.sqrt(varEnds[i]) for i in range(len(endProj))]
-    end90lower = [endProj[i]-t90*np.sqrt(varEnds[i]) for i in range(len(endProj))]
-    end95upper = [endProj[i]+t95*np.sqrt(varEnds[i]) for i in range(len(endProj))]
-    end95lower = [endProj[i]-t95*np.sqrt(varEnds[i]) for i in range(len(endProj))]
-    end99upper = [endProj[i]+t99*np.sqrt(varEnds[i]) for i in range(len(endProj))]
-    end99lower = [endProj[i]-t99*np.sqrt(varEnds[i]) for i in range(len(endProj))]
+    int90upper = [min(intProj[i]+t90*np.sqrt(covarInt_diag[i]),1.) for i in range(len(intProj))]
+    int90lower = [max(intProj[i]-t90*np.sqrt(covarInt_diag[i]),0.) for i in range(len(intProj))]
+    int95upper = [min(intProj[i]+t95*np.sqrt(covarInt_diag[i]),1.) for i in range(len(intProj))]
+    int95lower = [max(intProj[i]-t95*np.sqrt(covarInt_diag[i]),0.) for i in range(len(intProj))]
+    int99upper = [min(intProj[i]+t99*np.sqrt(covarInt_diag[i]),1.) for i in range(len(intProj))]
+    int99lower = [max(intProj[i]-t99*np.sqrt(covarInt_diag[i]),0.) for i in range(len(intProj))]
+    end90upper = [min(endProj[i]+t90*np.sqrt(varEnds[i]),1.) for i in range(len(endProj))]
+    end90lower = [max(endProj[i]-t90*np.sqrt(varEnds[i]),0.) for i in range(len(endProj))]
+    end95upper = [min(endProj[i]+t95*np.sqrt(varEnds[i]),1.) for i in range(len(endProj))]
+    end95lower = [max(endProj[i]-t95*np.sqrt(varEnds[i]),0.) for i in range(len(endProj))]
+    end99upper = [min(endProj[i]+t99*np.sqrt(varEnds[i]),1.) for i in range(len(endProj))]
+    end99lower = [max(endProj[i]-t99*np.sqrt(varEnds[i]),0.) for i in range(len(endProj))]
     #Insert 'nan' where we didn't have any samples
     for i in range(len(zeroInds[0])):
         endProj = np.insert(endProj,zeroInds[0][i],np.nan)

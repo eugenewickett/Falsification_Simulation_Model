@@ -67,7 +67,7 @@ endLTvar = 0. # Variance in LT for end node procuring from an intermediate node
 
 usePrior = 1. #If not 1., will use regularization instead
 optRegularizationWeight = 0.2 # Regularization weight to use with the MLE nonlinear optimizer
-lklhdBool = True #Generate the estimates using the likelihood estimator + NUTS (takes time)
+lklhdBool = False #Generate the estimates using the likelihood estimator + NUTS (takes time)
 lklhdEst_M, lklhdEst_Madapt, lklhdEst_delta = 500, 5000, 0.4 #NUTS parameters
 
 burnInDays_End = 25 # No end-node demand or testing until after this day
@@ -183,7 +183,7 @@ for rep in range(numReplications):
     intSFVec = []
     if intSFscenario_bool == True:
         for indEnd in range(2):
-            intSFVec.append(0.0)
+            intSFVec.append(0.01)
         for indEnd in range(2):
             intSFVec.append(0.1)
         for indEnd in range(2):

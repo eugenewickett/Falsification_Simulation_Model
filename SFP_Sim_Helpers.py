@@ -498,7 +498,7 @@ def SimReplicationOutput(OPdict):
     '''
  ### END "SimReplicationOutput" ###
 
-def SFPSim_EvaluateIntervals(OPdicts,dictNamesVec=[],threshold=0.2):
+def SFPSim_EvaluateIntervals(OPdicts,dictNamesVec=[]):
     '''
     Evaluates the performance of different intervals stored in the output
     dictionaries and conducts interval scoring, relative to the "true" SFP
@@ -511,7 +511,824 @@ def SFPSim_EvaluateIntervals(OPdicts,dictNamesVec=[],threshold=0.2):
     
     
     #### TO BE COMPLETED LATER
+   
     
+    
+    # Define lists for storing different interval metrics; each list contains a
+    # dictionary's list of metrics, calculated per replication
+    List_Lin_percContain_imp_90 = []
+    List_Lin_percContain_imp_95 = []
+    List_Lin_percContain_imp_99 = []
+    List_Lin_percContain_out_90 = []
+    List_Lin_percContain_out_95 = []
+    List_Lin_percContain_out_99 = []
+    List_Lin_intervalLen_imp_90 = []
+    List_Lin_intervalLen_imp_95 = []
+    List_Lin_intervalLen_imp_99 = []
+    List_Lin_intervalLen_out_90 = []
+    List_Lin_intervalLen_out_95 = []
+    List_Lin_intervalLen_out_99 = []
+    List_Lin_GneitingLoss_imp_90 = []
+    List_Lin_GneitingLoss_imp_95 = []
+    List_Lin_GneitingLoss_imp_99 = []
+    List_Lin_GneitingLoss_out_90 = []
+    List_Lin_GneitingLoss_out_95 = []
+    List_Lin_GneitingLoss_out_99 = []
+    
+    List_MAPtr_percContain_imp_90 = []
+    List_MAPtr_percContain_imp_95 = []
+    List_MAPtr_percContain_imp_99 = []
+    List_MAPtr_percContain_out_90 = []
+    List_MAPtr_percContain_out_95 = []
+    List_MAPtr_percContain_out_99 = []
+    List_MAPtr_intervalLen_imp_90 = []
+    List_MAPtr_intervalLen_imp_95 = []
+    List_MAPtr_intervalLen_imp_99 = []
+    List_MAPtr_intervalLen_out_90 = []
+    List_MAPtr_intervalLen_out_95 = []
+    List_MAPtr_intervalLen_out_99 = []
+    List_MAPtr_GneitingLoss_imp_90 = []
+    List_MAPtr_GneitingLoss_imp_95 = []
+    List_MAPtr_GneitingLoss_imp_99 = []
+    List_MAPtr_GneitingLoss_out_90 = []
+    List_MAPtr_GneitingLoss_out_95 = []
+    List_MAPtr_GneitingLoss_out_99 = []
+    
+    List_MAPuntr_percContain_imp_90 = []
+    List_MAPuntr_percContain_imp_95 = []
+    List_MAPuntr_percContain_imp_99 = []
+    List_MAPuntr_percContain_out_90 = []
+    List_MAPuntr_percContain_out_95 = []
+    List_MAPuntr_percContain_out_99 = []
+    List_MAPuntr_intervalLen_imp_90 = []
+    List_MAPuntr_intervalLen_imp_95 = []
+    List_MAPuntr_intervalLen_imp_99 = []
+    List_MAPuntr_intervalLen_out_90 = []
+    List_MAPuntr_intervalLen_out_95 = []
+    List_MAPuntr_intervalLen_out_99 = []
+    List_MAPuntr_GneitingLoss_imp_90 = []
+    List_MAPuntr_GneitingLoss_imp_95 = []
+    List_MAPuntr_GneitingLoss_imp_99 = []
+    List_MAPuntr_GneitingLoss_out_90 = []
+    List_MAPuntr_GneitingLoss_out_95 = []
+    List_MAPuntr_GneitingLoss_out_99 = []
+    
+    List_POSTtr_percContain_imp_90 = []
+    List_POSTtr_percContain_imp_95 = []
+    List_POSTtr_percContain_imp_99 = []
+    List_POSTtr_percContain_out_90 = []
+    List_POSTtr_percContain_out_95 = []
+    List_POSTtr_percContain_out_99 = []
+    List_POSTtr_intervalLen_imp_90 = []
+    List_POSTtr_intervalLen_imp_95 = []
+    List_POSTtr_intervalLen_imp_99 = []
+    List_POSTtr_intervalLen_out_90 = []
+    List_POSTtr_intervalLen_out_95 = []
+    List_POSTtr_intervalLen_out_99 = []
+    List_POSTtr_GneitingLoss_imp_90 = []
+    List_POSTtr_GneitingLoss_imp_95 = []
+    List_POSTtr_GneitingLoss_imp_99 = []
+    List_POSTtr_GneitingLoss_out_90 = []
+    List_POSTtr_GneitingLoss_out_95 = []
+    List_POSTtr_GneitingLoss_out_99 = []
+    
+    List_POSTuntr_percContain_imp_90 = []
+    List_POSTuntr_percContain_imp_95 = []
+    List_POSTuntr_percContain_imp_99 = []
+    List_POSTuntr_percContain_out_90 = []
+    List_POSTuntr_percContain_out_95 = []
+    List_POSTuntr_percContain_out_99 = []
+    List_POSTuntr_intervalLen_imp_90 = []
+    List_POSTuntr_intervalLen_imp_95 = []
+    List_POSTuntr_intervalLen_imp_99 = []
+    List_POSTuntr_intervalLen_out_90 = []
+    List_POSTuntr_intervalLen_out_95 = []
+    List_POSTuntr_intervalLen_out_99 = []
+    List_POSTuntr_GneitingLoss_imp_90 = []
+    List_POSTuntr_GneitingLoss_imp_95 = []
+    List_POSTuntr_GneitingLoss_imp_99 = []
+    List_POSTuntr_GneitingLoss_out_90 = []
+    List_POSTuntr_GneitingLoss_out_95 = []
+    List_POSTuntr_GneitingLoss_out_99 = []
+    
+    List_MAPtrProb_percContain_imp_90 = []
+    List_MAPtrProb_percContain_imp_95 = []
+    List_MAPtrProb_percContain_imp_99 = []
+    List_MAPtrProb_percContain_out_90 = []
+    List_MAPtrProb_percContain_out_95 = []
+    List_MAPtrProb_percContain_out_99 = []
+    List_MAPtrProb_intervalLen_imp_90 = []
+    List_MAPtrProb_intervalLen_imp_95 = []
+    List_MAPtrProb_intervalLen_imp_99 = []
+    List_MAPtrProb_intervalLen_out_90 = []
+    List_MAPtrProb_intervalLen_out_95 = []
+    List_MAPtrProb_intervalLen_out_99 = []
+    List_MAPtrProb_GneitingLoss_imp_90 = []
+    List_MAPtrProb_GneitingLoss_imp_95 = []
+    List_MAPtrProb_GneitingLoss_imp_99 = []
+    List_MAPtrProb_GneitingLoss_out_90 = []
+    List_MAPtrProb_GneitingLoss_out_95 = []
+    List_MAPtrProb_GneitingLoss_out_99 = []
+    
+    List_MAPuntrProb_percContain_imp_90 = []
+    List_MAPuntrProb_percContain_imp_95 = []
+    List_MAPuntrProb_percContain_imp_99 = []
+    List_MAPuntrProb_percContain_out_90 = []
+    List_MAPuntrProb_percContain_out_95 = []
+    List_MAPuntrProb_percContain_out_99 = []
+    List_MAPuntrProb_intervalLen_imp_90 = []
+    List_MAPuntrProb_intervalLen_imp_95 = []
+    List_MAPuntrProb_intervalLen_imp_99 = []
+    List_MAPuntrProb_intervalLen_out_90 = []
+    List_MAPuntrProb_intervalLen_out_95 = []
+    List_MAPuntrProb_intervalLen_out_99 = []
+    List_MAPuntrProb_GneitingLoss_imp_90 = []
+    List_MAPuntrProb_GneitingLoss_imp_95 = []
+    List_MAPuntrProb_GneitingLoss_imp_99 = []
+    List_MAPuntrProb_GneitingLoss_out_90 = []
+    List_MAPuntrProb_GneitingLoss_out_95 = []
+    List_MAPuntrProb_GneitingLoss_out_99 = []
+    
+    # Loop through each dictionary
+    for currDict in OPdicts:
+        # Initialize lists for this dictionary's metrics
+        cd_List_Lin_percContain_imp_90 = []
+        cd_List_Lin_percContain_imp_95 = []
+        cd_List_Lin_percContain_imp_99 = []
+        cd_List_Lin_percContain_out_90 = []
+        cd_List_Lin_percContain_out_95 = []
+        cd_List_Lin_percContain_out_99 = []
+        cd_List_Lin_intervalLen_imp_90 = []
+        cd_List_Lin_intervalLen_imp_95 = []
+        cd_List_Lin_intervalLen_imp_99 = []
+        cd_List_Lin_intervalLen_out_90 = []
+        cd_List_Lin_intervalLen_out_95 = []
+        cd_List_Lin_intervalLen_out_99 = []
+        cd_List_Lin_GneitingLoss_imp_90 = []
+        cd_List_Lin_GneitingLoss_imp_95 = []
+        cd_List_Lin_GneitingLoss_imp_99 = []
+        cd_List_Lin_GneitingLoss_out_90 = []
+        cd_List_Lin_GneitingLoss_out_95 = []
+        cd_List_Lin_GneitingLoss_out_99 = []
+        
+        cd_List_MAPtr_percContain_imp_90 = []
+        cd_List_MAPtr_percContain_imp_95 = []
+        cd_List_MAPtr_percContain_imp_99 = []
+        cd_List_MAPtr_percContain_out_90 = []
+        cd_List_MAPtr_percContain_out_95 = []
+        cd_List_MAPtr_percContain_out_99 = []
+        cd_List_MAPtr_intervalLen_imp_90 = []
+        cd_List_MAPtr_intervalLen_imp_95 = []
+        cd_List_MAPtr_intervalLen_imp_99 = []
+        cd_List_MAPtr_intervalLen_out_90 = []
+        cd_List_MAPtr_intervalLen_out_95 = []
+        cd_List_MAPtr_intervalLen_out_99 = []
+        cd_List_MAPtr_GneitingLoss_imp_90 = []
+        cd_List_MAPtr_GneitingLoss_imp_95 = []
+        cd_List_MAPtr_GneitingLoss_imp_99 = []
+        cd_List_MAPtr_GneitingLoss_out_90 = []
+        cd_List_MAPtr_GneitingLoss_out_95 = []
+        cd_List_MAPtr_GneitingLoss_out_99 = []
+        
+        cd_List_MAPuntr_percContain_imp_90 = []
+        cd_List_MAPuntr_percContain_imp_95 = []
+        cd_List_MAPuntr_percContain_imp_99 = []
+        cd_List_MAPuntr_percContain_out_90 = []
+        cd_List_MAPuntr_percContain_out_95 = []
+        cd_List_MAPuntr_percContain_out_99 = []
+        cd_List_MAPuntr_intervalLen_imp_90 = []
+        cd_List_MAPuntr_intervalLen_imp_95 = []
+        cd_List_MAPuntr_intervalLen_imp_99 = []
+        cd_List_MAPuntr_intervalLen_out_90 = []
+        cd_List_MAPuntr_intervalLen_out_95 = []
+        cd_List_MAPuntr_intervalLen_out_99 = []
+        cd_List_MAPuntr_GneitingLoss_imp_90 = []
+        cd_List_MAPuntr_GneitingLoss_imp_95 = []
+        cd_List_MAPuntr_GneitingLoss_imp_99 = []
+        cd_List_MAPuntr_GneitingLoss_out_90 = []
+        cd_List_MAPuntr_GneitingLoss_out_95 = []
+        cd_List_MAPuntr_GneitingLoss_out_99 = []
+        
+        cd_List_POSTtr_percContain_imp_90 = []
+        cd_List_POSTtr_percContain_imp_95 = []
+        cd_List_POSTtr_percContain_imp_99 = []
+        cd_List_POSTtr_percContain_out_90 = []
+        cd_List_POSTtr_percContain_out_95 = []
+        cd_List_POSTtr_percContain_out_99 = []
+        cd_List_POSTtr_intervalLen_imp_90 = []
+        cd_List_POSTtr_intervalLen_imp_95 = []
+        cd_List_POSTtr_intervalLen_imp_99 = []
+        cd_List_POSTtr_intervalLen_out_90 = []
+        cd_List_POSTtr_intervalLen_out_95 = []
+        cd_List_POSTtr_intervalLen_out_99 = []
+        cd_List_POSTtr_GneitingLoss_imp_90 = []
+        cd_List_POSTtr_GneitingLoss_imp_95 = []
+        cd_List_POSTtr_GneitingLoss_imp_99 = []
+        cd_List_POSTtr_GneitingLoss_out_90 = []
+        cd_List_POSTtr_GneitingLoss_out_95 = []
+        cd_List_POSTtr_GneitingLoss_out_99 = []
+        
+        cd_List_POSTuntr_percContain_imp_90 = []
+        cd_List_POSTuntr_percContain_imp_95 = []
+        cd_List_POSTuntr_percContain_imp_99 = []
+        cd_List_POSTuntr_percContain_out_90 = []
+        cd_List_POSTuntr_percContain_out_95 = []
+        cd_List_POSTuntr_percContain_out_99 = []
+        cd_List_POSTuntr_intervalLen_imp_90 = []
+        cd_List_POSTuntr_intervalLen_imp_95 = []
+        cd_List_POSTuntr_intervalLen_imp_99 = []
+        cd_List_POSTuntr_intervalLen_out_90 = []
+        cd_List_POSTuntr_intervalLen_out_95 = []
+        cd_List_POSTuntr_intervalLen_out_99 = []
+        cd_List_POSTuntr_GneitingLoss_imp_90 = []
+        cd_List_POSTuntr_GneitingLoss_imp_95 = []
+        cd_List_POSTuntr_GneitingLoss_imp_99 = []
+        cd_List_POSTuntr_GneitingLoss_out_90 = []
+        cd_List_POSTuntr_GneitingLoss_out_95 = []
+        cd_List_POSTuntr_GneitingLoss_out_99 = []
+        
+        cd_List_MAPtrProb_percContain_imp_90 = []
+        cd_List_MAPtrProb_percContain_imp_95 = []
+        cd_List_MAPtrProb_percContain_imp_99 = []
+        cd_List_MAPtrProb_percContain_out_90 = []
+        cd_List_MAPtrProb_percContain_out_95 = []
+        cd_List_MAPtrProb_percContain_out_99 = []
+        cd_List_MAPtrProb_intervalLen_imp_90 = []
+        cd_List_MAPtrProb_intervalLen_imp_95 = []
+        cd_List_MAPtrProb_intervalLen_imp_99 = []
+        cd_List_MAPtrProb_intervalLen_out_90 = []
+        cd_List_MAPtrProb_intervalLen_out_95 = []
+        cd_List_MAPtrProb_intervalLen_out_99 = []
+        cd_List_MAPtrProb_GneitingLoss_imp_90 = []
+        cd_List_MAPtrProb_GneitingLoss_imp_95 = []
+        cd_List_MAPtrProb_GneitingLoss_imp_99 = []
+        cd_List_MAPtrProb_GneitingLoss_out_90 = []
+        cd_List_MAPtrProb_GneitingLoss_out_95 = []
+        cd_List_MAPtrProb_GneitingLoss_out_99 = []
+        
+        cd_List_MAPuntrProb_percContain_imp_90 = []
+        cd_List_MAPuntrProb_percContain_imp_95 = []
+        cd_List_MAPuntrProb_percContain_imp_99 = []
+        cd_List_MAPuntrProb_percContain_out_90 = []
+        cd_List_MAPuntrProb_percContain_out_95 = []
+        cd_List_MAPuntrProb_percContain_out_99 = []
+        cd_List_MAPuntrProb_intervalLen_imp_90 = []
+        cd_List_MAPuntrProb_intervalLen_imp_95 = []
+        cd_List_MAPuntrProb_intervalLen_imp_99 = []
+        cd_List_MAPuntrProb_intervalLen_out_90 = []
+        cd_List_MAPuntrProb_intervalLen_out_95 = []
+        cd_List_MAPuntrProb_intervalLen_out_99 = []
+        cd_List_MAPuntrProb_GneitingLoss_imp_90 = []
+        cd_List_MAPuntrProb_GneitingLoss_imp_95 = []
+        cd_List_MAPuntrProb_GneitingLoss_imp_99 = []
+        cd_List_MAPuntrProb_GneitingLoss_out_90 = []
+        cd_List_MAPuntrProb_GneitingLoss_out_95 = []
+        cd_List_MAPuntrProb_GneitingLoss_out_99 = []
+        
+        # Now loop through each replication in the dictionary and retrieve the different metrics
+        for rep in currDict.keys():
+            repDict = currDict[rep] 
+            # Grab true SFP values and outputs
+            rep_trueVec_imp = repDict['intSFTrueValues']
+            rep_trueVec_imp = [i+0.001 for i in rep_trueVec_imp]
+            rep_trueVec_out = repDict['endSFTrueValues']
+            numImp = len(rep_trueVec_imp)
+            numOut = len(rep_trueVec_out)
+            rep_op_Lin = repDict['estDict_Lin']
+            rep_op_Untr = repDict['estDict_Untracked']
+            rep_op_Tr = repDict['estDict_Tracked']
+            rep_op_UntrSamps = repDict['postSamps_Untracked']
+            rep_op_TrSamps = repDict['postSamps_Tracked']
+            # Retrieve 90, 95, and 99 intervals from estimate output dictionaries and posterior samples
+            # Each interval is represented by a [lower bds, upper bds] inclusive list
+            rep_inter90_imp_Lin = [rep_op_Lin['90lower_int'],rep_op_Lin['90upper_int']]
+            rep_inter90_imp_UntrMAP = [rep_op_Untr['90lower_int'],rep_op_Untr['90upper_int']]
+            rep_inter90_imp_TrMAP = [rep_op_Tr['90lower_int'],rep_op_Tr['90upper_int']]
+            rep_inter90_imp_UntrMAPprob = [rep_op_Untr['90lower_int_Probs'],rep_op_Untr['90upper_int_Probs']]
+            rep_inter90_imp_TrMAPprob = [rep_op_Tr['90lower_int_Probs'],rep_op_Tr['90upper_int_Probs']]
+            rep_inter90_imp_UntrPOST = [[sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.05))  for i in range(numImp)],\
+                                         [sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.95))  for i in range(numImp)]]
+            rep_inter90_imp_TrPOST = [[sps.expit(np.quantile(rep_op_TrSamps[:,i],0.05))  for i in range(numImp)],\
+                                         [sps.expit(np.quantile(rep_op_TrSamps[:,i],0.95))  for i in range(numImp)]]            
+            rep_inter90_out_Lin = [rep_op_Lin['90lower_end'],rep_op_Lin['90upper_end']]
+            rep_inter90_out_UntrMAP = [rep_op_Untr['90lower_end'],rep_op_Untr['90upper_end']]
+            rep_inter90_out_TrMAP = [rep_op_Tr['90lower_end'],rep_op_Tr['90upper_end']]
+            rep_inter90_out_UntrMAPprob = [rep_op_Untr['90lower_end_Probs'],rep_op_Untr['90upper_end_Probs']]
+            rep_inter90_out_TrMAPprob = [rep_op_Tr['90lower_end_Probs'],rep_op_Tr['90upper_end_Probs']]
+            rep_inter90_out_UntrPOST = [[sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.05))  for i in range(numImp,numImp+numOut)],\
+                                         [sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.95))  for i in range(numImp,numImp+numOut)]]
+            rep_inter90_out_TrPOST = [[sps.expit(np.quantile(rep_op_TrSamps[:,i],0.05))  for i in range(numImp,numImp+numOut)],\
+                                         [sps.expit(np.quantile(rep_op_TrSamps[:,i],0.95))  for i in range(numImp,numImp+numOut)]]
+            
+            rep_inter95_imp_Lin = [rep_op_Lin['95lower_int'],rep_op_Lin['95upper_int']]
+            rep_inter95_imp_UntrMAP = [rep_op_Untr['95lower_int'],rep_op_Untr['95upper_int']]
+            rep_inter95_imp_TrMAP = [rep_op_Tr['95lower_int'],rep_op_Tr['95upper_int']]
+            rep_inter95_imp_UntrMAPprob = [rep_op_Untr['95lower_int_Probs'],rep_op_Untr['95upper_int_Probs']]
+            rep_inter95_imp_TrMAPprob = [rep_op_Tr['95lower_int_Probs'],rep_op_Tr['95upper_int_Probs']]
+            rep_inter95_imp_UntrPOST = [[sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.025))  for i in range(numImp)],\
+                                        [sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.975))  for i in range(numImp)]]
+            rep_inter95_imp_TrPOST = [[sps.expit(np.quantile(rep_op_TrSamps[:,i],0.025))  for i in range(numImp)],\
+                                         [sps.expit(np.quantile(rep_op_TrSamps[:,i],0.975))  for i in range(numImp)]]            
+            rep_inter95_out_Lin = [rep_op_Lin['95lower_end'],rep_op_Lin['95upper_end']]
+            rep_inter95_out_UntrMAP = [rep_op_Untr['95lower_end'],rep_op_Untr['95upper_end']]
+            rep_inter95_out_TrMAP = [rep_op_Tr['95lower_end'],rep_op_Tr['95upper_end']]
+            rep_inter95_out_UntrMAPprob = [rep_op_Untr['95lower_end_Probs'],rep_op_Untr['95upper_end_Probs']]
+            rep_inter95_out_TrMAPprob = [rep_op_Tr['95lower_end_Probs'],rep_op_Tr['95upper_end_Probs']]
+            rep_inter95_out_UntrPOST = [[sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.025))  for i in range(numImp,numImp+numOut)],\
+                                         [sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.975))  for i in range(numImp,numImp+numOut)]]
+            rep_inter95_out_TrPOST = [[sps.expit(np.quantile(rep_op_TrSamps[:,i],0.025))  for i in range(numImp,numImp+numOut)],\
+                                         [sps.expit(np.quantile(rep_op_TrSamps[:,i],0.975))  for i in range(numImp,numImp+numOut)]]
+            
+            rep_inter99_imp_Lin = [rep_op_Lin['99lower_int'],rep_op_Lin['99upper_int']]
+            rep_inter99_imp_UntrMAP = [rep_op_Untr['99lower_int'],rep_op_Untr['99upper_int']]
+            rep_inter99_imp_TrMAP = [rep_op_Tr['99lower_int'],rep_op_Tr['99upper_int']]
+            rep_inter99_imp_UntrMAPprob = [rep_op_Untr['99lower_int_Probs'],rep_op_Untr['99upper_int_Probs']]
+            rep_inter99_imp_TrMAPprob = [rep_op_Tr['99lower_int_Probs'],rep_op_Tr['99upper_int_Probs']]
+            rep_inter99_imp_UntrPOST = [[sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.005))  for i in range(numImp)],\
+                                         [sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.995))  for i in range(numImp)]]
+            rep_inter99_imp_TrPOST = [[sps.expit(np.quantile(rep_op_TrSamps[:,i],0.005))  for i in range(numImp)],\
+                                         [sps.expit(np.quantile(rep_op_TrSamps[:,i],0.995))  for i in range(numImp)]]            
+            rep_inter99_out_Lin = [rep_op_Lin['99lower_end'],rep_op_Lin['99upper_end']]
+            rep_inter99_out_UntrMAP = [rep_op_Untr['99lower_end'],rep_op_Untr['99upper_end']]
+            rep_inter99_out_TrMAP = [rep_op_Tr['99lower_end'],rep_op_Tr['99upper_end']]
+            rep_inter99_out_UntrMAPprob = [rep_op_Untr['99lower_end_Probs'],rep_op_Untr['99upper_end_Probs']]
+            rep_inter99_out_TrMAPprob = [rep_op_Tr['99lower_end_Probs'],rep_op_Tr['99upper_end_Probs']]
+            rep_inter99_out_UntrPOST = [[sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.005))  for i in range(numImp,numImp+numOut)],\
+                                         [sps.expit(np.quantile(rep_op_UntrSamps[:,i],0.995))  for i in range(numImp,numImp+numOut)]]
+            rep_inter99_out_TrPOST = [[sps.expit(np.quantile(rep_op_TrSamps[:,i],0.005))  for i in range(numImp,numImp+numOut)],\
+                                         [sps.expit(np.quantile(rep_op_TrSamps[:,i],0.995))  for i in range(numImp,numImp+numOut)]]
+            
+            # INTERVAL CLEAN-UP: Values above 1 or below 0 are brought within reason
+            rep_inter90_imp_Lin = [[max(0.,i) for i in rep_inter90_imp_Lin[0]],[min(1.,i) for i in rep_inter90_imp_Lin[1]]]
+            rep_inter95_imp_Lin = [[max(0.,i) for i in rep_inter95_imp_Lin[0]],[min(1.,i) for i in rep_inter95_imp_Lin[1]]]
+            rep_inter99_imp_Lin = [[max(0.,i) for i in rep_inter99_imp_Lin[0]],[min(1.,i) for i in rep_inter99_imp_Lin[1]]]
+            rep_inter90_out_Lin = [[max(0.,i) for i in rep_inter90_out_Lin[0]],[min(1.,i) for i in rep_inter90_out_Lin[1]]]
+            rep_inter95_out_Lin = [[max(0.,i) for i in rep_inter95_out_Lin[0]],[min(1.,i) for i in rep_inter95_out_Lin[1]]]
+            rep_inter99_out_Lin = [[max(0.,i) for i in rep_inter99_out_Lin[0]],[min(1.,i) for i in rep_inter99_out_Lin[1]]]
+            
+            # Now ascertain the proportion of importer/outlet real SFP values 
+            cd_List_Lin_percContain_imp_90.append(np.nanmean([1 if rep_inter90_imp_Lin[0][i]<=rep_trueVec_imp[i]<=rep_inter90_imp_Lin[1][i] else 0 for i in range(numImp)]))
+            cd_List_Lin_percContain_out_90.append(np.nanmean([1 if rep_inter90_out_Lin[0][i]<=rep_trueVec_out[i]<=rep_inter90_out_Lin[1][i] else 0 for i in range(numOut)]))
+            cd_List_Lin_percContain_imp_95.append(np.nanmean([1 if rep_inter95_imp_Lin[0][i]<=rep_trueVec_imp[i]<=rep_inter95_imp_Lin[1][i] else 0 for i in range(numImp)]))
+            cd_List_Lin_percContain_out_95.append(np.nanmean([1 if rep_inter95_out_Lin[0][i]<=rep_trueVec_out[i]<=rep_inter95_out_Lin[1][i] else 0 for i in range(numOut)]))
+            cd_List_Lin_percContain_imp_99.append(np.nanmean([1 if rep_inter99_imp_Lin[0][i]<=rep_trueVec_imp[i]<=rep_inter99_imp_Lin[1][i] else 0 for i in range(numImp)]))
+            cd_List_Lin_percContain_out_99.append(np.nanmean([1 if rep_inter99_out_Lin[0][i]<=rep_trueVec_out[i]<=rep_inter99_out_Lin[1][i] else 0 for i in range(numOut)]))
+            
+            cd_List_MAPuntr_percContain_imp_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_imp_UntrMAP[0][i]) else 1 if rep_inter90_imp_UntrMAP[0][i]<=rep_trueVec_imp[i]<=rep_inter90_imp_UntrMAP[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPuntr_percContain_out_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_out_UntrMAP[0][i]) else 1 if rep_inter90_out_UntrMAP[0][i]<=rep_trueVec_out[i]<=rep_inter90_out_UntrMAP[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPuntr_percContain_imp_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_imp_UntrMAP[0][i]) else 1 if rep_inter95_imp_UntrMAP[0][i]<=rep_trueVec_imp[i]<=rep_inter95_imp_UntrMAP[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPuntr_percContain_out_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_out_UntrMAP[0][i]) else 1 if rep_inter95_out_UntrMAP[0][i]<=rep_trueVec_out[i]<=rep_inter95_out_UntrMAP[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPuntr_percContain_imp_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_imp_UntrMAP[0][i]) else 1 if rep_inter99_imp_UntrMAP[0][i]<=rep_trueVec_imp[i]<=rep_inter99_imp_UntrMAP[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPuntr_percContain_out_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_out_UntrMAP[0][i]) else 1 if rep_inter99_out_UntrMAP[0][i]<=rep_trueVec_out[i]<=rep_inter99_out_UntrMAP[1][i] else 0 for i in range(numOut)]))
+            
+            cd_List_MAPtr_percContain_imp_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_imp_TrMAP[0][i]) else 1 if rep_inter90_imp_TrMAP[0][i]<=rep_trueVec_imp[i]<=rep_inter90_imp_TrMAP[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPtr_percContain_out_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_out_TrMAP[0][i]) else 1 if rep_inter90_out_TrMAP[0][i]<=rep_trueVec_out[i]<=rep_inter90_out_TrMAP[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPtr_percContain_imp_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_imp_TrMAP[0][i]) else 1 if rep_inter95_imp_TrMAP[0][i]<=rep_trueVec_imp[i]<=rep_inter95_imp_TrMAP[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPtr_percContain_out_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_out_TrMAP[0][i]) else 1 if rep_inter95_out_TrMAP[0][i]<=rep_trueVec_out[i]<=rep_inter95_out_TrMAP[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPtr_percContain_imp_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_imp_TrMAP[0][i]) else 1 if rep_inter99_imp_TrMAP[0][i]<=rep_trueVec_imp[i]<=rep_inter99_imp_TrMAP[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPtr_percContain_out_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_out_TrMAP[0][i]) else 1 if rep_inter99_out_TrMAP[0][i]<=rep_trueVec_out[i]<=rep_inter99_out_TrMAP[1][i] else 0 for i in range(numOut)]))
+            
+            cd_List_MAPuntrProb_percContain_imp_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_imp_UntrMAPprob[0][i]) else 1 if rep_inter90_imp_UntrMAPprob[0][i]<=rep_trueVec_imp[i]<=rep_inter90_imp_UntrMAPprob[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPuntrProb_percContain_out_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_out_UntrMAPprob[0][i]) else 1 if rep_inter90_out_UntrMAPprob[0][i]<=rep_trueVec_out[i]<=rep_inter90_out_UntrMAPprob[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPuntrProb_percContain_imp_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_imp_UntrMAPprob[0][i]) else 1 if rep_inter95_imp_UntrMAPprob[0][i]<=rep_trueVec_imp[i]<=rep_inter95_imp_UntrMAPprob[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPuntrProb_percContain_out_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_out_UntrMAPprob[0][i]) else 1 if rep_inter95_out_UntrMAPprob[0][i]<=rep_trueVec_out[i]<=rep_inter95_out_UntrMAPprob[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPuntrProb_percContain_imp_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_imp_UntrMAPprob[0][i]) else 1 if rep_inter99_imp_UntrMAPprob[0][i]<=rep_trueVec_imp[i]<=rep_inter99_imp_UntrMAPprob[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPuntrProb_percContain_out_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_out_UntrMAPprob[0][i]) else 1 if rep_inter99_out_UntrMAPprob[0][i]<=rep_trueVec_out[i]<=rep_inter99_out_UntrMAPprob[1][i] else 0 for i in range(numOut)]))
+            
+            cd_List_MAPtrProb_percContain_imp_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_imp_TrMAPprob[0][i]) else 1 if rep_inter90_imp_TrMAPprob[0][i]<=rep_trueVec_imp[i]<=rep_inter90_imp_TrMAPprob[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPtrProb_percContain_out_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_out_TrMAPprob[0][i]) else 1 if rep_inter90_out_TrMAPprob[0][i]<=rep_trueVec_out[i]<=rep_inter90_out_TrMAPprob[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPtrProb_percContain_imp_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_imp_TrMAPprob[0][i]) else 1 if rep_inter95_imp_TrMAPprob[0][i]<=rep_trueVec_imp[i]<=rep_inter95_imp_TrMAPprob[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPtrProb_percContain_out_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_out_TrMAPprob[0][i]) else 1 if rep_inter95_out_TrMAPprob[0][i]<=rep_trueVec_out[i]<=rep_inter95_out_TrMAPprob[1][i] else 0 for i in range(numOut)]))
+            cd_List_MAPtrProb_percContain_imp_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_imp_TrMAPprob[0][i]) else 1 if rep_inter99_imp_TrMAPprob[0][i]<=rep_trueVec_imp[i]<=rep_inter99_imp_TrMAPprob[1][i] else 0 for i in range(numImp)]))
+            cd_List_MAPtrProb_percContain_out_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_out_TrMAPprob[0][i]) else 1 if rep_inter99_out_TrMAPprob[0][i]<=rep_trueVec_out[i]<=rep_inter99_out_TrMAPprob[1][i] else 0 for i in range(numOut)]))
+            
+            cd_List_POSTuntr_percContain_imp_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_imp_UntrPOST[0][i]) else 1 if rep_inter90_imp_UntrPOST[0][i]<=rep_trueVec_imp[i]<=rep_inter90_imp_UntrPOST[1][i] else 0 for i in range(numImp)]))
+            cd_List_POSTuntr_percContain_out_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_out_UntrPOST[0][i]) else 1 if rep_inter90_out_UntrPOST[0][i]<=rep_trueVec_out[i]<=rep_inter90_out_UntrPOST[1][i] else 0 for i in range(numOut)]))
+            cd_List_POSTuntr_percContain_imp_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_imp_UntrPOST[0][i]) else 1 if rep_inter95_imp_UntrPOST[0][i]<=rep_trueVec_imp[i]<=rep_inter95_imp_UntrPOST[1][i] else 0 for i in range(numImp)]))
+            cd_List_POSTuntr_percContain_out_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_out_UntrPOST[0][i]) else 1 if rep_inter95_out_UntrPOST[0][i]<=rep_trueVec_out[i]<=rep_inter95_out_UntrPOST[1][i] else 0 for i in range(numOut)]))
+            cd_List_POSTuntr_percContain_imp_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_imp_UntrPOST[0][i]) else 1 if rep_inter99_imp_UntrPOST[0][i]<=rep_trueVec_imp[i]<=rep_inter99_imp_UntrPOST[1][i] else 0 for i in range(numImp)]))
+            cd_List_POSTuntr_percContain_out_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_out_UntrPOST[0][i]) else 1 if rep_inter99_out_UntrPOST[0][i]<=rep_trueVec_out[i]<=rep_inter99_out_UntrPOST[1][i] else 0 for i in range(numOut)]))
+            
+            cd_List_POSTtr_percContain_imp_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_imp_TrPOST[0][i]) else 1 if rep_inter90_imp_TrPOST[0][i]<=rep_trueVec_imp[i]<=rep_inter90_imp_TrPOST[1][i] else 0 for i in range(numImp)]))
+            cd_List_POSTtr_percContain_out_90.append(np.nanmean([np.nan if np.isnan(rep_inter90_out_TrPOST[0][i]) else 1 if rep_inter90_out_TrPOST[0][i]<=rep_trueVec_out[i]<=rep_inter90_out_TrPOST[1][i] else 0 for i in range(numOut)]))
+            cd_List_POSTtr_percContain_imp_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_imp_TrPOST[0][i]) else 1 if rep_inter95_imp_TrPOST[0][i]<=rep_trueVec_imp[i]<=rep_inter95_imp_TrPOST[1][i] else 0 for i in range(numImp)]))
+            cd_List_POSTtr_percContain_out_95.append(np.nanmean([np.nan if np.isnan(rep_inter95_out_TrPOST[0][i]) else 1 if rep_inter95_out_TrPOST[0][i]<=rep_trueVec_out[i]<=rep_inter95_out_TrPOST[1][i] else 0 for i in range(numOut)]))
+            cd_List_POSTtr_percContain_imp_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_imp_TrPOST[0][i]) else 1 if rep_inter99_imp_TrPOST[0][i]<=rep_trueVec_imp[i]<=rep_inter99_imp_TrPOST[1][i] else 0 for i in range(numImp)]))
+            cd_List_POSTtr_percContain_out_99.append(np.nanmean([np.nan if np.isnan(rep_inter99_out_TrPOST[0][i]) else 1 if rep_inter99_out_TrPOST[0][i]<=rep_trueVec_out[i]<=rep_inter99_out_TrPOST[1][i] else 0 for i in range(numOut)]))
+            
+            # Next, retrieve the interval widths
+            cd_List_Lin_intervalLen_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_Lin[0][i]) else rep_inter90_imp_Lin[1][i] - rep_inter90_imp_Lin[0][i] for i in range(numImp)])
+            cd_List_Lin_intervalLen_out_90.extend([np.nan if np.isnan(rep_inter90_out_Lin[0][i]) else rep_inter90_out_Lin[1][i] - rep_inter90_out_Lin[0][i] for i in range(numOut)])
+            cd_List_Lin_intervalLen_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_Lin[0][i]) else rep_inter95_imp_Lin[1][i] - rep_inter95_imp_Lin[0][i] for i in range(numImp)])
+            cd_List_Lin_intervalLen_out_95.extend([np.nan if np.isnan(rep_inter95_out_Lin[0][i]) else rep_inter95_out_Lin[1][i] - rep_inter95_out_Lin[0][i] for i in range(numOut)])
+            cd_List_Lin_intervalLen_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_Lin[0][i]) else rep_inter99_imp_Lin[1][i] - rep_inter99_imp_Lin[0][i] for i in range(numImp)])
+            cd_List_Lin_intervalLen_out_99.extend([np.nan if np.isnan(rep_inter99_out_Lin[0][i]) else rep_inter99_out_Lin[1][i] - rep_inter99_out_Lin[0][i] for i in range(numOut)])
+            
+            cd_List_MAPuntr_intervalLen_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_UntrMAP[0][i]) else rep_inter90_imp_UntrMAP[1][i] - rep_inter90_imp_UntrMAP[0][i] for i in range(numImp)])
+            cd_List_MAPuntr_intervalLen_out_90.extend([np.nan if np.isnan(rep_inter90_out_UntrMAP[0][i]) else rep_inter90_out_UntrMAP[1][i] - rep_inter90_out_UntrMAP[0][i] for i in range(numOut)])
+            cd_List_MAPuntr_intervalLen_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_UntrMAP[0][i]) else rep_inter95_imp_UntrMAP[1][i] - rep_inter95_imp_UntrMAP[0][i] for i in range(numImp)])
+            cd_List_MAPuntr_intervalLen_out_95.extend([np.nan if np.isnan(rep_inter95_out_UntrMAP[0][i]) else rep_inter95_out_UntrMAP[1][i] - rep_inter95_out_UntrMAP[0][i] for i in range(numOut)])
+            cd_List_MAPuntr_intervalLen_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_UntrMAP[0][i]) else rep_inter99_imp_UntrMAP[1][i] - rep_inter99_imp_UntrMAP[0][i] for i in range(numImp)])
+            cd_List_MAPuntr_intervalLen_out_99.extend([np.nan if np.isnan(rep_inter99_out_UntrMAP[0][i]) else rep_inter99_out_UntrMAP[1][i] - rep_inter99_out_UntrMAP[0][i] for i in range(numOut)])
+            
+            cd_List_MAPtr_intervalLen_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_TrMAP[0][i]) else rep_inter90_imp_TrMAP[1][i] - rep_inter90_imp_TrMAP[0][i] for i in range(numImp)])
+            cd_List_MAPtr_intervalLen_out_90.extend([np.nan if np.isnan(rep_inter90_out_TrMAP[0][i]) else rep_inter90_out_TrMAP[1][i] - rep_inter90_out_TrMAP[0][i] for i in range(numOut)])
+            cd_List_MAPtr_intervalLen_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_TrMAP[0][i]) else rep_inter95_imp_TrMAP[1][i] - rep_inter95_imp_TrMAP[0][i] for i in range(numImp)])
+            cd_List_MAPtr_intervalLen_out_95.extend([np.nan if np.isnan(rep_inter95_out_TrMAP[0][i]) else rep_inter95_out_TrMAP[1][i] - rep_inter95_out_TrMAP[0][i] for i in range(numOut)])
+            cd_List_MAPtr_intervalLen_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_TrMAP[0][i]) else rep_inter99_imp_TrMAP[1][i] - rep_inter99_imp_TrMAP[0][i] for i in range(numImp)])
+            cd_List_MAPtr_intervalLen_out_99.extend([np.nan if np.isnan(rep_inter99_out_TrMAP[0][i]) else rep_inter99_out_TrMAP[1][i] - rep_inter99_out_TrMAP[0][i] for i in range(numOut)])
+            
+            cd_List_MAPuntrProb_intervalLen_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_UntrMAPprob[0][i]) else rep_inter90_imp_UntrMAPprob[1][i] - rep_inter90_imp_UntrMAPprob[0][i] for i in range(numImp)])
+            cd_List_MAPuntrProb_intervalLen_out_90.extend([np.nan if np.isnan(rep_inter90_out_UntrMAPprob[0][i]) else rep_inter90_out_UntrMAPprob[1][i] - rep_inter90_out_UntrMAPprob[0][i] for i in range(numOut)])
+            cd_List_MAPuntrProb_intervalLen_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_UntrMAPprob[0][i]) else rep_inter95_imp_UntrMAPprob[1][i] - rep_inter95_imp_UntrMAPprob[0][i] for i in range(numImp)])
+            cd_List_MAPuntrProb_intervalLen_out_95.extend([np.nan if np.isnan(rep_inter95_out_UntrMAPprob[0][i]) else rep_inter95_out_UntrMAPprob[1][i] - rep_inter95_out_UntrMAPprob[0][i] for i in range(numOut)])
+            cd_List_MAPuntrProb_intervalLen_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_UntrMAPprob[0][i]) else rep_inter99_imp_UntrMAPprob[1][i] - rep_inter99_imp_UntrMAPprob[0][i] for i in range(numImp)])
+            cd_List_MAPuntrProb_intervalLen_out_99.extend([np.nan if np.isnan(rep_inter99_out_UntrMAPprob[0][i]) else rep_inter99_out_UntrMAPprob[1][i] - rep_inter99_out_UntrMAPprob[0][i] for i in range(numOut)])
+            
+            cd_List_MAPtrProb_intervalLen_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_TrMAPprob[0][i]) else rep_inter90_imp_TrMAPprob[1][i] - rep_inter90_imp_TrMAPprob[0][i] for i in range(numImp)])
+            cd_List_MAPtrProb_intervalLen_out_90.extend([np.nan if np.isnan(rep_inter90_out_TrMAPprob[0][i]) else rep_inter90_out_TrMAPprob[1][i] - rep_inter90_out_TrMAPprob[0][i] for i in range(numOut)])
+            cd_List_MAPtrProb_intervalLen_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_TrMAPprob[0][i]) else rep_inter95_imp_TrMAPprob[1][i] - rep_inter95_imp_TrMAPprob[0][i] for i in range(numImp)])
+            cd_List_MAPtrProb_intervalLen_out_95.extend([np.nan if np.isnan(rep_inter95_out_TrMAPprob[0][i]) else rep_inter95_out_TrMAPprob[1][i] - rep_inter95_out_TrMAPprob[0][i] for i in range(numOut)])
+            cd_List_MAPtrProb_intervalLen_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_TrMAPprob[0][i]) else rep_inter99_imp_TrMAPprob[1][i] - rep_inter99_imp_TrMAPprob[0][i] for i in range(numImp)])
+            cd_List_MAPtrProb_intervalLen_out_99.extend([np.nan if np.isnan(rep_inter99_out_TrMAPprob[0][i]) else rep_inter99_out_TrMAPprob[1][i] - rep_inter99_out_TrMAPprob[0][i] for i in range(numOut)])
+            
+            cd_List_POSTuntr_intervalLen_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_UntrPOST[0][i]) else rep_inter90_imp_UntrPOST[1][i] - rep_inter90_imp_UntrPOST[0][i] for i in range(numImp)])
+            cd_List_POSTuntr_intervalLen_out_90.extend([np.nan if np.isnan(rep_inter90_out_UntrPOST[0][i]) else rep_inter90_out_UntrPOST[1][i] - rep_inter90_out_UntrPOST[0][i] for i in range(numOut)])
+            cd_List_POSTuntr_intervalLen_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_UntrPOST[0][i]) else rep_inter95_imp_UntrPOST[1][i] - rep_inter95_imp_UntrPOST[0][i] for i in range(numImp)])
+            cd_List_POSTuntr_intervalLen_out_95.extend([np.nan if np.isnan(rep_inter95_out_UntrPOST[0][i]) else rep_inter95_out_UntrPOST[1][i] - rep_inter95_out_UntrPOST[0][i] for i in range(numOut)])
+            cd_List_POSTuntr_intervalLen_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_UntrPOST[0][i]) else rep_inter99_imp_UntrPOST[1][i] - rep_inter99_imp_UntrPOST[0][i] for i in range(numImp)])
+            cd_List_POSTuntr_intervalLen_out_99.extend([np.nan if np.isnan(rep_inter99_out_UntrPOST[0][i]) else rep_inter99_out_UntrPOST[1][i] - rep_inter99_out_UntrPOST[0][i] for i in range(numOut)])
+            
+            cd_List_POSTtr_intervalLen_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_TrPOST[0][i]) else rep_inter90_imp_TrPOST[1][i] - rep_inter90_imp_TrPOST[0][i] for i in range(numImp)])
+            cd_List_POSTtr_intervalLen_out_90.extend([np.nan if np.isnan(rep_inter90_out_TrPOST[0][i]) else rep_inter90_out_TrPOST[1][i] - rep_inter90_out_TrPOST[0][i] for i in range(numOut)])
+            cd_List_POSTtr_intervalLen_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_TrPOST[0][i]) else rep_inter95_imp_TrPOST[1][i] - rep_inter95_imp_TrPOST[0][i] for i in range(numImp)])
+            cd_List_POSTtr_intervalLen_out_95.extend([np.nan if np.isnan(rep_inter95_out_TrPOST[0][i]) else rep_inter95_out_TrPOST[1][i] - rep_inter95_out_TrPOST[0][i] for i in range(numOut)])
+            cd_List_POSTtr_intervalLen_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_TrPOST[0][i]) else rep_inter99_imp_TrPOST[1][i] - rep_inter99_imp_TrPOST[0][i] for i in range(numImp)])
+            cd_List_POSTtr_intervalLen_out_99.extend([np.nan if np.isnan(rep_inter99_out_TrPOST[0][i]) else rep_inter99_out_TrPOST[1][i] - rep_inter99_out_TrPOST[0][i] for i in range(numOut)])
+            
+            # Finally, compute interval loss using Gneiting (2007)
+            cd_List_Lin_GneitingLoss_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_Lin[0][i]) else rep_inter90_imp_Lin[1][i] - rep_inter90_imp_Lin[0][i] + (2/0.1)*(min(abs(rep_inter90_imp_Lin[1][i]-rep_trueVec_imp[i]),abs(rep_inter90_imp_Lin[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter90_imp_Lin[0][i])+(rep_trueVec_imp[i]>rep_inter90_imp_Lin[1][i]))) for i in range(numImp)])
+            cd_List_Lin_GneitingLoss_out_90.extend([np.nan if np.isnan(rep_inter90_out_Lin[0][i]) else rep_inter90_out_Lin[1][i] - rep_inter90_out_Lin[0][i] + (2/0.1)*(min(abs(rep_inter90_out_Lin[1][i]-rep_trueVec_out[i]),abs(rep_inter90_out_Lin[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter90_out_Lin[0][i])+(rep_trueVec_out[i]>rep_inter90_out_Lin[1][i]))) for i in range(numOut)])
+            cd_List_Lin_GneitingLoss_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_Lin[0][i]) else rep_inter95_imp_Lin[1][i] - rep_inter95_imp_Lin[0][i] + (2/0.05)*(min(abs(rep_inter95_imp_Lin[1][i]-rep_trueVec_imp[i]),abs(rep_inter95_imp_Lin[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter95_imp_Lin[0][i])+(rep_trueVec_imp[i]>rep_inter95_imp_Lin[1][i]))) for i in range(numImp)])
+            cd_List_Lin_GneitingLoss_out_95.extend([np.nan if np.isnan(rep_inter95_out_Lin[0][i]) else rep_inter95_out_Lin[1][i] - rep_inter95_out_Lin[0][i] + (2/0.05)*(min(abs(rep_inter95_out_Lin[1][i]-rep_trueVec_out[i]),abs(rep_inter95_out_Lin[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter95_out_Lin[0][i])+(rep_trueVec_out[i]>rep_inter95_out_Lin[1][i]))) for i in range(numOut)])
+            cd_List_Lin_GneitingLoss_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_Lin[0][i]) else rep_inter99_imp_Lin[1][i] - rep_inter99_imp_Lin[0][i] + (2/0.01)*(min(abs(rep_inter99_imp_Lin[1][i]-rep_trueVec_imp[i]),abs(rep_inter99_imp_Lin[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter99_imp_Lin[0][i])+(rep_trueVec_imp[i]>rep_inter99_imp_Lin[1][i]))) for i in range(numImp)])
+            cd_List_Lin_GneitingLoss_out_99.extend([np.nan if np.isnan(rep_inter99_out_Lin[0][i]) else rep_inter99_out_Lin[1][i] - rep_inter99_out_Lin[0][i] + (2/0.01)*(min(abs(rep_inter99_out_Lin[1][i]-rep_trueVec_out[i]),abs(rep_inter99_out_Lin[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter99_out_Lin[0][i])+(rep_trueVec_out[i]>rep_inter99_out_Lin[1][i]))) for i in range(numOut)])
+            
+            cd_List_MAPuntr_GneitingLoss_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_UntrMAP[0][i]) else rep_inter90_imp_UntrMAP[1][i] - rep_inter90_imp_UntrMAP[0][i] + (2/0.1)*(min(abs(rep_inter90_imp_UntrMAP[1][i]-rep_trueVec_imp[i]),abs(rep_inter90_imp_UntrMAP[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter90_imp_UntrMAP[0][i])+(rep_trueVec_imp[i]>rep_inter90_imp_UntrMAP[1][i]))) for i in range(numImp)])
+            cd_List_MAPuntr_GneitingLoss_out_90.extend([np.nan if np.isnan(rep_inter90_out_UntrMAP[0][i]) else rep_inter90_out_UntrMAP[1][i] - rep_inter90_out_UntrMAP[0][i] + (2/0.1)*(min(abs(rep_inter90_out_UntrMAP[1][i]-rep_trueVec_out[i]),abs(rep_inter90_out_UntrMAP[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter90_out_UntrMAP[0][i])+(rep_trueVec_out[i]>rep_inter90_out_UntrMAP[1][i]))) for i in range(numOut)])
+            cd_List_MAPuntr_GneitingLoss_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_UntrMAP[0][i]) else rep_inter95_imp_UntrMAP[1][i] - rep_inter95_imp_UntrMAP[0][i] + (2/0.05)*(min(abs(rep_inter95_imp_UntrMAP[1][i]-rep_trueVec_imp[i]),abs(rep_inter95_imp_UntrMAP[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter95_imp_UntrMAP[0][i])+(rep_trueVec_imp[i]>rep_inter95_imp_UntrMAP[1][i]))) for i in range(numImp)])
+            cd_List_MAPuntr_GneitingLoss_out_95.extend([np.nan if np.isnan(rep_inter95_out_UntrMAP[0][i]) else rep_inter95_out_UntrMAP[1][i] - rep_inter95_out_UntrMAP[0][i] + (2/0.05)*(min(abs(rep_inter95_out_UntrMAP[1][i]-rep_trueVec_out[i]),abs(rep_inter95_out_UntrMAP[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter95_out_UntrMAP[0][i])+(rep_trueVec_out[i]>rep_inter95_out_UntrMAP[1][i]))) for i in range(numOut)])
+            cd_List_MAPuntr_GneitingLoss_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_UntrMAP[0][i]) else rep_inter99_imp_UntrMAP[1][i] - rep_inter99_imp_UntrMAP[0][i] + (2/0.01)*(min(abs(rep_inter99_imp_UntrMAP[1][i]-rep_trueVec_imp[i]),abs(rep_inter99_imp_UntrMAP[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter99_imp_UntrMAP[0][i])+(rep_trueVec_imp[i]>rep_inter99_imp_UntrMAP[1][i]))) for i in range(numImp)])
+            cd_List_MAPuntr_GneitingLoss_out_99.extend([np.nan if np.isnan(rep_inter99_out_UntrMAP[0][i]) else rep_inter99_out_UntrMAP[1][i] - rep_inter99_out_UntrMAP[0][i] + (2/0.01)*(min(abs(rep_inter99_out_UntrMAP[1][i]-rep_trueVec_out[i]),abs(rep_inter99_out_UntrMAP[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter99_out_UntrMAP[0][i])+(rep_trueVec_out[i]>rep_inter99_out_UntrMAP[1][i]))) for i in range(numOut)])
+            
+            cd_List_MAPtr_GneitingLoss_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_TrMAP[0][i]) else rep_inter90_imp_TrMAP[1][i] - rep_inter90_imp_TrMAP[0][i] + (2/0.1)*(min(abs(rep_inter90_imp_TrMAP[1][i]-rep_trueVec_imp[i]),abs(rep_inter90_imp_TrMAP[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter90_imp_TrMAP[0][i])+(rep_trueVec_imp[i]>rep_inter90_imp_TrMAP[1][i]))) for i in range(numImp)])
+            cd_List_MAPtr_GneitingLoss_out_90.extend([np.nan if np.isnan(rep_inter90_out_TrMAP[0][i]) else rep_inter90_out_TrMAP[1][i] - rep_inter90_out_TrMAP[0][i] + (2/0.1)*(min(abs(rep_inter90_out_TrMAP[1][i]-rep_trueVec_out[i]),abs(rep_inter90_out_TrMAP[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter90_out_TrMAP[0][i])+(rep_trueVec_out[i]>rep_inter90_out_TrMAP[1][i]))) for i in range(numOut)])
+            cd_List_MAPtr_GneitingLoss_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_TrMAP[0][i]) else rep_inter95_imp_TrMAP[1][i] - rep_inter95_imp_TrMAP[0][i] + (2/0.05)*(min(abs(rep_inter95_imp_TrMAP[1][i]-rep_trueVec_imp[i]),abs(rep_inter95_imp_TrMAP[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter95_imp_TrMAP[0][i])+(rep_trueVec_imp[i]>rep_inter95_imp_TrMAP[1][i]))) for i in range(numImp)])
+            cd_List_MAPtr_GneitingLoss_out_95.extend([np.nan if np.isnan(rep_inter95_out_TrMAP[0][i]) else rep_inter95_out_TrMAP[1][i] - rep_inter95_out_TrMAP[0][i] + (2/0.05)*(min(abs(rep_inter95_out_TrMAP[1][i]-rep_trueVec_out[i]),abs(rep_inter95_out_TrMAP[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter95_out_TrMAP[0][i])+(rep_trueVec_out[i]>rep_inter95_out_TrMAP[1][i]))) for i in range(numOut)])
+            cd_List_MAPtr_GneitingLoss_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_TrMAP[0][i]) else rep_inter99_imp_TrMAP[1][i] - rep_inter99_imp_TrMAP[0][i] + (2/0.01)*(min(abs(rep_inter99_imp_TrMAP[1][i]-rep_trueVec_imp[i]),abs(rep_inter99_imp_TrMAP[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter99_imp_TrMAP[0][i])+(rep_trueVec_imp[i]>rep_inter99_imp_TrMAP[1][i]))) for i in range(numImp)])
+            cd_List_MAPtr_GneitingLoss_out_99.extend([np.nan if np.isnan(rep_inter99_out_TrMAP[0][i]) else rep_inter99_out_TrMAP[1][i] - rep_inter99_out_TrMAP[0][i] + (2/0.01)*(min(abs(rep_inter99_out_TrMAP[1][i]-rep_trueVec_out[i]),abs(rep_inter99_out_TrMAP[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter99_out_TrMAP[0][i])+(rep_trueVec_out[i]>rep_inter99_out_TrMAP[1][i]))) for i in range(numOut)])
+            
+            cd_List_MAPuntrProb_GneitingLoss_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_UntrMAPprob[0][i]) else rep_inter90_imp_UntrMAPprob[1][i] - rep_inter90_imp_UntrMAPprob[0][i] + (2/0.1)*(min(abs(rep_inter90_imp_UntrMAPprob[1][i]-rep_trueVec_imp[i]),abs(rep_inter90_imp_UntrMAPprob[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter90_imp_UntrMAPprob[0][i])+(rep_trueVec_imp[i]>rep_inter90_imp_UntrMAPprob[1][i]))) for i in range(numImp)])
+            cd_List_MAPuntrProb_GneitingLoss_out_90.extend([np.nan if np.isnan(rep_inter90_out_UntrMAPprob[0][i]) else rep_inter90_out_UntrMAPprob[1][i] - rep_inter90_out_UntrMAPprob[0][i] + (2/0.1)*(min(abs(rep_inter90_out_UntrMAPprob[1][i]-rep_trueVec_out[i]),abs(rep_inter90_out_UntrMAPprob[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter90_out_UntrMAPprob[0][i])+(rep_trueVec_out[i]>rep_inter90_out_UntrMAPprob[1][i]))) for i in range(numOut)])
+            cd_List_MAPuntrProb_GneitingLoss_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_UntrMAPprob[0][i]) else rep_inter95_imp_UntrMAPprob[1][i] - rep_inter95_imp_UntrMAPprob[0][i] + (2/0.05)*(min(abs(rep_inter95_imp_UntrMAPprob[1][i]-rep_trueVec_imp[i]),abs(rep_inter95_imp_UntrMAPprob[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter95_imp_UntrMAPprob[0][i])+(rep_trueVec_imp[i]>rep_inter95_imp_UntrMAPprob[1][i]))) for i in range(numImp)])
+            cd_List_MAPuntrProb_GneitingLoss_out_95.extend([np.nan if np.isnan(rep_inter95_out_UntrMAPprob[0][i]) else rep_inter95_out_UntrMAPprob[1][i] - rep_inter95_out_UntrMAPprob[0][i] + (2/0.05)*(min(abs(rep_inter95_out_UntrMAPprob[1][i]-rep_trueVec_out[i]),abs(rep_inter95_out_UntrMAPprob[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter95_out_UntrMAPprob[0][i])+(rep_trueVec_out[i]>rep_inter95_out_UntrMAPprob[1][i]))) for i in range(numOut)])
+            cd_List_MAPuntrProb_GneitingLoss_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_UntrMAPprob[0][i]) else rep_inter99_imp_UntrMAPprob[1][i] - rep_inter99_imp_UntrMAPprob[0][i] + (2/0.01)*(min(abs(rep_inter99_imp_UntrMAPprob[1][i]-rep_trueVec_imp[i]),abs(rep_inter99_imp_UntrMAPprob[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter99_imp_UntrMAPprob[0][i])+(rep_trueVec_imp[i]>rep_inter99_imp_UntrMAPprob[1][i]))) for i in range(numImp)])
+            cd_List_MAPuntrProb_GneitingLoss_out_99.extend([np.nan if np.isnan(rep_inter99_out_UntrMAPprob[0][i]) else rep_inter99_out_UntrMAPprob[1][i] - rep_inter99_out_UntrMAPprob[0][i] + (2/0.01)*(min(abs(rep_inter99_out_UntrMAPprob[1][i]-rep_trueVec_out[i]),abs(rep_inter99_out_UntrMAPprob[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter99_out_UntrMAPprob[0][i])+(rep_trueVec_out[i]>rep_inter99_out_UntrMAPprob[1][i]))) for i in range(numOut)])
+            
+            cd_List_MAPtrProb_GneitingLoss_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_TrMAPprob[0][i]) else rep_inter90_imp_TrMAPprob[1][i] - rep_inter90_imp_TrMAPprob[0][i] + (2/0.1)*(min(abs(rep_inter90_imp_TrMAPprob[1][i]-rep_trueVec_imp[i]),abs(rep_inter90_imp_TrMAPprob[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter90_imp_TrMAPprob[0][i])+(rep_trueVec_imp[i]>rep_inter90_imp_TrMAPprob[1][i]))) for i in range(numImp)])
+            cd_List_MAPtrProb_GneitingLoss_out_90.extend([np.nan if np.isnan(rep_inter90_out_TrMAPprob[0][i]) else rep_inter90_out_TrMAPprob[1][i] - rep_inter90_out_TrMAPprob[0][i] + (2/0.1)*(min(abs(rep_inter90_out_TrMAPprob[1][i]-rep_trueVec_out[i]),abs(rep_inter90_out_TrMAPprob[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter90_out_TrMAPprob[0][i])+(rep_trueVec_out[i]>rep_inter90_out_TrMAPprob[1][i]))) for i in range(numOut)])
+            cd_List_MAPtrProb_GneitingLoss_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_TrMAPprob[0][i]) else rep_inter95_imp_TrMAPprob[1][i] - rep_inter95_imp_TrMAPprob[0][i] + (2/0.05)*(min(abs(rep_inter95_imp_TrMAPprob[1][i]-rep_trueVec_imp[i]),abs(rep_inter95_imp_TrMAPprob[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter95_imp_TrMAPprob[0][i])+(rep_trueVec_imp[i]>rep_inter95_imp_TrMAPprob[1][i]))) for i in range(numImp)])
+            cd_List_MAPtrProb_GneitingLoss_out_95.extend([np.nan if np.isnan(rep_inter95_out_TrMAPprob[0][i]) else rep_inter95_out_TrMAPprob[1][i] - rep_inter95_out_TrMAPprob[0][i] + (2/0.05)*(min(abs(rep_inter95_out_TrMAPprob[1][i]-rep_trueVec_out[i]),abs(rep_inter95_out_TrMAPprob[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter95_out_TrMAPprob[0][i])+(rep_trueVec_out[i]>rep_inter95_out_TrMAPprob[1][i]))) for i in range(numOut)])
+            cd_List_MAPtrProb_GneitingLoss_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_TrMAPprob[0][i]) else rep_inter99_imp_TrMAPprob[1][i] - rep_inter99_imp_TrMAPprob[0][i] + (2/0.01)*(min(abs(rep_inter99_imp_TrMAPprob[1][i]-rep_trueVec_imp[i]),abs(rep_inter99_imp_TrMAPprob[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter99_imp_TrMAPprob[0][i])+(rep_trueVec_imp[i]>rep_inter99_imp_TrMAPprob[1][i]))) for i in range(numImp)])
+            cd_List_MAPtrProb_GneitingLoss_out_99.extend([np.nan if np.isnan(rep_inter99_out_TrMAPprob[0][i]) else rep_inter99_out_TrMAPprob[1][i] - rep_inter99_out_TrMAPprob[0][i] + (2/0.01)*(min(abs(rep_inter99_out_TrMAPprob[1][i]-rep_trueVec_out[i]),abs(rep_inter99_out_TrMAPprob[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter99_out_TrMAPprob[0][i])+(rep_trueVec_out[i]>rep_inter99_out_TrMAPprob[1][i]))) for i in range(numOut)])
+            
+            cd_List_POSTuntr_GneitingLoss_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_UntrPOST[0][i]) else rep_inter90_imp_UntrPOST[1][i] - rep_inter90_imp_UntrPOST[0][i] + (2/0.1)*(min(abs(rep_inter90_imp_UntrPOST[1][i]-rep_trueVec_imp[i]),abs(rep_inter90_imp_UntrPOST[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter90_imp_UntrPOST[0][i])+(rep_trueVec_imp[i]>rep_inter90_imp_UntrPOST[1][i]))) for i in range(numImp)])
+            cd_List_POSTuntr_GneitingLoss_out_90.extend([np.nan if np.isnan(rep_inter90_out_UntrPOST[0][i]) else rep_inter90_out_UntrPOST[1][i] - rep_inter90_out_UntrPOST[0][i] + (2/0.1)*(min(abs(rep_inter90_out_UntrPOST[1][i]-rep_trueVec_out[i]),abs(rep_inter90_out_UntrPOST[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter90_out_UntrPOST[0][i])+(rep_trueVec_out[i]>rep_inter90_out_UntrPOST[1][i]))) for i in range(numOut)])
+            cd_List_POSTuntr_GneitingLoss_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_UntrPOST[0][i]) else rep_inter95_imp_UntrPOST[1][i] - rep_inter95_imp_UntrPOST[0][i] + (2/0.05)*(min(abs(rep_inter95_imp_UntrPOST[1][i]-rep_trueVec_imp[i]),abs(rep_inter95_imp_UntrPOST[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter95_imp_UntrPOST[0][i])+(rep_trueVec_imp[i]>rep_inter95_imp_UntrPOST[1][i]))) for i in range(numImp)])
+            cd_List_POSTuntr_GneitingLoss_out_95.extend([np.nan if np.isnan(rep_inter95_out_UntrPOST[0][i]) else rep_inter95_out_UntrPOST[1][i] - rep_inter95_out_UntrPOST[0][i] + (2/0.05)*(min(abs(rep_inter95_out_UntrPOST[1][i]-rep_trueVec_out[i]),abs(rep_inter95_out_UntrPOST[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter95_out_UntrPOST[0][i])+(rep_trueVec_out[i]>rep_inter95_out_UntrPOST[1][i]))) for i in range(numOut)])
+            cd_List_POSTuntr_GneitingLoss_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_UntrPOST[0][i]) else rep_inter99_imp_UntrPOST[1][i] - rep_inter99_imp_UntrPOST[0][i] + (2/0.01)*(min(abs(rep_inter99_imp_UntrPOST[1][i]-rep_trueVec_imp[i]),abs(rep_inter99_imp_UntrPOST[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter99_imp_UntrPOST[0][i])+(rep_trueVec_imp[i]>rep_inter99_imp_UntrPOST[1][i]))) for i in range(numImp)])
+            cd_List_POSTuntr_GneitingLoss_out_99.extend([np.nan if np.isnan(rep_inter99_out_UntrPOST[0][i]) else rep_inter99_out_UntrPOST[1][i] - rep_inter99_out_UntrPOST[0][i] + (2/0.01)*(min(abs(rep_inter99_out_UntrPOST[1][i]-rep_trueVec_out[i]),abs(rep_inter99_out_UntrPOST[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter99_out_UntrPOST[0][i])+(rep_trueVec_out[i]>rep_inter99_out_UntrPOST[1][i]))) for i in range(numOut)])
+            
+            cd_List_POSTtr_GneitingLoss_imp_90.extend([np.nan if np.isnan(rep_inter90_imp_TrPOST[0][i]) else rep_inter90_imp_TrPOST[1][i] - rep_inter90_imp_TrPOST[0][i] + (2/0.1)*(min(abs(rep_inter90_imp_TrPOST[1][i]-rep_trueVec_imp[i]),abs(rep_inter90_imp_TrPOST[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter90_imp_TrPOST[0][i])+(rep_trueVec_imp[i]>rep_inter90_imp_TrPOST[1][i]))) for i in range(numImp)])
+            cd_List_POSTtr_GneitingLoss_out_90.extend([np.nan if np.isnan(rep_inter90_out_TrPOST[0][i]) else rep_inter90_out_TrPOST[1][i] - rep_inter90_out_TrPOST[0][i] + (2/0.1)*(min(abs(rep_inter90_out_TrPOST[1][i]-rep_trueVec_out[i]),abs(rep_inter90_out_TrPOST[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter90_out_TrPOST[0][i])+(rep_trueVec_out[i]>rep_inter90_out_TrPOST[1][i]))) for i in range(numOut)])
+            cd_List_POSTtr_GneitingLoss_imp_95.extend([np.nan if np.isnan(rep_inter95_imp_TrPOST[0][i]) else rep_inter95_imp_TrPOST[1][i] - rep_inter95_imp_TrPOST[0][i] + (2/0.05)*(min(abs(rep_inter95_imp_TrPOST[1][i]-rep_trueVec_imp[i]),abs(rep_inter95_imp_TrPOST[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter95_imp_TrPOST[0][i])+(rep_trueVec_imp[i]>rep_inter95_imp_TrPOST[1][i]))) for i in range(numImp)])
+            cd_List_POSTtr_GneitingLoss_out_95.extend([np.nan if np.isnan(rep_inter95_out_TrPOST[0][i]) else rep_inter95_out_TrPOST[1][i] - rep_inter95_out_TrPOST[0][i] + (2/0.05)*(min(abs(rep_inter95_out_TrPOST[1][i]-rep_trueVec_out[i]),abs(rep_inter95_out_TrPOST[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter95_out_TrPOST[0][i])+(rep_trueVec_out[i]>rep_inter95_out_TrPOST[1][i]))) for i in range(numOut)])
+            cd_List_POSTtr_GneitingLoss_imp_99.extend([np.nan if np.isnan(rep_inter99_imp_TrPOST[0][i]) else rep_inter99_imp_TrPOST[1][i] - rep_inter99_imp_TrPOST[0][i] + (2/0.01)*(min(abs(rep_inter99_imp_TrPOST[1][i]-rep_trueVec_imp[i]),abs(rep_inter99_imp_TrPOST[0][i]-rep_trueVec_imp[i]))*((rep_trueVec_imp[i]<rep_inter99_imp_TrPOST[0][i])+(rep_trueVec_imp[i]>rep_inter99_imp_TrPOST[1][i]))) for i in range(numImp)])
+            cd_List_POSTtr_GneitingLoss_out_99.extend([np.nan if np.isnan(rep_inter99_out_TrPOST[0][i]) else rep_inter99_out_TrPOST[1][i] - rep_inter99_out_TrPOST[0][i] + (2/0.01)*(min(abs(rep_inter99_out_TrPOST[1][i]-rep_trueVec_out[i]),abs(rep_inter99_out_TrPOST[0][i]-rep_trueVec_out[i]))*((rep_trueVec_out[i]<rep_inter99_out_TrPOST[0][i])+(rep_trueVec_out[i]>rep_inter99_out_TrPOST[1][i]))) for i in range(numOut)])
+           
+            #### END OF REPLICATION LOOP
+        
+        # Add to our dictionary-wise lists
+        List_Lin_percContain_imp_90.append(cd_List_Lin_percContain_imp_90)
+        List_Lin_percContain_imp_95.append(cd_List_Lin_percContain_imp_95)
+        List_Lin_percContain_imp_99.append(cd_List_Lin_percContain_imp_99)
+        List_Lin_percContain_out_90.append(cd_List_Lin_percContain_out_90)
+        List_Lin_percContain_out_95.append(cd_List_Lin_percContain_out_95)
+        List_Lin_percContain_out_99.append(cd_List_Lin_percContain_out_99)
+        List_MAPuntr_percContain_imp_90.append(cd_List_MAPuntr_percContain_imp_90)
+        List_MAPuntr_percContain_imp_95.append(cd_List_MAPuntr_percContain_imp_95)
+        List_MAPuntr_percContain_imp_99.append(cd_List_MAPuntr_percContain_imp_99)
+        List_MAPuntr_percContain_out_90.append(cd_List_MAPuntr_percContain_out_90)
+        List_MAPuntr_percContain_out_95.append(cd_List_MAPuntr_percContain_out_95)
+        List_MAPuntr_percContain_out_99.append(cd_List_MAPuntr_percContain_out_99)
+        List_MAPtr_percContain_imp_90.append(cd_List_MAPtr_percContain_imp_90)
+        List_MAPtr_percContain_imp_95.append(cd_List_MAPtr_percContain_imp_95)
+        List_MAPtr_percContain_imp_99.append(cd_List_MAPtr_percContain_imp_99)
+        List_MAPtr_percContain_out_90.append(cd_List_MAPtr_percContain_out_90)
+        List_MAPtr_percContain_out_95.append(cd_List_MAPtr_percContain_out_95)
+        List_MAPtr_percContain_out_99.append(cd_List_MAPtr_percContain_out_99)
+        List_MAPuntrProb_percContain_imp_90.append(cd_List_MAPuntrProb_percContain_imp_90)
+        List_MAPuntrProb_percContain_imp_95.append(cd_List_MAPuntrProb_percContain_imp_95)
+        List_MAPuntrProb_percContain_imp_99.append(cd_List_MAPuntrProb_percContain_imp_99)
+        List_MAPuntrProb_percContain_out_90.append(cd_List_MAPuntrProb_percContain_out_90)
+        List_MAPuntrProb_percContain_out_95.append(cd_List_MAPuntrProb_percContain_out_95)
+        List_MAPuntrProb_percContain_out_99.append(cd_List_MAPuntrProb_percContain_out_99)
+        List_MAPtrProb_percContain_imp_90.append(cd_List_MAPtrProb_percContain_imp_90)
+        List_MAPtrProb_percContain_imp_95.append(cd_List_MAPtrProb_percContain_imp_95)
+        List_MAPtrProb_percContain_imp_99.append(cd_List_MAPtrProb_percContain_imp_99)
+        List_MAPtrProb_percContain_out_90.append(cd_List_MAPtrProb_percContain_out_90)
+        List_MAPtrProb_percContain_out_95.append(cd_List_MAPtrProb_percContain_out_95)
+        List_MAPtrProb_percContain_out_99.append(cd_List_MAPtrProb_percContain_out_99)        
+        List_POSTuntr_percContain_imp_90.append(cd_List_POSTuntr_percContain_imp_90)
+        List_POSTuntr_percContain_imp_95.append(cd_List_POSTuntr_percContain_imp_95)
+        List_POSTuntr_percContain_imp_99.append(cd_List_POSTuntr_percContain_imp_99)
+        List_POSTuntr_percContain_out_90.append(cd_List_POSTuntr_percContain_out_90)
+        List_POSTuntr_percContain_out_95.append(cd_List_POSTuntr_percContain_out_95)
+        List_POSTuntr_percContain_out_99.append(cd_List_POSTuntr_percContain_out_99)
+        List_POSTtr_percContain_imp_90.append(cd_List_POSTtr_percContain_imp_90)
+        List_POSTtr_percContain_imp_95.append(cd_List_POSTtr_percContain_imp_95)
+        List_POSTtr_percContain_imp_99.append(cd_List_POSTtr_percContain_imp_99)
+        List_POSTtr_percContain_out_90.append(cd_List_POSTtr_percContain_out_90)
+        List_POSTtr_percContain_out_95.append(cd_List_POSTtr_percContain_out_95)
+        List_POSTtr_percContain_out_99.append(cd_List_POSTtr_percContain_out_99)
+        
+        List_Lin_intervalLen_imp_90.append(cd_List_Lin_intervalLen_imp_90)
+        List_Lin_intervalLen_imp_95.append(cd_List_Lin_intervalLen_imp_95)
+        List_Lin_intervalLen_imp_99.append(cd_List_Lin_intervalLen_imp_99)
+        List_Lin_intervalLen_out_90.append(cd_List_Lin_intervalLen_out_90)
+        List_Lin_intervalLen_out_95.append(cd_List_Lin_intervalLen_out_95)
+        List_Lin_intervalLen_out_99.append(cd_List_Lin_intervalLen_out_99)
+        List_MAPuntr_intervalLen_imp_90.append(cd_List_MAPuntr_intervalLen_imp_90)
+        List_MAPuntr_intervalLen_imp_95.append(cd_List_MAPuntr_intervalLen_imp_95)
+        List_MAPuntr_intervalLen_imp_99.append(cd_List_MAPuntr_intervalLen_imp_99)
+        List_MAPuntr_intervalLen_out_90.append(cd_List_MAPuntr_intervalLen_out_90)
+        List_MAPuntr_intervalLen_out_95.append(cd_List_MAPuntr_intervalLen_out_95)
+        List_MAPuntr_intervalLen_out_99.append(cd_List_MAPuntr_intervalLen_out_99)
+        List_MAPtr_intervalLen_imp_90.append(cd_List_MAPtr_intervalLen_imp_90)
+        List_MAPtr_intervalLen_imp_95.append(cd_List_MAPtr_intervalLen_imp_95)
+        List_MAPtr_intervalLen_imp_99.append(cd_List_MAPtr_intervalLen_imp_99)
+        List_MAPtr_intervalLen_out_90.append(cd_List_MAPtr_intervalLen_out_90)
+        List_MAPtr_intervalLen_out_95.append(cd_List_MAPtr_intervalLen_out_95)
+        List_MAPtr_intervalLen_out_99.append(cd_List_MAPtr_intervalLen_out_99)
+        List_MAPuntrProb_intervalLen_imp_90.append(cd_List_MAPuntrProb_intervalLen_imp_90)
+        List_MAPuntrProb_intervalLen_imp_95.append(cd_List_MAPuntrProb_intervalLen_imp_95)
+        List_MAPuntrProb_intervalLen_imp_99.append(cd_List_MAPuntrProb_intervalLen_imp_99)
+        List_MAPuntrProb_intervalLen_out_90.append(cd_List_MAPuntrProb_intervalLen_out_90)
+        List_MAPuntrProb_intervalLen_out_95.append(cd_List_MAPuntrProb_intervalLen_out_95)
+        List_MAPuntrProb_intervalLen_out_99.append(cd_List_MAPuntrProb_intervalLen_out_99)
+        List_MAPtrProb_intervalLen_imp_90.append(cd_List_MAPtrProb_intervalLen_imp_90)
+        List_MAPtrProb_intervalLen_imp_95.append(cd_List_MAPtrProb_intervalLen_imp_95)
+        List_MAPtrProb_intervalLen_imp_99.append(cd_List_MAPtrProb_intervalLen_imp_99)
+        List_MAPtrProb_intervalLen_out_90.append(cd_List_MAPtrProb_intervalLen_out_90)
+        List_MAPtrProb_intervalLen_out_95.append(cd_List_MAPtrProb_intervalLen_out_95)
+        List_MAPtrProb_intervalLen_out_99.append(cd_List_MAPtrProb_intervalLen_out_99)        
+        List_POSTuntr_intervalLen_imp_90.append(cd_List_POSTuntr_intervalLen_imp_90)
+        List_POSTuntr_intervalLen_imp_95.append(cd_List_POSTuntr_intervalLen_imp_95)
+        List_POSTuntr_intervalLen_imp_99.append(cd_List_POSTuntr_intervalLen_imp_99)
+        List_POSTuntr_intervalLen_out_90.append(cd_List_POSTuntr_intervalLen_out_90)
+        List_POSTuntr_intervalLen_out_95.append(cd_List_POSTuntr_intervalLen_out_95)
+        List_POSTuntr_intervalLen_out_99.append(cd_List_POSTuntr_intervalLen_out_99)
+        List_POSTtr_intervalLen_imp_90.append(cd_List_POSTtr_intervalLen_imp_90)
+        List_POSTtr_intervalLen_imp_95.append(cd_List_POSTtr_intervalLen_imp_95)
+        List_POSTtr_intervalLen_imp_99.append(cd_List_POSTtr_intervalLen_imp_99)
+        List_POSTtr_intervalLen_out_90.append(cd_List_POSTtr_intervalLen_out_90)
+        List_POSTtr_intervalLen_out_95.append(cd_List_POSTtr_intervalLen_out_95)
+        List_POSTtr_intervalLen_out_99.append(cd_List_POSTtr_intervalLen_out_99)
+        
+        List_Lin_GneitingLoss_imp_90.append(cd_List_Lin_GneitingLoss_imp_90)
+        List_Lin_GneitingLoss_imp_95.append(cd_List_Lin_GneitingLoss_imp_95)
+        List_Lin_GneitingLoss_imp_99.append(cd_List_Lin_GneitingLoss_imp_99)
+        List_Lin_GneitingLoss_out_90.append(cd_List_Lin_GneitingLoss_out_90)
+        List_Lin_GneitingLoss_out_95.append(cd_List_Lin_GneitingLoss_out_95)
+        List_Lin_GneitingLoss_out_99.append(cd_List_Lin_GneitingLoss_out_99)
+        List_MAPuntr_GneitingLoss_imp_90.append(cd_List_MAPuntr_GneitingLoss_imp_90)
+        List_MAPuntr_GneitingLoss_imp_95.append(cd_List_MAPuntr_GneitingLoss_imp_95)
+        List_MAPuntr_GneitingLoss_imp_99.append(cd_List_MAPuntr_GneitingLoss_imp_99)
+        List_MAPuntr_GneitingLoss_out_90.append(cd_List_MAPuntr_GneitingLoss_out_90)
+        List_MAPuntr_GneitingLoss_out_95.append(cd_List_MAPuntr_GneitingLoss_out_95)
+        List_MAPuntr_GneitingLoss_out_99.append(cd_List_MAPuntr_GneitingLoss_out_99)
+        List_MAPtr_GneitingLoss_imp_90.append(cd_List_MAPtr_GneitingLoss_imp_90)
+        List_MAPtr_GneitingLoss_imp_95.append(cd_List_MAPtr_GneitingLoss_imp_95)
+        List_MAPtr_GneitingLoss_imp_99.append(cd_List_MAPtr_GneitingLoss_imp_99)
+        List_MAPtr_GneitingLoss_out_90.append(cd_List_MAPtr_GneitingLoss_out_90)
+        List_MAPtr_GneitingLoss_out_95.append(cd_List_MAPtr_GneitingLoss_out_95)
+        List_MAPtr_GneitingLoss_out_99.append(cd_List_MAPtr_GneitingLoss_out_99)
+        List_MAPuntrProb_GneitingLoss_imp_90.append(cd_List_MAPuntrProb_GneitingLoss_imp_90)
+        List_MAPuntrProb_GneitingLoss_imp_95.append(cd_List_MAPuntrProb_GneitingLoss_imp_95)
+        List_MAPuntrProb_GneitingLoss_imp_99.append(cd_List_MAPuntrProb_GneitingLoss_imp_99)
+        List_MAPuntrProb_GneitingLoss_out_90.append(cd_List_MAPuntrProb_GneitingLoss_out_90)
+        List_MAPuntrProb_GneitingLoss_out_95.append(cd_List_MAPuntrProb_GneitingLoss_out_95)
+        List_MAPuntrProb_GneitingLoss_out_99.append(cd_List_MAPuntrProb_GneitingLoss_out_99)
+        List_MAPtrProb_GneitingLoss_imp_90.append(cd_List_MAPtrProb_GneitingLoss_imp_90)
+        List_MAPtrProb_GneitingLoss_imp_95.append(cd_List_MAPtrProb_GneitingLoss_imp_95)
+        List_MAPtrProb_GneitingLoss_imp_99.append(cd_List_MAPtrProb_GneitingLoss_imp_99)
+        List_MAPtrProb_GneitingLoss_out_90.append(cd_List_MAPtrProb_GneitingLoss_out_90)
+        List_MAPtrProb_GneitingLoss_out_95.append(cd_List_MAPtrProb_GneitingLoss_out_95)
+        List_MAPtrProb_GneitingLoss_out_99.append(cd_List_MAPtrProb_GneitingLoss_out_99)        
+        List_POSTuntr_GneitingLoss_imp_90.append(cd_List_POSTuntr_GneitingLoss_imp_90)
+        List_POSTuntr_GneitingLoss_imp_95.append(cd_List_POSTuntr_GneitingLoss_imp_95)
+        List_POSTuntr_GneitingLoss_imp_99.append(cd_List_POSTuntr_GneitingLoss_imp_99)
+        List_POSTuntr_GneitingLoss_out_90.append(cd_List_POSTuntr_GneitingLoss_out_90)
+        List_POSTuntr_GneitingLoss_out_95.append(cd_List_POSTuntr_GneitingLoss_out_95)
+        List_POSTuntr_GneitingLoss_out_99.append(cd_List_POSTuntr_GneitingLoss_out_99)
+        List_POSTtr_GneitingLoss_imp_90.append(cd_List_POSTtr_GneitingLoss_imp_90)
+        List_POSTtr_GneitingLoss_imp_95.append(cd_List_POSTtr_GneitingLoss_imp_95)
+        List_POSTtr_GneitingLoss_imp_99.append(cd_List_POSTtr_GneitingLoss_imp_99)
+        List_POSTtr_GneitingLoss_out_90.append(cd_List_POSTtr_GneitingLoss_out_90)
+        List_POSTtr_GneitingLoss_out_95.append(cd_List_POSTtr_GneitingLoss_out_95)
+        List_POSTtr_GneitingLoss_out_99.append(cd_List_POSTtr_GneitingLoss_out_99)
+        
+        ### END OF OUTPUT DICTIONARY LOOP
+    
+    # Create master lists that we can loop through later
+    imp90_master = [List_Lin_percContain_imp_90,List_MAPuntr_percContain_imp_90,List_MAPtr_percContain_imp_90,List_MAPuntrProb_percContain_imp_90,\
+                    List_MAPtrProb_percContain_imp_90,List_POSTuntr_percContain_imp_90,List_POSTtr_percContain_imp_90]
+    imp95_master = [List_Lin_percContain_imp_95,List_MAPuntr_percContain_imp_95,List_MAPtr_percContain_imp_95,List_MAPuntrProb_percContain_imp_95,\
+                    List_MAPtrProb_percContain_imp_95,List_POSTuntr_percContain_imp_95,List_POSTtr_percContain_imp_95]
+    imp99_master = [List_Lin_percContain_imp_99,List_MAPuntr_percContain_imp_99,List_MAPtr_percContain_imp_99,List_MAPuntrProb_percContain_imp_99,\
+                    List_MAPtrProb_percContain_imp_99,List_POSTuntr_percContain_imp_99,List_POSTtr_percContain_imp_99]
+    out90_master = [List_Lin_percContain_out_90,List_MAPuntr_percContain_out_90,List_MAPtr_percContain_out_90,List_MAPuntrProb_percContain_out_90,\
+                    List_MAPtrProb_percContain_out_90,List_POSTuntr_percContain_out_90,List_POSTtr_percContain_out_90]
+    out95_master = [List_Lin_percContain_out_95,List_MAPuntr_percContain_out_95,List_MAPtr_percContain_out_95,List_MAPuntrProb_percContain_out_95,\
+                    List_MAPtrProb_percContain_out_95,List_POSTuntr_percContain_out_95,List_POSTtr_percContain_out_95]
+    out99_master = [List_Lin_percContain_out_99,List_MAPuntr_percContain_out_99,List_MAPtr_percContain_out_99,List_MAPuntrProb_percContain_out_99,\
+                    List_MAPtrProb_percContain_out_99,List_POSTuntr_percContain_out_99,List_POSTtr_percContain_out_99]
+    
+    #Create master list to loop through each CI,outlet/importer combination
+    MasterList = [imp90_master,imp95_master,imp99_master,\
+                  out90_master,out95_master,out99_master]
+    MasterStrings = ['IMPORTERS, 90% CI','IMPORTERS, 95% CI','IMPORTERS, 99% CI',
+                     'OUTLETS, 90% CI','OUTLETS, 95% CI','OUTLETS, 99% CI']
+    
+    ############# PLOTTING #############
+    xTickLabels = [] # For plot x ticks
+    # How many replications? For plot x ticks
+    for dictNum in range(len(dictNamesVec)):
+        nCurr = len(List_Lin_percContain_imp_90[dictNum])
+        xTickLabels.append(str(dictNamesVec[dictNum])+' \n n=%i' % nCurr)
+    # Build pandas dataframes for seaborn plots
+    headCol = ['dict','calcMethod','value']
+    
+    for masterInd, currMaster in enumerate(MasterList):    
+        DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+        for dictInd,currDict in enumerate(dictNamesVec):
+            block1 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Linear Projection']),\
+                              currMaster[0][dictInd]))       
+            block2 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked MAP']),\
+                              currMaster[1][dictInd]))
+            block3 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked MAP']),\
+                              currMaster[2][dictInd]))
+            block4 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked MAP (no transform)']),\
+                              currMaster[3][dictInd]))
+            block5 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked MAP (no transform)']),\
+                              currMaster[4][dictInd]))
+            block6 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Untracked Posterior Sample']),\
+                              currMaster[5][dictInd]))        
+            block7 = list(zip(itertools.cycle([currDict]),\
+                              itertools.cycle(['Tracked Posterior Sample']),\
+                              currMaster[6][dictInd]))
+            for tup in block1:
+                DFdata.append(tup)
+            for tup in block2:
+                DFdata.append(tup)
+            for tup in block3:
+                DFdata.append(tup)
+            for tup in block4:
+                DFdata.append(tup)    
+            for tup in block5:
+                DFdata.append(tup)
+            for tup in block6:
+                DFdata.append(tup)
+            for tup in block7:
+                DFdata.append(tup)
+        
+        pandaDF = pd.DataFrame(DFdata,columns=headCol)
+        
+        # Build boxplot
+        plt.figure(figsize=(13,7))
+        plt.suptitle('Percent containing true value - '+MasterStrings[masterInd],fontsize=18)
+        plt.ylim(0,1.05)
+        ax = sns.boxplot(y='value',x='dict',data=pandaDF,palette='bright',\
+                          hue='calcMethod')
+        ax.set_xlabel('Output Dictionary',fontsize=16)
+        ax.set_ylabel('Percent containing true value',fontsize=16)
+        ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=10)
+        ax.tick_params(axis='y', which='major', labelsize=16)
+        yticks = ax.get_yticks()
+        ax.set_yticklabels(['{:,.0%}'.format(x) for x in yticks])
+        plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+        plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+        plt.show()      
+            
+        ### END PLOTTING OF ITEMS IN MASTER LIST
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    '''
+    absDevList_Lin = []
+    absDevList_MLE = []
+    absDevList_MLEtr = []
+    absDevList_Post = []
+    absDevList_Posttr = []
+    
+    for currDict in OPdicts:
+        currDict_absDevList_Lin = []
+        for repNum in currDict.keys():
+            currTrueSFPVec_imp = currDict[repNum]['intSFTrueValues']
+            if not currDict[repNum]['intFalseEstimates'] == []:
+                currLinProj = currDict[repNum]['intFalseEstimates']
+            else:
+                currLinProj = [np.nan for i in range(len(currTrueSFVec))]
+            currLinProjAbsdevs = [np.abs(currLinProj[i]-currTrueSFVec[i]) for i in range(len(currTrueSFVec))]
+            
+        
+            currDict_absDevList_Lin.append(np.mean(currLinProjAbsdevs))
+        
+        absDevList_Lin.append(currDict_absDevList_Lin) 
+    
+    
+    ############# PLOTTING #############
+    xTickLabels = [] # For plot x ticks
+    # How many replications?
+    for dictNum in range(len(dictNamesVec)):
+        nCurr = len(absDevList_Lin[dictNum])
+        xTickLabels.append(str(dictNamesVec[dictNum])+' \n n=%i' % nCurr)
+    # For plot x ticks
+    
+    
+    # Build pandas dataframes for seaborn plots
+    headCol = ['dict','calcMethod','devVal']
+    # Absolute deviations - importers
+    DFdata = [] # We will grow a list of tuples containing [dictionary,calc method, deviation]
+    for dictInd,currDict in enumerate(dictNamesVec):
+        block1 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Linear Projection']),\
+                          absDevList_Lin[dictInd]))
+       
+        block3 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Untracked MAP']),\
+                          absDevList_MLE[dictInd]))
+        block4 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Untracked Posterior Sample Medians']),\
+                          absDevList_Post[dictInd]))
+        block5 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked MAP']),\
+                          absDevList_MLEtr[dictInd]))
+        block6 = list(zip(itertools.cycle([currDict]),\
+                          itertools.cycle(['Tracked Posterior Sample Medians']),\
+                          absDevList_Posttr[dictInd]))
+        for tup in block1:
+            DFdata.append(tup)
+        #for tup in block2:
+        #    DFdata.append(tup)
+        for tup in block3:
+            DFdata.append(tup)
+        for tup in block4:
+            DFdata.append(tup)    
+        for tup in block5:
+            DFdata.append(tup)
+        for tup in block6:
+            DFdata.append(tup)
+    
+    AbsDevsDF = pd.DataFrame(DFdata,columns=headCol)
+    
+    # Build boxplot
+    plt.figure(figsize=(13,7))
+    plt.suptitle('Absolute Estimate Deviations - IMPORTERS',fontsize=18)
+    plt.ylim(0,0.4)
+    ax = sns.boxplot(y='devVal',x='dict',data=AbsDevsDF,palette='bright',\
+                      hue='calcMethod')
+    ax.set_xlabel('Output Dictionary',fontsize=16)
+    ax.set_ylabel('Absolute Deviation',fontsize=16)
+    ax.set_xticklabels(xTickLabels,rotation='vertical',fontsize=14)
+    plt.setp(ax.get_legend().get_texts(), fontsize='12') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='14') # for legend title
+    plt.show()
+    
+    '''
 
 def SimSFPEstimateOutput(OPdicts,dictNamesVec=[],threshold=0.2):
     '''
