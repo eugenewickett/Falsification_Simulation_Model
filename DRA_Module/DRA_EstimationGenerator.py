@@ -14,6 +14,7 @@ Tracked methods.
 
 import numpy as np
 import csv
+import matplotlib.pyplot as plt
 import DRA_EstimationMethods as estMethods
 
 ### PUT DATA FILE NAME HERE; IT MUST BE LOCATED IN THE SAME DIRECTORY AS THIS FILE
@@ -65,6 +66,24 @@ outputPostSamps = estMethods.GeneratePostSamps_TRACKED(N,Y,diagSens,diagSpec,\
                                                        Madapt=5000,
                                                        delta=0.4,
                                                        usePriors=1.)
+
+# Plot testing results per outlets
+numTestsVec = np.sum(N,axis=1)
+numPositivesVec = np.sum(Y,axis=1)
+outletInds = np.arange(outletNum)
+width = 0.25
+fig = plt.figure()
+ax = fig.add_axes([0,0,3,0.5])
+ax.set_xlabel('Tested Node',fontsize=16)
+ax.set_ylabel('Result Amount',fontsize=16)
+ax.bar(outletInds, numTestsVec, color='black', width=0.25)
+ax.bar(outletInds+width, numPositivesVec, color='red', width=0.25)
+plt.legend(('Times tested','Times falsified'),loc=2)
+plt.xticks(rotation=90)
+plt.show()
+
+
+
 
 # Generate output list of estimates and intervals
 outputTrackedDict.keys()
